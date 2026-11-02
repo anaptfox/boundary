@@ -23,7 +23,7 @@ you already know the audience and job.
 
 ## Bring your own application
 
-- [Concise native TypeScript authoring](./guides/concise-authoring.md) — the shortest TypeScript entry
+- [The short path: surface, install, connect](./reference/host.md#the-short-path) — the TypeScript entry the README teaches
 - [Compose native modules](./guides/module-composition.md)
 - [Native dispatch](./guides/native-dispatch.md) — select, inspect and coordinate a library's own dispatcher
 - [Embed Boundary in a native C or C++ host](./guides/native-embedding.md)

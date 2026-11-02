@@ -4,9 +4,11 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  bindInteractions,
+  admitWhen,
   declaredInteractionError,
   defineInteraction,
+  install,
+  surface,
 } from "@foxworth/boundary";
 import {
   AcceptedSchema,
@@ -151,9 +153,9 @@ export async function runSceneHostProof(engine: SceneEngineDriver) {
 
   try {
     storage = await mkdtemp(join(tmpdir(), `boundary-${engine.engine}-scene-`));
-    const boundary = await bindInteractions(interactions, {
-      installationId: `example:crdt:${engine.engine}:one`,
-      realizationVersion: `${engine.engine}-scene:v1`,
+    const app = await install(interactions, {
+      id: `example:crdt:${engine.engine}:one`,
+      version: `${engine.engine}-scene:v1`,
       handlers: {
         async move(input, _actor: SceneActor) {
           await engine.move(input.id, input.x, input.y);
@@ -216,17 +218,14 @@ export async function runSceneHostProof(engine: SceneEngineDriver) {
           return record;
         },
       },
-      callers: {
-        editor: {
-          direct: ["move", "capture", "render", "accept"],
-          admit: (actor) => actor.role === "editor",
-        },
-        reviewer: {
-          direct: ["capture", "render"],
-          admit: (actor) => actor.role === "reviewer",
-        },
-      },
     });
+    const editor = await app.connect(surface.all(interactions), {
+      admit: admitWhen((actor: SceneActor) => actor.role === "editor", "Editor required"),
+    });
+    const reviewer = await app.connect(surface(interactions, { call: ["capture", "render"] }), {
+      admit: admitWhen((actor: SceneActor) => actor.role === "reviewer", "Reviewer required"),
+    });
+    const boundary = { callers: { editor, reviewer } };
 
     assert.deepEqual(Object.keys(boundary.callers.reviewer), ["capture", "render"]);
     assert.equal("move" in boundary.callers.reviewer, false);
@@ -307,12 +306,12 @@ export async function runSceneHostProof(engine: SceneEngineDriver) {
     assert.equal(digestScene(restoredContent), restoredMetadata.contentDigest);
 
     const beforeRevocation = engine.readLive();
-    boundary.bindingControllers.editor.revoke();
+    app.revoke(editor);
     await assert.rejects(
       boundary.callers.editor.move({ id: "orb", x: 90, y: 90 }, sceneActors.editor),
     );
     assert.deepEqual(engine.readLive(), beforeRevocation, "binding revocation prevents later edits");
-    boundary.installationController.revoke();
+    app.revoke();
     await assert.rejects(boundary.callers.reviewer.render(candidateA, sceneActors.reviewer));
 
     return Object.freeze({

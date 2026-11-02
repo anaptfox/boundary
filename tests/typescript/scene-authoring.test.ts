@@ -4,7 +4,7 @@ import {
   sceneActors,
 } from "../../examples/snippets/typescript/scene-authoring";
 
-describe("concise scene authoring", () => {
+describe("scene authoring on the short path", () => {
   it("keeps host handlers behind narrow, admitted, revocable callers", async () => {
     const scene = await createSceneAuthoringExample();
     const { editor, assistant } = scene.callers;
@@ -24,7 +24,7 @@ describe("concise scene authoring", () => {
 
     await expect(assistant.capture(sceneActors.editor)).rejects.toThrow();
 
-    expect(scene.bindingControllers.assistant.revoke()).toBe(true);
+    expect(scene.app.revoke(assistant)).toBe(true);
     await expect(assistant.render(captured, sceneActors.assistant)).rejects.toThrow();
   });
 });

@@ -25,42 +25,34 @@ editor: [ inspect, makeThumbnail, delete ]
 script: [          makeThumbnail         ]
 ```
 
-Create the script's Projection from compiled declarations. It needs no running
+Create the script's Surface from the declarations. It needs no running
 installation or admission context at this stage. Select required interactions
 and modes explicitly; avoid giving it a larger surface merely because the
 editor already has one.
 
-<!-- snippet:examples/snippets/typescript/thumbnail.ts#projection -->
+<!-- snippet:examples/snippets/typescript/thumbnail.ts#surface -->
 ```ts
-const compiled = await compileInteractions(interactions);
-const thumbnailSurface = await projectInteractions(compiled, {
-  makeThumbnail: direct(compiled.handles.makeThumbnail),
-});
+const thumbnailSurface = surface(interactions, { call: ["makeThumbnail"] });
 // No implementation or live installation is needed to select this surface.
 ```
 
-## Bind to available execution
+## Connect to available execution
 
-When an installation is available, bind the Projection with the host's
-admission function. Inspect an `unrealized` report instead of continuing with
-only the interactions that happened to match. A successful Binding connects the
-whole selected surface and pins its implementation mapping. The example keeps
-the exhaustive report as the thrown error's `cause`; inspect its `issues` for
-the alias, interaction, mode, reason, and contract path that blocked connection.
+When an installation is available, connect the Surface with the host's
+admission function. A successful connection binds the whole selected surface
+and pins its implementation mapping; there is no caller over the interactions
+that happened to match. When the surface cannot be realized, `connect` throws a
+`ConnectError` whose `report.issues` name the alias, interaction, mode, reason,
+and contract path that blocked connection, and whose `expected`, `found`, and
+`fix` text say what to change.
 
-<!-- snippet:examples/snippets/typescript/thumbnail.ts#binding -->
+<!-- snippet:examples/snippets/typescript/thumbnail.ts#connect -->
 ```ts
 const admitScreenOrScript = admitWhen(
   (context: Context) => context.kind === "screen" || context.kind === "script",
   "This connection admits the screen and script",
 );
-const result = await bindProjection(thumbnailSurface, installation, {
-  admit: admitScreenOrScript,
-});
-if (result.status !== "bound") {
-  throw new Error("Thumbnail surface is unavailable", { cause: result.report });
-}
-const caller = result.binding.connect();
+const thumbnails = await app.connect(thumbnailSurface, { admit: admitScreenOrScript });
 ```
 
 Supply context on each invocation. The host uses that context for admission
@@ -69,19 +61,17 @@ constructing trustworthy context.
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#call -->
 ```ts
-const fromScreen = () => caller.call(
-  thumbnailSurface.handles.makeThumbnail,
+const fromScreen = () => thumbnails.makeThumbnail(
   { imageId: "original", maxWidth: 200 },
   { kind: "screen" },
 );
-const fromScript = () => caller.call(
-  thumbnailSurface.handles.makeThumbnail,
+const fromScript = () => thumbnails.makeThumbnail(
   { imageId: "original", maxWidth: 200 },
   { kind: "script" },
 );
 ```
 
-Both calls select the same handle and supply different invocation context.
+Both calls use the same method and supply different invocation context.
 
 If the worker returns a job ID where the script expects a finished thumbnail,
 fix the declared workflow deliberately. Rebinding cannot turn incompatible
@@ -96,7 +86,7 @@ create a remote transport.
 
 Presentation names can differ from interaction IDs. There is no way to hide a
 bound interaction from a tool list: the list presents the whole Binding. When an
-interaction must be outside this caller's surface, bind a narrower Projection.
+interaction must be outside this caller's surface, connect a narrower Surface.
 
 ## Check the boundary
 
@@ -116,23 +106,16 @@ See [testing](./testing.md) for the broader verification guide.
 ## Give an agent the same treatment
 
 An agent preparing article images selects inspection and thumbnail creation.
-Deletion stays outside its Projection. Its tool interface describes those
+Deletion stays outside its Surface. Its tool interface describes those
 existing interactions, and the host still admits each invocation.
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#agent -->
 ```ts
-const agentSurface = await projectInteractions(compiled, {
-  makeThumbnail: direct(compiled.handles.makeThumbnail),
-  inspectImage: direct(compiled.handles.inspectImage),
-});
-const agentResult = await bindProjection(agentSurface, installation, {
+const agentSurface = surface(interactions, { call: ["makeThumbnail", "inspectImage"] });
+const agent = await app.connect(agentSurface, {
   admit: admitWhen((context: Context) => context.kind === "agent", "Agent connection required"),
 });
-if (agentResult.status !== "bound") {
-  throw new Error("Agent surface is unavailable", { cause: agentResult.report });
-}
-const agent = agentResult.binding.connect();
-// No deleteImage handle is exposed. Admission still checks every call.
+// No deleteImage method exists. Admission still checks every call.
 // Context must come from the host's trusted caller identification.
 ```
 

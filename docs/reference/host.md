@@ -34,38 +34,155 @@ Projection + InteractionInstallation + admission --bind--> ProjectionBinding
 
 ## Public module boundary
 
-The root exports the host lifecycle functions and their directly owned types:
+The root exports the short path and the values it is made of:
 
-- `defineInteraction`
-- `compileInteractions`
-- `bindInteractions`
-- `composeCompiledInteractions`
-- `diffCompiledInteractions`
-- `implementInteractions`
-- `installInteractions`
-- `projectInteractions`
-- `projectAllDirect`
-- `pickProjection`
-- `presentProjection`
-- `assessProjection`
-- `direct`
-- `directRealizationIds`
-- `bindProjection`
-- `admitWhen`
-- `admitAll`
-- `declaredInteractionError`
-- `isDeclaredInteractionError`
-- `BindInteractionsError`
+- `defineInteraction`, `declaredInteractionError`, `isDeclaredInteractionError`
+- `surface` and `surface.all`
+- `install`, returning an `Installation` with `connect`, `tryConnect`,
+  `revoke`, and `binding`
+- `admitWhen` and `admitAll`
+- `ConnectError`, `HostError`, `InteractionFault`, `DeclaredInteractionError`
+
+The explicit pipeline (`compileInteractions`, `implementInteractions`,
+`installInteractions`, `projectInteractions`, `bindProjection`,
+`restrictBinding`, `bindNativeInteractions`, `direct`, `directRealizationIds`,
+`pickProjection`, `projectAllDirect`, `presentProjection`, `assessProjection`,
+`describeBinding`) is exported from `@foxworth/boundary/pipeline`. The root
+still re-exports most of it during the migration; that duplication ends when
+the root settles on the short path.
 
 Lifecycle transformations are free functions. Methods belong only to values
-that already own a live capability: `binding.connect`, `binding.invoke`,
-`caller.call`, and, when request mode was realized, `caller.request`.
+that already own a live capability: `app.connect`, `caller.<alias>`,
+`caller.propose.<alias>`, `binding.invoke`, and the pipeline's `binding.connect`
+and `caller.call`.
 
 The root does not re-export Program, Handoff, Control, adapter, build, or
 filesystem interfaces. Import those direct packages when their lower-level
 capability is needed. In particular, the root direct-call path has no runtime
 dependency on Control. The optional request bridge is owned by
 `@foxworth/boundary/control/host`.
+
+## The short path
+
+`surface`, `install`, and `connect` are the TypeScript entry the README
+teaches. They compose the explicit pipeline and return its artifacts; they add
+no behaviour of their own.
+
+A **Surface** selects what one caller may see from a declaration record:
+`call` aliases are callable directly, `propose` aliases yield a Proposal record
+for host review. Nothing is selected by default and `surface.all(record)`
+spells out the everything case. A Surface is inert: it names no
+implementation, admission, or context, and it may stay unconnected forever.
+
+```ts
+const editorSurface = surface(scene, { call: ["move", "capture", "render"] });
+const assistantSurface = surface(scene, { call: ["capture", "render"] });
+```
+
+`install` compiles the record and installs its handlers. The host owns
+`version`, the release label of the installed realizations; Boundary never
+derives it from code. `id` is optional and defaults to a visible
+`generated:...` token; a host that publishes Reach records or persists Control
+state passes its own. The executable [scene example](../../examples/snippets/typescript/scene-authoring.ts)
+keeps its state in plain `Map` values:
+
+<!-- snippet:examples/snippets/typescript/scene-authoring.ts#install -->
+```ts
+const app = await install(sceneInteractions, {
+  id: "scene:local:v1",
+  version: "scene-handlers:v1",
+  handlers: {
+    move(input, _actor: SceneActor) {
+      const previous = positions.get(input.id);
+      if (!previous) throw new Error(`Unknown scene item: ${input.id}`);
+      const next = Object.freeze({
+        x: input.x,
+        y: input.y,
+        revision: previous.revision + 1,
+      });
+      positions.set(input.id, next);
+      return Object.freeze({ id: input.id, ...next });
+    },
+    capture(_actor: SceneActor) {
+      const current = positions.get("orb");
+      if (!current) throw new Error("The scene item is unavailable");
+      const candidateId = `scene-candidate-${nextCandidateId++}`;
+      candidates.set(candidateId, Object.freeze({ id: "orb", ...current }));
+      return { candidateId };
+    },
+    render(reference, _actor: SceneActor) {
+      const candidate = candidates.get(reference.candidateId);
+      if (!candidate) {
+        throw declaredInteractionError(
+          sceneInteractions.render,
+          "missingCandidate",
+          { candidateId: reference.candidateId },
+        );
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle data-revision="${candidate.revision}" cx="${candidate.x}" cy="${candidate.y}" r="5"/></svg>`;
+    },
+  },
+});
+```
+
+The handler context type is inferred from the handlers' typed actor parameters.
+One Installation has one context type. `install(..., { dispatch: { targets,
+dispatchers } })` installs native dispatchers over host-owned targets instead
+of handlers, and `requests: (compiled) => contributeControlRequests(...)` adds
+the Control request bridge so `propose` aliases can connect.
+
+`connect` binds a Surface to the Installation and returns a caller. `admit` is
+required by the type; there is no admit-all default, and holding a Surface or
+a caller is never authority. The admission rule runs on every call with that
+call's actor.
+
+<!-- snippet:examples/snippets/typescript/scene-authoring.ts#connect -->
+```ts
+const editor = await app.connect(surface.all(sceneInteractions), {
+  admit: admitWhen((actor: SceneActor) => actor.role === "editor", "Editor required"),
+});
+const assistant = await app.connect(surface(sceneInteractions, { call: ["capture", "render"] }), {
+  admit: admitWhen((actor: SceneActor) => actor.role === "assistant", "Assistant required"),
+});
+```
+
+A caller has one method per `call` alias and `propose.<alias>` per `propose`
+alias. Methods take the declared input followed by the actor; zero-input
+interactions take only the actor, and contextless installations take neither.
+The assistant has no `move` method:
+
+<!-- snippet:examples/snippets/typescript/scene-authoring.ts#call-sequence -->
+```ts
+export async function runSceneAuthoringSequence() {
+  const scene = await createSceneAuthoringExample();
+  await scene.callers.editor.move({ id: "orb", x: 18, y: 24 }, scene.actors.editor);
+  const captured = await scene.callers.assistant.capture(scene.actors.assistant);
+  await scene.callers.editor.move({ id: "orb", x: 71, y: 83 }, scene.actors.editor);
+  return scene.callers.assistant.render(captured, scene.actors.assistant);
+}
+```
+
+A caller also carries its read-only `manifest` and a `handoff` seam
+(`manifest`, `resolve`, `invoke`) for adapters that validate serialized
+invocations into this exact Binding. It carries no controller: `app.revoke(caller)`
+revokes that caller's Binding and `app.revoke()` revokes the whole
+Installation, and only the host holds `app`. `app.binding(caller)` returns the
+real `ProjectionBinding` for inspection and Handoff tooling; `app.program`,
+`app.compiled`, `app.installation`, and `app.manifest` are the pipeline's own
+artifacts.
+
+When the Surface cannot be realized, `connect` throws `ConnectError`. It
+carries the exhaustive unrealized `report` and three agent-readable strings:
+`expected` (what the Surface required), `found` (one line per issue), and
+`fix` (what to change). `tryConnect` returns `{ status: "unrealized", report }`
+instead of throwing and accepts a Surface over any declarations, because a
+disagreement is what the report is for.
+
+Connecting compiles the Surface's own declarations for the expected side of
+the Binding. A Surface built from a record whose `suggest` only changes
+suggestions is refused by an installation whose `suggest` also changes the
+document, even when the interaction id, input, and output are unchanged. The
+README's document-review example shows that refusal.
 
 ## Definitions
 
@@ -161,80 +278,6 @@ correlates the inert definition-owned error schema. A typed caller receives a
 `isDeclaredInteractionError(error, projectedHandle, code)` to narrow it. An
 arbitrary throw is not a declared error.
 
-## `bindInteractions`
-
-`bindInteractions(definitions, options)` is the compact TypeScript authoring
-entry for direct callers. It runs the existing compile, implementation,
-installation, projection, and binding steps, then returns those authentic
-values with named methods over each connected caller. It does not create a
-second dispatch or authorization path.
-
-```ts
-type EditorActor = Readonly<{ role: "editor" | "assistant" }>;
-
-const api = await bindInteractions(interactions, {
-  installationId: "editor:local:v1",
-  realizationVersion: "editor-handlers:v3",
-  handlers: {
-    move(input, _actor: EditorActor) { return editor.move(input, _actor); },
-    capture(_actor: EditorActor) {
-      const frozen = Object.freeze({ ...editor.position() });
-      return { candidateId: editor.storeCandidate(frozen) };
-    },
-    render(reference, _actor: EditorActor) {
-      return editor.renderStoredCandidate(reference.candidateId);
-    },
-  },
-  callers: {
-    editor: {
-      direct: ["move", "capture", "render"],
-      admit: (actor) => actor.role === "editor",
-    },
-    assistant: {
-      direct: ["capture", "render"],
-      admit: (actor) => actor.role === "assistant",
-    },
-  },
-});
-
-await api.callers.editor.move({ x: 10, y: 20 }, editorActor);
-const candidate = await api.callers.assistant.capture(assistantActor);
-await api.callers.editor.move({ x: 70, y: 80 }, editorActor);
-await api.callers.assistant.render(candidate, assistantActor);
-```
-
-The definitions, handlers, actors, state, and admission rules remain host code.
-The handler context is inferred from a typed context parameter such as
-`_actor: EditorActor`; contextful named calls take `(input, actor)`, while
-zero-input calls take `(actor)`. In this example, capture freezes the current
-position in host-owned candidate storage and returns only a `CandidateRef` ID.
-Render resolves that ID against the snapshot store, so a later move cannot
-change the captured position. The host raises its declared `missingCandidate`
-error if the ID is absent.
-TypeScript preserves each caller's literal aliases and definition input/output
-types. Every call still passes through that caller's Binding, validates input
-and output, and runs its admission with the actor supplied for that call.
-
-Both `installationId` and `realizationVersion` are required and supplied by the
-host. Change the realization version when handlers change; Boundary does not
-hash function source. Interaction alias `then` is reserved when exposed as a
-named method. A malformed or unrealizable caller makes setup throw
-`BindInteractionsError`; its `issues`
-identify caller-specific setup failures and their causes, and setup revokes any
-bindings and installation it already created without exposing a partial caller
-map. Invalid global definitions or handlers can fail earlier with their own
-construction errors.
-
-The result includes `compiled`, `installation`, `installationController`,
-`projections`, `bindings`, `bindingControllers`, and `callers`. These are the
-same native values returned by the lower-level lifecycle, suitable for
-inspection and lifecycle management. Revoke one caller through its matching
-`bindingControllers` entry, or revoke all callers through
-`installationController`. The helper covers direct mode only. Continue using
-`projectInteractions`, `bindProjection`, and the Control bridge when a host
-needs independently managed projections or request mode. Rust and the portable
-contract laws are unchanged.
-
 ## `installInteractions`
 
 Installation binds one compiled set to exact process-local execution. Bare
@@ -305,7 +348,7 @@ const { installation, controller: installationController } =
 
 A request-capable entry adds `request: createRequestRealizationId` beside its
 `direct` realization. Portable mode values remain exactly `"direct"` and
-`"request"`.
+`"request"`; the short path's `call` and `propose` verbs map onto them.
 
 `RealizationId` changes when the realization represented by that exact
 interaction and mode changes. Direct and request modes have distinct realization

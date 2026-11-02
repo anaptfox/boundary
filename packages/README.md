@@ -84,6 +84,7 @@ docs check fails when it drifts.
 | `@foxworth/boundary/inspector` | `callers/inspector` | `callers/inspector/index.ts` |
 | `@foxworth/boundary/mcp` | `callers/mcp` | `callers/mcp/index.ts` |
 | `@foxworth/boundary/observations` | `core/host` | `core/host/observations/index.ts` |
+| `@foxworth/boundary/pipeline` | `core/host` | `core/host/pipeline.ts` |
 | `@foxworth/boundary/plugin` | `guests/plugin` | `guests/plugin/index.ts` |
 | `@foxworth/boundary/program` | `core/program` | `core/program/index.ts` |
 | `@foxworth/boundary/program/zod` | `core/program` | `core/program/zod.ts` |

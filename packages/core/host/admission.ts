@@ -69,17 +69,22 @@ export const admitAll: Admission<any> = Object.freeze(() =>
   Object.freeze({ decision: "allow" as const }),
 );
 
-/** Admit when `allow(context)` is true; otherwise deny with `reason`. */
+/** Admit when `allow(context)` is true; otherwise deny with `reason`. The predicate may be asynchronous. */
 export function admitWhen<Context>(
-  allow: (context: Context) => boolean,
+  allow: (context: Context) => boolean | PromiseLike<boolean>,
   reason: string | ((context: Context) => string) = "denied",
 ): Admission<Context> {
-  return (request) =>
-    allow(request.context)
-      ? { decision: "allow" }
-      : {
-          decision: "deny",
-          reason:
-            typeof reason === "function" ? reason(request.context) : reason,
-        };
+  return (request) => {
+    const decide = (allowed: boolean): AdmissionDecision =>
+      allowed === true
+        ? { decision: "allow" }
+        : {
+            decision: "deny",
+            reason: typeof reason === "function" ? reason(request.context) : reason,
+          };
+    const allowed = allow(request.context);
+    return typeof allowed === "object" && allowed !== null && "then" in allowed
+      ? Promise.resolve(allowed).then(decide)
+      : decide(allowed);
+  };
 }

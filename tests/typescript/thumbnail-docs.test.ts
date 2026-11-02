@@ -10,40 +10,39 @@ describe("thumbnail documentation example", () => {
     });
   });
 
-  it("shares rendering between callers and binds a replacement explicitly", async () => {
+  it("shares rendering between callers and connects a replacement explicitly", async () => {
     const example = await createThumbnailExample();
     const screen = await example.fromScreen();
     expect(screen).toEqual({ imageId: "original:w200", width: 200, height: 150 });
     expect(await example.fromScript()).toEqual(screen);
     expect(example.images.get(screen.imageId)?.svg).toContain('width="200" height="150"');
     expect(example.images.get(screen.imageId)?.svg).toContain('viewBox="0 0 800 600"');
-    expect(await example.replacementCaller.call(
-      example.thumbnailSurface.handles.makeThumbnail,
+    expect(await example.replacementCaller.makeThumbnail(
       { imageId: "original", maxWidth: 400 },
       { kind: "script" },
     )).toEqual({ imageId: "original:w400", width: 400, height: 300 });
     expect(example.dispatches).toEqual(["makeThumbnail", "makeThumbnail", "makeThumbnail"]);
+    expect(example.replacementCaller.manifest.installationId).toBe("images:local:release-2");
+    expect(example.thumbnails.manifest.installationId).toBe("images:local:release-1");
   });
 
   it("refuses a job-returning installation before dispatch", async () => {
     const example = await createThumbnailExample();
     expect(example.mismatch.status).toBe("unrealized");
+    if (example.mismatch.status !== "unrealized") throw new Error("expected a refusal");
+    expect(example.mismatch.report.issues.map((issue) => issue.reason)).toEqual(["incompatible-contract"]);
     expect(example.queuedDispatches).toEqual([]);
     expect(example.dispatches).toEqual([]);
   });
 
   it("narrows the agent surface and checks admission independently", async () => {
     const example = await createThumbnailExample();
-    expect(Object.keys(example.agentSurface.handles)).toEqual(["makeThumbnail", "inspectImage"]);
-    expect(example.agentBinding.resolve("images.delete")).toBeUndefined();
-    expect(await example.agent.call(
-      example.agentSurface.handles.inspectImage,
-      { imageId: "original" },
-      { kind: "agent" },
-    )).toEqual({ imageId: "original", width: 800, height: 600 });
+    expect(Object.keys(example.agent)).toEqual(["makeThumbnail", "inspectImage"]);
+    expect(example.app.binding(example.agent).resolve("images.delete")).toBeUndefined();
+    expect(await example.agent.inspectImage({ imageId: "original" }, { kind: "agent" }))
+      .toEqual({ imageId: "original", width: 800, height: 600 });
     const before = example.dispatches.length;
-    await expect(example.agent.call(
-      example.agentSurface.handles.makeThumbnail,
+    await expect(example.agent.makeThumbnail(
       { imageId: "original", maxWidth: 100 },
       { kind: "screen" },
     )).rejects.toThrow();

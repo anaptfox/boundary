@@ -48,6 +48,7 @@
     "./inspector": "./callers/inspector/index.ts",
     "./mcp": "./callers/mcp/index.ts",
     "./observations": "./core/host/observations/index.ts",
+    "./pipeline": "./core/host/pipeline.ts",
     "./plugin": "./guests/plugin/index.ts",
     "./program": "./core/program/index.ts",
     "./program/zod": "./core/program/zod.ts",
@@ -166,6 +167,7 @@
       "./inspector": "./dist/inspector.js",
       "./mcp": "./dist/mcp.js",
       "./observations": "./dist/observations.js",
+      "./pipeline": "./dist/pipeline.js",
       "./plugin": {
         "types": "./dist/plugin.d.ts",
         "node": "./dist/plugin.js"

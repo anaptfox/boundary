@@ -1,16 +1,10 @@
 import { metadataForCompiled } from "./compile";
 import { failHost } from "./errors";
-import type { NativeDispatchOutcome } from "./native-outcome";
+import type { NativeDispatchers } from "./facade-types";
 import type {
-  CompiledInteractions, InteractionDefinitions, MaybePromise,
-  NativeDispatchRequest, NativeInteractionBinding,
+  CompiledInteractions, InteractionDefinitions, NativeInteractionBinding,
 } from "./types";
 
-export type NativeDispatchers<Definitions extends InteractionDefinitions, Targets, Context> = {
-  readonly [Alias in keyof Definitions]: (
-    request: NativeDispatchRequest<Definitions[Alias], Targets[Alias & keyof Targets], Context>,
-  ) => MaybePromise<NativeDispatchOutcome<Definitions[Alias]>>;
-};
 
 /** Correlate each compiled alias with its native target and dispatch types. */
 export function bindNativeInteractions<

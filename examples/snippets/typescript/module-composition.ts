@@ -1,11 +1,15 @@
 // #region imports
 import {
+  declaredInteractionError,
+  defineInteraction,
+  type DefinitionInput,
+  type InteractionDefinitions,
+} from "@foxworth/boundary";
+import {
   bindNativeInteractions,
   bindProjection,
   compileInteractions,
   composeCompiledInteractions,
-  declaredInteractionError,
-  defineInteraction,
   directRealizationIds,
   implementInteractions,
   installInteractions,
@@ -13,10 +17,8 @@ import {
   projectAllDirect,
   type Admission,
   type AdmissionRequest,
-  type DefinitionInput,
   type ImplementationMap,
-  type InteractionDefinitions,
-} from "@foxworth/boundary";
+} from "@foxworth/boundary/pipeline";
 import { portableSchema } from "@foxworth/boundary/program";
 // #endregion imports
 

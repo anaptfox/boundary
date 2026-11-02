@@ -237,9 +237,6 @@ rules. For the optional proposal, grant, and recovery lifecycle, see
 [controlled effects](./docs/guides/controlled-effects.md); for observation
 delivery and read refresh, see [shared updates](./docs/guides/humans-and-agents.md#make-shared-updates-truthful).
 
-For a shorter native TypeScript setup with named callers, see the
-[concise authoring guide](./docs/guides/concise-authoring.md).
-
 The optional [Yjs and Automerge snapshot adapters](./docs/guides/crdt-snapshots.md)
 are **experimental**: their APIs may change incompatibly and have no production
 support commitment. See [availability and support](./docs/concepts/current-status.md).
@@ -351,67 +348,51 @@ Together they form one executable example.
 ```ts
 import { createReviewApplication } from "./document-review-host";
 import type { ReviewActor } from "./document-review-store";
-import {
-  admitWhen, bindProjection, compileInteractions, direct,
-  directRealizationIds, implementInteractions, installInteractions, projectInteractions,
-} from "@foxworth/boundary";
+import { admitWhen, install, surface } from "@foxworth/boundary";
 ```
 
-Select the actions each caller needs from the same declarations. A selected
-interface is a **Projection**. The CLI and assistant can share one because
-both need to read and suggest; the editor also needs to accept.
+Select the actions each caller needs from the same declarations. A selection
+is a **Surface**. The CLI and assistant can share one because both need to
+read and suggest; the editor also needs to accept. A Surface exists before any
+implementation does.
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#surfaces -->
 ```ts
-const compiled = await compileInteractions(reviewInteractions);
-const editorSurface = await projectInteractions(compiled, {
-  read: direct(compiled.handles.read),
-  suggest: direct(compiled.handles.suggest),
-  accept: direct(compiled.handles.accept),
-});
-const contributorSurface = await projectInteractions(compiled, {
-  read: direct(compiled.handles.read),
-  suggest: direct(compiled.handles.suggest),
-});
+const editorSurface = surface(reviewInteractions, { call: ["read", "suggest", "accept"] });
+const contributorSurface = surface(reviewInteractions, { call: ["read", "suggest"] });
 ```
 
 An **Installation** pairs the declarations with this application's live
-implementations. The application below owns one document and its suggestions:
+implementations. The host names the installation and its release `version`;
+Boundary never derives either from code. The application below owns one
+document and its suggestions:
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#installation -->
 ```ts
 const application = createReviewApplication();
-const implementations = implementInteractions<typeof reviewInteractions, ReviewActor>(reviewInteractions, {
-  read: application.handlers.read,
-  suggest: application.handlers.suggest,
-  accept: application.handlers.accept,
-});
-const { installation } = await installInteractions(compiled, {
-  installationId: "review:local:1",
-  implementations,
-  realizationIds: directRealizationIds(compiled, "release-1"),
+const app = await install(reviewInteractions, {
+  id: "review:local:1",
+  version: "release-1",
+  handlers: application.handlers,
 });
 ```
 
-A **Binding** checks that the whole selected interface can be served by that
-installation. The host also supplies admission rules, checked on every call:
+**Connecting** a Surface checks that the whole selection can be served by that
+installation, then returns a caller with one method per selected interaction.
+`admit` is required: the host's admission rule runs on every call, and holding
+a Surface or a caller is never authority by itself.
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#connections -->
 ```ts
-const editorResult = await bindProjection(editorSurface, installation, {
+const editor = await app.connect(editorSurface, {
   admit: admitWhen((actor: ReviewActor) => actor.kind === "editor", "Editor required"),
 });
-const contributorResult = await bindProjection(contributorSurface, installation, {
+const contributor = await app.connect(contributorSurface, {
   admit: admitWhen(
     (actor: ReviewActor) => actor.kind === "script" || actor.kind === "assistant",
     "Contributor required",
   ),
 });
-if (editorResult.status !== "bound" || contributorResult.status !== "bound") {
-  throw new Error("Review interfaces are unavailable");
-}
-const editor = editorResult.binding.connect();
-const contributor = contributorResult.binding.connect();
 ```
 
 These fixture identities stand in for authenticated callers. In a remote app,
@@ -430,24 +411,22 @@ Now let the CLI and assistant suggest different dates. The editor chooses one:
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#review -->
 ```ts
-const original = await contributor.call(contributorSurface.handles.read, {}, scriptActor);
-await contributor.call(contributorSurface.handles.suggest, {
+const original = await contributor.read({}, scriptActor);
+await contributor.suggest({
   id: "cli-1", text: "Launch on Monday.", basedOnRevision: original.revision,
 }, scriptActor);
-const suggestion = await contributor.call(contributorSurface.handles.suggest, {
+const suggestion = await contributor.suggest({
   id: "assistant-1", text: "Launch on Tuesday.", basedOnRevision: original.revision,
 }, assistantActor);
 // The document is still "Launch on Friday." Both changes are suggestions.
 
-const accepted = await editor.call(editorSurface.handles.accept, {
-  suggestionId: suggestion.id,
-}, editorActor);
+const accepted = await editor.accept({ suggestionId: suggestion.id }, editorActor);
 // accepted: { text: "Launch on Tuesday.", revision: 1 }
 ```
 
-Can the assistant call `accept`? Its connection has no such interaction. Even
-passing it an editor's handle doesn't expand the connection. Calling through
-the editor's connection with an assistant identity also fails admission.
+Can the assistant call `accept`? Its caller has no such method, because its
+Surface never selected one. Calling through the editor's caller with an
+assistant identity also fails admission.
 
 The application separately checks that an editor cannot accept their own
 suggestion, or accept one based on an old document revision. Selection,
@@ -456,19 +435,64 @@ admission, and domain rules each do a different job.
 ### Change one thing. Predict what still works.
 
 Suppose you replace the implementation. The selected interactions still mean
-read, suggest, and accept, with the same declared contracts. You can explicitly
-bind the existing caller interface to the new installation. Existing
-connections remain attached to the original installation.
+read, suggest, and accept, with the same declared contracts. You connect the
+existing Surface to the new installation explicitly. Existing callers remain
+attached to the original installation.
+
+<!-- snippet:examples/snippets/typescript/document-review.ts#replacement -->
+```ts
+// A fresh set of implementation functions shares the application-owned store.
+const replacementApplication = createReviewApplication(application.store);
+const replacement = await install(reviewInteractions, {
+  id: "review:local:2",
+  version: "release-2",
+  handlers: replacementApplication.handlers,
+});
+const assistant = await replacement.connect(contributorSurface, {
+  admit: admitWhen((actor: ReviewActor) => actor.kind === "assistant", "Assistant required"),
+});
+// The editor and the contributor above stay attached to the first installation.
+```
 
 Now suppose a replacement declares that `suggest` also changes the document.
-Its name, inputs, and outputs are unchanged. Should the assistant's existing
-interface still connect?
+Its name, inputs, and outputs are unchanged. Should the contributor's existing
+Surface still connect?
 
 ```text
 caller expects suggest to change       installation declares it changes
 
 suggestions                     ✓      suggestions
 suggestions                     X      suggestions + document
+```
+
+<!-- snippet:examples/snippets/typescript/document-review.ts#changed-contract -->
+```ts
+// It now changes the document too. The old read-and-suggest surface must fail,
+// even though the interaction ID, inputs, and outputs have stayed the same.
+const changedInteractions = {
+  ...reviewInteractions,
+  suggest: defineInteraction({
+    id: "document.suggest",
+    input: Suggestion, output: Suggestion,
+    errors: { reviewRejected },
+    reads: ["document", "suggestions"],
+    changes: ["suggestions", "document"],
+  }),
+};
+const dispatches: string[] = [];
+const changed = await install(changedInteractions, {
+  id: "review:auto-apply:1",
+  version: "release-1",
+  handlers: {
+    read() { dispatches.push("read"); return application.store.read(); },
+    suggest(input) { dispatches.push("suggest"); return input; },
+    accept(input, actor: ReviewActor) { dispatches.push("accept"); return application.handlers.accept(input, actor); },
+  },
+});
+const result = await changed.tryConnect(contributorSurface, {
+  admit: admitWhen((actor: ReviewActor) => actor.kind === "assistant", "Assistant required"),
+});
+// result.status === "unrealized": suggest's declared write footprint grew.
 ```
 
 Boundary refuses the second connection before running any interaction. The expected
@@ -482,7 +506,9 @@ The [complete example](./examples/snippets/typescript/document-review.ts) and
 [its tests](./tests/typescript/document-review-docs.test.ts) exercise the review,
 refusals, and explicit replacement. They use local calls and in-memory state.
 The [caller guide](./docs/guides/adding-a-caller.md) explains the additional
-transport step for a real CLI, browser, or agent connection.
+transport step for a real CLI, browser, or agent connection, and the
+[host reference](./docs/reference/host.md) documents `surface`, `install`,
+`connect`, and the explicit pipeline underneath them.
 
 ## Where it earns its place
 

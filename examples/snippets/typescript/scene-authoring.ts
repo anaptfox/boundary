@@ -1,8 +1,10 @@
 import { z } from "zod";
 import {
-  bindInteractions,
-  defineInteraction,
+  admitWhen,
   declaredInteractionError,
+  defineInteraction,
+  install,
+  surface,
 } from "@foxworth/boundary";
 
 export type SceneActor = Readonly<{
@@ -62,10 +64,10 @@ export async function createSceneAuthoringExample() {
   const candidates = new Map<string, Readonly<z.infer<typeof Position>>>();
   let nextCandidateId = 1;
 
-  // #region binding-call
-  const boundary = await bindInteractions(sceneInteractions, {
-    installationId: "scene:local:v1",
-    realizationVersion: "scene-handlers:v1",
+  // #region install
+  const app = await install(sceneInteractions, {
+    id: "scene:local:v1",
+    version: "scene-handlers:v1",
     handlers: {
       move(input, _actor: SceneActor) {
         const previous = positions.get(input.id);
@@ -97,20 +99,19 @@ export async function createSceneAuthoringExample() {
         return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle data-revision="${candidate.revision}" cx="${candidate.x}" cy="${candidate.y}" r="5"/></svg>`;
       },
     },
-    callers: {
-      editor: {
-        direct: ["move", "capture", "render"],
-        admit: (actor) => actor.role === "editor",
-      },
-      assistant: {
-        direct: ["capture", "render"],
-        admit: (actor) => actor.role === "assistant",
-      },
-    },
   });
-  // #endregion binding-call
+  // #endregion install
 
-  return Object.freeze({ ...boundary, actors: sceneActors });
+  // #region connect
+  const editor = await app.connect(surface.all(sceneInteractions), {
+    admit: admitWhen((actor: SceneActor) => actor.role === "editor", "Editor required"),
+  });
+  const assistant = await app.connect(surface(sceneInteractions, { call: ["capture", "render"] }), {
+    admit: admitWhen((actor: SceneActor) => actor.role === "assistant", "Assistant required"),
+  });
+  // #endregion connect
+
+  return Object.freeze({ app, callers: Object.freeze({ editor, assistant }), actors: sceneActors });
 }
 
 // #region call-sequence

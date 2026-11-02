@@ -1,4 +1,5 @@
-import { bindNativeInteractions, bindProjection, compileInteractions, defineInteraction, installInteractions, projectInteractions, admitAll } from "@foxworth/boundary";
+import { defineInteraction } from "@foxworth/boundary";
+import { bindNativeInteractions, bindProjection, compileInteractions, installInteractions, projectInteractions, admitAll } from "@foxworth/boundary/pipeline";
 import { portableSchema } from "@foxworth/boundary/program";
 
 async function authoring() {

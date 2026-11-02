@@ -23,7 +23,7 @@ temporary consumer. It typechecks and runs the reusable scene examples against
 that packed SDK. Each engine creates two real replicas inside the same consumer
 process and exchanges native Yjs updates or Automerge Sync messages through a
 private loopback TCP relay. The examples exercise host admission and
-revocation through `bindInteractions`, freeze and validate scene candidates,
+revocation through `install` and `connect`, freeze and validate scene candidates,
 reject stale and racing acceptance, and save/reload the accepted engine bytes.
 This proves only the exercised local relay and example host path. The relay is
 not authenticated and does not prove authorization of arbitrary inbound CRDT

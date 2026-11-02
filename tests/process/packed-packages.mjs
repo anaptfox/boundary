@@ -24,7 +24,7 @@ import { proveBrowserConsumer } from "./browser-consumer.mjs";
 import { proveArtifactConsumer } from "./artifact-consumer.mjs";
 import { proveBoundaryIntegration } from "./boundary-integration.mjs";
 import { proveCausalEvidenceConsumer } from "./causal-evidence-consumer.mjs";
-import { proveConciseAuthoringConsumer } from "./concise-authoring-consumer.mjs";
+import { proveShortPathConsumer } from "./short-path-consumer.mjs";
 import { proveModuleCompositionConsumer } from "./module-composition.mjs";
 
 const workspaceRoot = path.resolve(
@@ -161,7 +161,7 @@ try {
   proveArtifactConsumer(temporaryRoot, `${tarballs.boundary}.receipt.json`);
   proveBoundaryIntegration(temporaryRoot);
   proveCausalEvidenceConsumer(temporaryRoot);
-  proveConciseAuthoringConsumer(temporaryRoot);
+  proveShortPathConsumer(temporaryRoot);
   await proveModuleCompositionConsumer(temporaryRoot, `${tarballs.boundary}.receipt.json`);
   writeFileSync(path.join(temporaryRoot, "plugin-proof.mjs"), `
 import assert from "node:assert/strict";

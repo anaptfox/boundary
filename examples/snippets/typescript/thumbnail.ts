@@ -4,16 +4,7 @@
  * moving execution to a worker additionally needs a host-chosen transport.
  */
 // #region imports
-import {
-  admitWhen,
-  bindProjection,
-  compileInteractions,
-  direct,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { admitWhen, install, surface } from "@foxworth/boundary";
 // #endregion imports
 
 // #region thumbnail-contract
@@ -67,13 +58,10 @@ function svg(width: number, height: number) {
 // #endregion application
 
 export async function createThumbnailExample() {
-  // #region projection
-  const compiled = await compileInteractions(interactions);
-  const thumbnailSurface = await projectInteractions(compiled, {
-    makeThumbnail: direct(compiled.handles.makeThumbnail),
-  });
+  // #region surface
+  const thumbnailSurface = surface(interactions, { call: ["makeThumbnail"] });
   // No implementation or live installation is needed to select this surface.
-  // #endregion projection
+  // #endregion surface
 
   // #region rendering-storage
   const images = new Map<string, StoredImage>([
@@ -98,50 +86,42 @@ export async function createThumbnailExample() {
   // #endregion rendering-storage
 
   // #region installation
-  const implementations = implementInteractions<typeof interactions, Context>(interactions, {
-    makeThumbnail(input) {
+  const handlers = {
+    makeThumbnail(input: z.infer<typeof ThumbnailInput>, _context: Context) {
       dispatches.push("makeThumbnail");
       return makeThumbnail(input);
     },
-    inspectImage({ imageId }) {
+    inspectImage({ imageId }: { imageId: string }) {
       dispatches.push("inspectImage");
       const { width, height } = lookup(imageId);
       return { imageId, width, height };
     },
-    deleteImage({ imageId }) {
+    deleteImage({ imageId }: { imageId: string }) {
       dispatches.push("deleteImage");
       return { deleted: images.delete(imageId) };
     },
-  });
-  const { installation } = await installInteractions(compiled, {
-    installationId: "images:local:release-1",
-    implementations,
-    realizationIds: directRealizationIds(compiled, "release-1"),
+  };
+  const app = await install(interactions, {
+    id: "images:local:release-1",
+    version: "release-1",
+    handlers,
   });
   // #endregion installation
 
-  // #region binding
+  // #region connect
   const admitScreenOrScript = admitWhen(
     (context: Context) => context.kind === "screen" || context.kind === "script",
     "This connection admits the screen and script",
   );
-  const result = await bindProjection(thumbnailSurface, installation, {
-    admit: admitScreenOrScript,
-  });
-  if (result.status !== "bound") {
-    throw new Error("Thumbnail surface is unavailable", { cause: result.report });
-  }
-  const caller = result.binding.connect();
-  // #endregion binding
+  const thumbnails = await app.connect(thumbnailSurface, { admit: admitScreenOrScript });
+  // #endregion connect
 
   // #region call
-  const fromScreen = () => caller.call(
-    thumbnailSurface.handles.makeThumbnail,
+  const fromScreen = () => thumbnails.makeThumbnail(
     { imageId: "original", maxWidth: 200 },
     { kind: "screen" },
   );
-  const fromScript = () => caller.call(
-    thumbnailSurface.handles.makeThumbnail,
+  const fromScript = () => thumbnails.makeThumbnail(
     { imageId: "original", maxWidth: 200 },
     { kind: "script" },
   );
@@ -149,19 +129,13 @@ export async function createThumbnailExample() {
 
   // #region replacement
   // A new local installation, not a remote-worker implementation.
-  const { installation: replacement } = await installInteractions(compiled, {
-    installationId: "images:local:release-2",
-    implementations,
-    realizationIds: directRealizationIds(compiled, "release-2"),
+  const replacement = await install(interactions, {
+    id: "images:local:release-2",
+    version: "release-2",
+    handlers,
   });
-  const replacementResult = await bindProjection(thumbnailSurface, replacement, {
-    admit: admitScreenOrScript,
-  });
-  if (replacementResult.status !== "bound") {
-    throw new Error("Replacement cannot satisfy caller", { cause: replacementResult.report });
-  }
   // The same caller surface connects explicitly to the new installation.
-  const replacementCaller = replacementResult.binding.connect();
+  const replacementCaller = await replacement.connect(thumbnailSurface, { admit: admitScreenOrScript });
   // #endregion replacement
 
   // #region mismatch
@@ -174,45 +148,35 @@ export async function createThumbnailExample() {
       changes: ["images"],
     }),
   };
-  const queued = await compileInteractions(queuedInteractions);
   const queuedDispatches: string[] = [];
-  const { installation: queuedInstallation } = await installInteractions(queued, {
-    installationId: "images:queued:release-1",
-    implementations: implementInteractions<typeof queuedInteractions, Context>(queuedInteractions, {
-      makeThumbnail() {
+  const queued = await install(queuedInteractions, {
+    id: "images:queued:release-1",
+    version: "release-1",
+    handlers: {
+      makeThumbnail(_input, _context: Context) {
         queuedDispatches.push("makeThumbnail");
         return { jobId: "job-1" };
       },
-    }),
-    realizationIds: directRealizationIds(queued, "release-1"),
+    },
   });
-  const mismatch = await bindProjection(thumbnailSurface, queuedInstallation, {
-    admit: admitScreenOrScript,
-  });
+  const mismatch = await queued.tryConnect(thumbnailSurface, { admit: admitScreenOrScript });
   // mismatch.status === "unrealized": a job ID does not satisfy ImageInfo.
-  // Binding checks declarations without dispatching thumbnail work.
+  // Connecting checks declarations without dispatching thumbnail work.
   // #endregion mismatch
 
   // #region agent
-  const agentSurface = await projectInteractions(compiled, {
-    makeThumbnail: direct(compiled.handles.makeThumbnail),
-    inspectImage: direct(compiled.handles.inspectImage),
-  });
-  const agentResult = await bindProjection(agentSurface, installation, {
+  const agentSurface = surface(interactions, { call: ["makeThumbnail", "inspectImage"] });
+  const agent = await app.connect(agentSurface, {
     admit: admitWhen((context: Context) => context.kind === "agent", "Agent connection required"),
   });
-  if (agentResult.status !== "bound") {
-    throw new Error("Agent surface is unavailable", { cause: agentResult.report });
-  }
-  const agent = agentResult.binding.connect();
-  // No deleteImage handle is exposed. Admission still checks every call.
+  // No deleteImage method exists. Admission still checks every call.
   // Context must come from the host's trusted caller identification.
   // #endregion agent
 
   return {
-    fromScreen, fromScript, images, dispatches, thumbnailSurface,
+    fromScreen, fromScript, images, dispatches, thumbnailSurface, thumbnails, app,
     replacementCaller, mismatch, queuedDispatches,
-    agent, agentSurface, agentBinding: agentResult.binding,
+    agent, agentSurface,
   };
 }
 

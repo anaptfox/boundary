@@ -8,55 +8,34 @@ import { defineInteraction } from "@foxworth/boundary";
 // #region imports
 import { createReviewApplication } from "./document-review-host";
 import type { ReviewActor } from "./document-review-store";
-import {
-  admitWhen, bindProjection, compileInteractions, direct,
-  directRealizationIds, implementInteractions, installInteractions, projectInteractions,
-} from "@foxworth/boundary";
+import { admitWhen, install, surface } from "@foxworth/boundary";
 // #endregion imports
 
 export async function createDocumentReviewExample() {
   // #region surfaces
-  const compiled = await compileInteractions(reviewInteractions);
-  const editorSurface = await projectInteractions(compiled, {
-    read: direct(compiled.handles.read),
-    suggest: direct(compiled.handles.suggest),
-    accept: direct(compiled.handles.accept),
-  });
-  const contributorSurface = await projectInteractions(compiled, {
-    read: direct(compiled.handles.read),
-    suggest: direct(compiled.handles.suggest),
-  });
+  const editorSurface = surface(reviewInteractions, { call: ["read", "suggest", "accept"] });
+  const contributorSurface = surface(reviewInteractions, { call: ["read", "suggest"] });
   // #endregion surfaces
 
   // #region installation
   const application = createReviewApplication();
-  const implementations = implementInteractions<typeof reviewInteractions, ReviewActor>(reviewInteractions, {
-    read: application.handlers.read,
-    suggest: application.handlers.suggest,
-    accept: application.handlers.accept,
-  });
-  const { installation } = await installInteractions(compiled, {
-    installationId: "review:local:1",
-    implementations,
-    realizationIds: directRealizationIds(compiled, "release-1"),
+  const app = await install(reviewInteractions, {
+    id: "review:local:1",
+    version: "release-1",
+    handlers: application.handlers,
   });
   // #endregion installation
 
   // #region connections
-  const editorResult = await bindProjection(editorSurface, installation, {
+  const editor = await app.connect(editorSurface, {
     admit: admitWhen((actor: ReviewActor) => actor.kind === "editor", "Editor required"),
   });
-  const contributorResult = await bindProjection(contributorSurface, installation, {
+  const contributor = await app.connect(contributorSurface, {
     admit: admitWhen(
       (actor: ReviewActor) => actor.kind === "script" || actor.kind === "assistant",
       "Contributor required",
     ),
   });
-  if (editorResult.status !== "bound" || contributorResult.status !== "bound") {
-    throw new Error("Review interfaces are unavailable");
-  }
-  const editor = editorResult.binding.connect();
-  const contributor = contributorResult.binding.connect();
   // #endregion connections
 
   // #region actors
@@ -68,39 +47,40 @@ export async function createDocumentReviewExample() {
 
   async function runReview() {
     // #region review
-    const original = await contributor.call(contributorSurface.handles.read, {}, scriptActor);
-    await contributor.call(contributorSurface.handles.suggest, {
+    const original = await contributor.read({}, scriptActor);
+    await contributor.suggest({
       id: "cli-1", text: "Launch on Monday.", basedOnRevision: original.revision,
     }, scriptActor);
-    const suggestion = await contributor.call(contributorSurface.handles.suggest, {
+    const suggestion = await contributor.suggest({
       id: "assistant-1", text: "Launch on Tuesday.", basedOnRevision: original.revision,
     }, assistantActor);
     // The document is still "Launch on Friday." Both changes are suggestions.
 
-    const accepted = await editor.call(editorSurface.handles.accept, {
-      suggestionId: suggestion.id,
-    }, editorActor);
+    const accepted = await editor.accept({ suggestionId: suggestion.id }, editorActor);
     // accepted: { text: "Launch on Tuesday.", revision: 1 }
     // #endregion review
     return accepted;
   }
 
   async function replaceImplementation() {
+    // #region replacement
     // A fresh set of implementation functions shares the application-owned store.
     const replacementApplication = createReviewApplication(application.store);
-    const { installation: replacement } = await installInteractions(compiled, {
-      installationId: "review:local:2",
-      implementations: implementInteractions<typeof reviewInteractions, ReviewActor>(reviewInteractions, replacementApplication.handlers),
-      realizationIds: directRealizationIds(compiled, "release-2"),
+    const replacement = await install(reviewInteractions, {
+      id: "review:local:2",
+      version: "release-2",
+      handlers: replacementApplication.handlers,
     });
-    const result = await bindProjection(contributorSurface, replacement, {
+    const assistant = await replacement.connect(contributorSurface, {
       admit: admitWhen((actor: ReviewActor) => actor.kind === "assistant", "Assistant required"),
     });
-    if (result.status !== "bound") throw new Error("Replacement is unavailable");
-    return { caller: result.binding.connect(), dispatches: replacementApplication.dispatches };
+    // The editor and the contributor above stay attached to the first installation.
+    // #endregion replacement
+    return { caller: assistant, dispatches: replacementApplication.dispatches };
   }
 
   async function tryChangedContract() {
+    // #region changed-contract
     // It now changes the document too. The old read-and-suggest surface must fail,
     // even though the interaction ID, inputs, and outputs have stayed the same.
     const changedInteractions = {
@@ -113,26 +93,26 @@ export async function createDocumentReviewExample() {
         changes: ["suggestions", "document"],
       }),
     };
-    const changed = await compileInteractions(changedInteractions);
     const dispatches: string[] = [];
-    const { installation: changedInstallation } = await installInteractions(changed, {
-      installationId: "review:auto-apply:1",
-      implementations: implementInteractions<typeof changedInteractions, ReviewActor>(changedInteractions, {
+    const changed = await install(changedInteractions, {
+      id: "review:auto-apply:1",
+      version: "release-1",
+      handlers: {
         read() { dispatches.push("read"); return application.store.read(); },
         suggest(input) { dispatches.push("suggest"); return input; },
-        accept(input, actor) { dispatches.push("accept"); return application.handlers.accept(input, actor); },
-      }),
-      realizationIds: directRealizationIds(changed, "release-1"),
+        accept(input, actor: ReviewActor) { dispatches.push("accept"); return application.handlers.accept(input, actor); },
+      },
     });
-    const result = await bindProjection(contributorSurface, changedInstallation, {
+    const result = await changed.tryConnect(contributorSurface, {
       admit: admitWhen((actor: ReviewActor) => actor.kind === "assistant", "Assistant required"),
     });
+    // result.status === "unrealized": suggest's declared write footprint grew.
+    // #endregion changed-contract
     return { result, dispatches };
   }
 
   return {
-    application, editor, contributor, editorSurface, contributorSurface,
-    editorBinding: editorResult.binding, contributorBinding: contributorResult.binding,
+    application, app, editor, contributor, editorSurface, contributorSurface,
     editorActor, scriptActor, assistantActor, runReview, replaceImplementation, tryChangedContract,
   };
 }

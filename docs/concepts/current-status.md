@@ -33,13 +33,12 @@ portable Projections, native implementations, live Installations, atomic
 Binding, per-call context, and host-held revocation. Its optional Control
 bridge creates requests for consequential effects.
 
-The TypeScript root also provides `bindInteractions`, a concise native helper
-for direct callers. It returns named methods over the normal compiled,
-installed, projected, and bound values. This convenience does not change
-portable contracts or add Rust support; use the lower-level lifecycle when
-projections need independent management or request mode is required. The
-[in-memory scene example](../guides/concise-authoring.md) demonstrates its
-current local behavior and persistence limits.
+The TypeScript root's short path is `surface`, `install`, and `connect`. It
+composes the explicit pipeline (`@foxworth/boundary/pipeline`) and returns the
+same compiled, installed, projected, and bound artifacts with one method per
+selected interaction and a `propose` method per request-mode selection. It does
+not change portable contracts or add Rust support; the [host reference](../reference/host.md#the-short-path)
+shows it on an in-memory scene.
 
 The experimental `@foxworth/boundary/yjs` and `@foxworth/boundary/automerge`
 subpaths capture local document versions and provide isolated JSON projections. They do

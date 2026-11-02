@@ -113,7 +113,7 @@ members reject during setup.
 
 ## Choose native dispatch for explicit outcome evidence
 
-Use `bindNativeInteractions` when the host owns another dispatcher or needs to
+Use `bindNativeInteractions` from `@foxworth/boundary/pipeline` when the host owns another dispatcher or needs to
 report an explicit native outcome. The target stays private to the host, and
 the dispatcher receives a request-owned outcome factory:
 
@@ -256,10 +256,10 @@ projection. Type tests reject a capacity input passed to a task handle,
 excluded mutation handles on a reader, wrong output fields and unknown assembly
 aliases. Runtime tests also refuse excluded and foreign selected handles.
 
-`bindInteractions` remains useful for a fixed direct-call surface whose
-admission only needs context. This recipe keeps the explicit lifecycle because
-it binds module-local surfaces to a shared installation and inspects input in
-admission. Application scheduling, dependency rules and storage stay local.
+The root's `surface`, `install`, and `connect` cover a fixed selection whose
+admission only needs context. This recipe keeps the explicit pipeline
+(`@foxworth/boundary/pipeline`) because it binds module-local selections to a
+shared installation and inspects input in admission. Application scheduling, dependency rules and storage stay local.
 
 ## Run the checked recipe
 

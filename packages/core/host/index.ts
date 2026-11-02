@@ -4,30 +4,52 @@ export {
   defineInteraction,
   isDeclaredInteractionError,
 } from "./definitions";
+export { surface } from "./surface";
+export { install, ConnectError } from "./installation";
+export { admitAll, admitWhen } from "./admission";
+export { HostError, InteractionFault } from "./errors";
+
+export type {
+  AnySurface,
+  ReservedCallerKey,
+  Surface,
+  SurfaceAlias,
+  SurfaceSelection,
+} from "./surface";
+export type {
+  AnyCaller,
+  CallArguments,
+  CallMethod,
+  CallMethods,
+  Caller,
+  CallerFor,
+  ConnectOptions,
+  ConnectResult,
+  ContextFromHandlers,
+  HandlerInstallOptions,
+  HandoffSeam,
+  InstallOptions,
+  Installation,
+  NativeDispatch,
+  NativeDispatchers,
+  NativeInstallOptions,
+  ProposeMethod,
+  ProposeMethods,
+  SurfaceFits,
+} from "./facade-types";
+
+// The explicit pipeline stays exported from the root until Phase 3 moves it
+// to `@foxworth/boundary/pipeline`, where it is already available.
 export {
   compileInteractions,
   composeCompiledInteractions,
   diffCompiledInteractions,
 } from "./compile";
 export { implementInteractions } from "./implement";
-export { bindNativeInteractions, type NativeDispatchers } from "./native-bindings";
-export { bindInteractions, BindInteractionsError } from "./bind-interactions";
-export type {
-  BindInteractionCallerConfig,
-  BindInteractionCallers,
-  BindInteractionsOptions,
-  BindInteractionsResult,
-  BindInteractionsIssue,
-  NamedCallArguments,
-  NamedCallerMethods,
-  NamedCallers,
-} from "./bind-interactions-types";
 export { installInteractions } from "./install";
 export { pickProjection, projectAllDirect, projectInteractions } from "./projection";
 export { direct, directRealizationIds } from "./direct";
-export { admitAll, admitWhen } from "./admission";
 export { bindProjection, restrictBinding } from "./binding";
-export { HostError, InteractionFault } from "./errors";
 
 export type {
   Admission,

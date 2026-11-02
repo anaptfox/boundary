@@ -135,27 +135,15 @@ Import the remaining Host functions used in the setup:
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#imports -->
 ```ts
-import {
-  admitWhen,
-  bindProjection,
-  compileInteractions,
-  direct,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { admitWhen, install, surface } from "@foxworth/boundary";
 ```
 
-Inside the same async setup, compile the definitions and select thumbnail
-creation for our two initial callers:
+Inside the same async setup, select thumbnail creation for our two initial
+callers:
 
-<!-- snippet:examples/snippets/typescript/thumbnail.ts#projection -->
+<!-- snippet:examples/snippets/typescript/thumbnail.ts#surface -->
 ```ts
-const compiled = await compileInteractions(interactions);
-const thumbnailSurface = await projectInteractions(compiled, {
-  makeThumbnail: direct(compiled.handles.makeThumbnail),
-});
+const thumbnailSurface = surface(interactions, { call: ["makeThumbnail"] });
 // No implementation or live installation is needed to select this surface.
 ```
 
@@ -164,8 +152,8 @@ caller needs                   application declares
 [ makeThumbnail ]              [ makeThumbnail, inspect, delete ]
 ```
 
-The selected surface is a **Projection**. At this point, there is still no
-live connection. Its declaration can exist before any implementation is installed.
+The selection is a **Surface**. At this point, there is still no live
+connection. It can exist before any implementation is installed.
 
 ## 4. Supply the implementation
 
@@ -174,29 +162,29 @@ is the live host that makes those implementations available.
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#installation -->
 ```ts
-const implementations = implementInteractions<typeof interactions, Context>(interactions, {
-  makeThumbnail(input) {
+const handlers = {
+  makeThumbnail(input: z.infer<typeof ThumbnailInput>, _context: Context) {
     dispatches.push("makeThumbnail");
     return makeThumbnail(input);
   },
-  inspectImage({ imageId }) {
+  inspectImage({ imageId }: { imageId: string }) {
     dispatches.push("inspectImage");
     const { width, height } = lookup(imageId);
     return { imageId, width, height };
   },
-  deleteImage({ imageId }) {
+  deleteImage({ imageId }: { imageId: string }) {
     dispatches.push("deleteImage");
     return { deleted: images.delete(imageId) };
   },
-});
-const { installation } = await installInteractions(compiled, {
-  installationId: "images:local:release-1",
-  implementations,
-  realizationIds: directRealizationIds(compiled, "release-1"),
+};
+const app = await install(interactions, {
+  id: "images:local:release-1",
+  version: "release-1",
+  handlers,
 });
 ```
 
-The host supplies installation and realization identities. The release token
+The host supplies the installation id and the `version`. The version
 identifies the declared implementation revision; it is not a hash of function
 source or proof of correct rendering. A different deployment needs deliberate
 host identity and lifecycle choices.
@@ -204,21 +192,16 @@ host identity and lifecycle choices.
 ## 5. Check the connection, then call
 
 Predict the result: our surface requires thumbnail creation, and this
-installation provides it. Boundary can bind them if their contracts and modes agree.
+installation provides it. Boundary connects them if their contracts and modes
+agree, and throws a `ConnectError` carrying the exhaustive report otherwise.
 
-<!-- snippet:examples/snippets/typescript/thumbnail.ts#binding -->
+<!-- snippet:examples/snippets/typescript/thumbnail.ts#connect -->
 ```ts
 const admitScreenOrScript = admitWhen(
   (context: Context) => context.kind === "screen" || context.kind === "script",
   "This connection admits the screen and script",
 );
-const result = await bindProjection(thumbnailSurface, installation, {
-  admit: admitScreenOrScript,
-});
-if (result.status !== "bound") {
-  throw new Error("Thumbnail surface is unavailable", { cause: result.report });
-}
-const caller = result.binding.connect();
+const thumbnails = await app.connect(thumbnailSurface, { admit: admitScreenOrScript });
 ```
 
 ```text
@@ -227,20 +210,18 @@ required: makeThumbnail ── checked ── available: makeThumbnail
                             bound
 ```
 
-The **Binding** pins this complete selected surface to this installation.
-Admission still checks each invocation. In this local example the context is
+The caller's **Binding** pins this complete selected surface to this
+installation. Admission still checks each invocation. In this local example the context is
 constructed by the application; a remote host must authenticate callers before
 creating trusted context.
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#call -->
 ```ts
-const fromScreen = () => caller.call(
-  thumbnailSurface.handles.makeThumbnail,
+const fromScreen = () => thumbnails.makeThumbnail(
   { imageId: "original", maxWidth: 200 },
   { kind: "screen" },
 );
-const fromScript = () => caller.call(
-  thumbnailSurface.handles.makeThumbnail,
+const fromScript = () => thumbnails.makeThumbnail(
   { imageId: "original", maxWidth: 200 },
   { kind: "script" },
 );
@@ -258,23 +239,17 @@ Keep the required surface fixed and change the installation:
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#replacement -->
 ```ts
 // A new local installation, not a remote-worker implementation.
-const { installation: replacement } = await installInteractions(compiled, {
-  installationId: "images:local:release-2",
-  implementations,
-  realizationIds: directRealizationIds(compiled, "release-2"),
+const replacement = await install(interactions, {
+  id: "images:local:release-2",
+  version: "release-2",
+  handlers,
 });
-const replacementResult = await bindProjection(thumbnailSurface, replacement, {
-  admit: admitScreenOrScript,
-});
-if (replacementResult.status !== "bound") {
-  throw new Error("Replacement cannot satisfy caller", { cause: replacementResult.report });
-}
 // The same caller surface connects explicitly to the new installation.
-const replacementCaller = replacementResult.binding.connect();
+const replacementCaller = await replacement.connect(thumbnailSurface, { admit: admitScreenOrScript });
 ```
 
 ```text
-same Projection ── old Binding ── release-1
+same Surface ── old Binding ── release-1
                 └─ new Binding ── release-2
 ```
 
@@ -286,7 +261,7 @@ The old Binding does not silently move to the new installation.
 ## 7. Predict a broken agreement
 
 Now change only the offered output contract. A queued implementation returns a
-job ID, while our callers expect a completed thumbnail. Will binding succeed?
+job ID, while our callers expect a completed thumbnail. Will connecting succeed?
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#mismatch -->
 ```ts
@@ -299,23 +274,20 @@ const queuedInteractions = {
     changes: ["images"],
   }),
 };
-const queued = await compileInteractions(queuedInteractions);
 const queuedDispatches: string[] = [];
-const { installation: queuedInstallation } = await installInteractions(queued, {
-  installationId: "images:queued:release-1",
-  implementations: implementInteractions<typeof queuedInteractions, Context>(queuedInteractions, {
-    makeThumbnail() {
+const queued = await install(queuedInteractions, {
+  id: "images:queued:release-1",
+  version: "release-1",
+  handlers: {
+    makeThumbnail(_input, _context: Context) {
       queuedDispatches.push("makeThumbnail");
       return { jobId: "job-1" };
     },
-  }),
-  realizationIds: directRealizationIds(queued, "release-1"),
+  },
 });
-const mismatch = await bindProjection(thumbnailSurface, queuedInstallation, {
-  admit: admitScreenOrScript,
-});
+const mismatch = await queued.tryConnect(thumbnailSurface, { admit: admitScreenOrScript });
 // mismatch.status === "unrealized": a job ID does not satisfy ImageInfo.
-// Binding checks declarations without dispatching thumbnail work.
+// Connecting checks declarations without dispatching thumbnail work.
 ```
 
 ```text
@@ -326,8 +298,9 @@ thumbnail ID + width + height  X    job ID
                       zero thumbnail dispatches
 ```
 
-`mismatch.status` is `unrealized`; `queuedDispatches` stays empty. Inspect
-`mismatch.report` when the status is `unrealized` for the incompatibility.
+`mismatch.status` is `unrealized`; `queuedDispatches` stays empty. `tryConnect`
+returns the report instead of throwing; inspect `mismatch.report` for the
+incompatibility.
 Boundary checks declarations here without trial-running the interaction.
 
 A compatible declaration still cannot prove that the image looks good. If a
@@ -342,18 +315,11 @@ Predict which definitions must change before looking at the code.
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#agent -->
 ```ts
-const agentSurface = await projectInteractions(compiled, {
-  makeThumbnail: direct(compiled.handles.makeThumbnail),
-  inspectImage: direct(compiled.handles.inspectImage),
-});
-const agentResult = await bindProjection(agentSurface, installation, {
+const agentSurface = surface(interactions, { call: ["makeThumbnail", "inspectImage"] });
+const agent = await app.connect(agentSurface, {
   admit: admitWhen((context: Context) => context.kind === "agent", "Agent connection required"),
 });
-if (agentResult.status !== "bound") {
-  throw new Error("Agent surface is unavailable", { cause: agentResult.report });
-}
-const agent = agentResult.binding.connect();
-// No deleteImage handle is exposed. Admission still checks every call.
+// No deleteImage method exists. Admission still checks every call.
 // Context must come from the host's trusted caller identification.
 ```
 
@@ -362,8 +328,8 @@ application: [ inspect, makeThumbnail, delete ]
 agent:       [ inspect, makeThumbnail         ]
 ```
 
-The existing definitions stay unchanged. The agent gets its own Projection,
-Binding, and admission rule. There is no deletion handle or bound deletion
+The existing definitions stay unchanged. The agent gets its own Surface,
+Binding, and admission rule. There is no deletion method or bound deletion
 interaction on its surface. The tests also attempt a call with the wrong context
 and check that it never dispatches.
 

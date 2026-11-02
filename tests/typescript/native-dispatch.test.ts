@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { defineInteraction } from "@foxworth/boundary";
 import {
-  admitAll, bindNativeInteractions, bindProjection, compileInteractions, defineInteraction,
+  admitAll, bindNativeInteractions, bindProjection, compileInteractions,
   describeBinding, installInteractions, projectInteractions, restrictBinding,
   type Admission, type InvocationCoordinator, type RawInvocationOutcome,
-} from "@foxworth/boundary";
+} from "@foxworth/boundary/pipeline";
 import { portableSchema, type InvocationObservation } from "@foxworth/boundary/program";
 import { createControlRequestContributions } from "@foxworth/boundary/host/control";
 import { createHandoffInvocation, executeHandoff } from "@foxworth/boundary/handoff";
