@@ -172,6 +172,16 @@ admission. `createMcpHandler(options, handlerOptions)` and
 configuration, with the legacy switch excluded. `maxToolInputElements` bounds
 server validation work. `await serving.dispose()` waits for MCP shutdown.
 
+Every tool result carries the checked outcome unchanged as `structuredContent`
+and opens `content[0].text` with one reviewed sentence a model can act on:
+success, a declared error with its code, denied (nothing ran), invalid (fix the
+input and call again), proposed (a Proposal awaits host review; the effect has
+not run), or uncertain (the effect may have run; do not repeat it; check with
+the named installation). A revoked Binding reads as an outdated view of the
+surface. `isError` is set for everything but success and proposed.
+`tests/conformance/v1/mcp-envelope.json` pins the wording for this adapter, the
+WebMCP adapter, and the Rust MCP server.
+
 The MCP adapter does not reserve transport, authentication, server lifecycle,
 tool selection, or administrative Control authority. Arbitrary host failures
 are sanitized by the same Handoff interface used by every other transport.
@@ -212,8 +222,11 @@ interaction or Program identity. Unchanged tools retain their registration.
 supports events. States are `started` and `cancelled`; neither is execution
 completion evidence. Disposal removes listeners. A register-only port remains
 supported.
-Request-mode tools create proposals only. The page remains usable when WebMCP
-is absent.
+Request-mode tools create proposals only; their description says so. A
+registered tool's `execute` returns the same envelope as the MCP adapter:
+`content[0].text` opens with the reviewed summary and `structuredContent` is
+the checked outcome unchanged (`WebMcpToolResult`). The page remains usable
+when WebMCP is absent.
 
 `webMcpTool(source, alias, { consequentialHint, debugging, untrustedContentHint })`
 lets the host describe consequences, developer-only intent, and untrusted

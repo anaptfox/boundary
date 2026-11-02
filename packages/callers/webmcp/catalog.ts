@@ -118,10 +118,13 @@ export async function prepareCatalog<Context>(
     }
     names.add(name);
 
-    const description =
+    const written =
       declaration.description ??
       resolution.expected.docs.description ??
       resolution.expected.docs.summary;
+    const description = resolution.mode === "request" && typeof written === "string" && written.trim()
+      ? `${written} Proposes only: creates a Proposal for host review. The effect does not run when this tool is called.`
+      : written;
     if (typeof description !== "string" || !description.trim()) {
       fail(
         "INVALID_TOOL",

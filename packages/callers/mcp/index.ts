@@ -3,6 +3,7 @@ export {
   createMcpServer,
   tool,
   toolsFor,
+  toolVerbDescription,
   type CreateMcpServerOptions,
   type McpContextRequest,
   type BoundaryMcpHttpOptions,

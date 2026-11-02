@@ -1,0 +1,282 @@
+{
+  "version": 1,
+  "$comment": "Reviewed evidence for the model-facing tool result envelope that the TypeScript MCP and WebMCP adapters and the Rust MCP server emit for one checked Handoff outcome. A tool result carries the outcome unchanged as structuredContent, flags isError exactly as listed, and opens content[0].text with the listed summary followed by a newline and the outcome as JSON. The six kinds a model must tell apart are success, declared-error, denied, invalid, proposed, and uncertain; failed covers faults proven not to have started. Uncertainty is never folded into failure, retry, or an exception. A gate may verify these cases but must never rewrite them.",
+  "textFormat": "{summary}\n{outcome as JSON}",
+  "cases": [
+    {
+      "name": "returned",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.list",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.list:direct:v1",
+        "certainty": "completed",
+        "result": {
+          "kind": "returned",
+          "value": []
+        }
+      },
+      "kind": "success",
+      "isError": false,
+      "repeat": "safe",
+      "summary": "todos.list completed and returned a value (certainty: completed)."
+    },
+    {
+      "name": "proposed",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.publish",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "request",
+        "realizationId": "todos.publish:request:v1",
+        "certainty": "not-started",
+        "result": {
+          "kind": "proposed",
+          "proposal": {
+            "id": "proposal-1"
+          }
+        }
+      },
+      "kind": "proposed",
+      "isError": false,
+      "repeat": "after-review",
+      "summary": "todos.publish was proposed, not run: a Proposal record now awaits host review (certainty: not-started). Do not call again to retry; the host decides."
+    },
+    {
+      "name": "declared-error",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.create",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.create:direct:v1",
+        "certainty": "completed",
+        "result": {
+          "kind": "declared-error",
+          "code": "duplicate",
+          "details": {
+            "title": "x"
+          }
+        }
+      },
+      "kind": "declared-error",
+      "isError": true,
+      "repeat": "after-fix",
+      "summary": "todos.create completed with its declared outcome \"duplicate\" (certainty: completed). Read details before deciding what to do next."
+    },
+    {
+      "name": "denied",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.create",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.create:direct:v1",
+        "certainty": "not-started",
+        "result": {
+          "kind": "denied",
+          "code": "CALL_NOT_ADMITTED"
+        }
+      },
+      "kind": "denied",
+      "isError": true,
+      "repeat": "never",
+      "summary": "todos.create was denied by the host (CALL_NOT_ADMITTED); nothing ran (certainty: not-started)."
+    },
+    {
+      "name": "invalid-input",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.create",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.create:direct:v1",
+        "certainty": "not-started",
+        "result": {
+          "kind": "fault",
+          "cause": "invalid-input",
+          "issues": [
+            {
+              "path": "invocation.input.title",
+              "message": "must be at least 1 character"
+            }
+          ]
+        }
+      },
+      "kind": "invalid",
+      "isError": true,
+      "repeat": "after-fix",
+      "summary": "todos.create was not started: the input was rejected before anything ran (certainty: not-started). Issues: invocation.input.title: must be at least 1 character. Fix it and call again."
+    },
+    {
+      "name": "invalid-invocation",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.create",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.create:direct:v1",
+        "certainty": "not-started",
+        "result": {
+          "kind": "fault",
+          "cause": "invalid-invocation"
+        }
+      },
+      "kind": "invalid",
+      "isError": true,
+      "repeat": "after-fix",
+      "summary": "todos.create was not started: the invocation was rejected before anything ran (certainty: not-started). Fix it and call again."
+    },
+    {
+      "name": "revoked",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.create",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.create:direct:v1",
+        "certainty": "not-started",
+        "result": {
+          "kind": "fault",
+          "cause": "revoked"
+        }
+      },
+      "kind": "failed",
+      "isError": true,
+      "repeat": "after-fix",
+      "summary": "todos.create was not started: this caller's view of the surface is outdated because its Binding was revoked (certainty: not-started). Obtain a fresh connection before calling again."
+    },
+    {
+      "name": "admission-failed",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.create",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.create:direct:v1",
+        "certainty": "not-started",
+        "result": {
+          "kind": "fault",
+          "cause": "admission-failed"
+        }
+      },
+      "kind": "failed",
+      "isError": true,
+      "repeat": "after-fix",
+      "summary": "todos.create was not started: admission-failed (certainty: not-started). Nothing ran."
+    },
+    {
+      "name": "request-failed",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.publish",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "request",
+        "realizationId": "todos.publish:request:v1",
+        "certainty": "not-started",
+        "result": {
+          "kind": "fault",
+          "cause": "request-failed"
+        }
+      },
+      "kind": "failed",
+      "isError": true,
+      "repeat": "after-fix",
+      "summary": "todos.publish was not started: request-failed (certainty: not-started). Nothing ran."
+    },
+    {
+      "name": "uncertain-unknown",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.create",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.create:direct:v1",
+        "certainty": "unknown",
+        "result": {
+          "kind": "fault",
+          "cause": "realization-failed"
+        }
+      },
+      "kind": "uncertain",
+      "isError": true,
+      "repeat": "never",
+      "summary": "todos.create may have run; its outcome is not known (certainty: unknown). Do not repeat it. Check with installation deploy:demo:1 before acting."
+    },
+    {
+      "name": "uncertain-not-completed",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.create",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.create:direct:v1",
+        "certainty": "not-completed",
+        "result": {
+          "kind": "fault",
+          "cause": "realization-failed"
+        }
+      },
+      "kind": "uncertain",
+      "isError": true,
+      "repeat": "never",
+      "summary": "todos.create may have run; its outcome is not known (certainty: not-completed). Do not repeat it. Check with installation deploy:demo:1 before acting."
+    },
+    {
+      "name": "uncertain-invalid-realization-outcome",
+      "outcome": {
+        "version": 1,
+        "bindingDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "installationId": "deploy:demo:1",
+        "interactionId": "todos.create",
+        "expectedContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "actualContractDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "mode": "direct",
+        "realizationId": "todos.create:direct:v1",
+        "certainty": "unknown",
+        "result": {
+          "kind": "fault",
+          "cause": "invalid-realization-outcome"
+        }
+      },
+      "kind": "uncertain",
+      "isError": true,
+      "repeat": "never",
+      "summary": "todos.create may have run; its outcome is not known (certainty: unknown). Do not repeat it. Check with installation deploy:demo:1 before acting."
+    }
+  ]
+}

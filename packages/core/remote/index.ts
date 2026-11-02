@@ -62,3 +62,5 @@ export {
   type SourceOutput,
   type SourceVerbs,
 } from "./source";
+
+export { describeOutcome, outcomeText, type OutcomeDescription, type OutcomeKind } from "./describe";

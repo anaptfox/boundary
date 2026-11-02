@@ -74,7 +74,7 @@ transportLaws("WebMCP transport laws", async (f, transport, title) => {
     modelContext: { async registerTool(value) { tool = value; } },
   });
   try {
-    const outcome = validateHandoffOutcome(await tool!.execute({ title }));
+    const outcome = validateHandoffOutcome((await tool!.execute({ title }) as { structuredContent: unknown }).structuredContent);
     return outcome.result.kind === "returned" ? outcome.result.value : outcome;
   } finally { registration.dispose(); }
 });

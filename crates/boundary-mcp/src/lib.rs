@@ -17,7 +17,10 @@
 mod server;
 mod tools;
 
-pub use server::{PROTOCOL_VERSION, ServerInfo, ToolInvoker, handle, serve, tool_result};
+pub use server::{
+    OutcomeDescription, PROTOCOL_VERSION, ServerInfo, ToolInvoker, describe_outcome, handle, serve,
+    tool_result,
+};
 pub use tools::{
     DuplicateName, MergedTools, Tool, ToolEntry, ToolError, ToolTarget, merge, tools_from_manifest,
 };

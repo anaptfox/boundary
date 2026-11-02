@@ -200,9 +200,19 @@ pub fn tools_from_manifest(manifest: &Value) -> Result<Vec<ToolEntry>, ToolError
                 .or_else(|| descriptor["docs"]["summary"].as_str())
                 .map(ToOwned::to_owned)
         });
-        let description = Some(match written {
-            Some(text) => format!("[from binding {binding_digest}] {text}"),
-            None => format!("[from binding {binding_digest}]"),
+        let mode = text(interaction, "mode", &path)?;
+        // A request-mode entry only proposes; its name and description say so,
+        // so a model never mistakes a proposal for the effect.
+        let proposes = mode == "request";
+        let description = Some(match (written, proposes) {
+            (Some(text), false) => format!("[from binding {binding_digest}] {text}"),
+            (Some(text), true) => format!(
+                "[from binding {binding_digest}] {text} Proposes only: creates a Proposal for host review. The effect does not run when this tool is called."
+            ),
+            (None, false) => format!("[from binding {binding_digest}]"),
+            (None, true) => format!(
+                "[from binding {binding_digest}] Proposes only: creates a Proposal for host review. The effect does not run when this tool is called."
+            ),
         });
 
         let changes_empty = descriptor
@@ -220,7 +230,11 @@ pub fn tools_from_manifest(manifest: &Value) -> Result<Vec<ToolEntry>, ToolError
                 name: {
                     let alias = text(interaction, "alias", &path)?;
                     usable_alias(&alias, &path)?;
-                    alias
+                    if proposes {
+                        format!("{alias}.propose")
+                    } else {
+                        alias
+                    }
                 },
                 description,
                 input_schema,
@@ -232,7 +246,7 @@ pub fn tools_from_manifest(manifest: &Value) -> Result<Vec<ToolEntry>, ToolError
                 interaction_id,
                 expected_contract_digest: text(interaction, "expectedContractDigest", &path)?,
                 actual_contract_digest: text(interaction, "actualContractDigest", &path)?,
-                mode: text(interaction, "mode", &path)?,
+                mode,
                 realization_id: text(interaction, "realizationId", &path)?,
                 input_arity: u8::try_from(arity).unwrap_or(1),
             },

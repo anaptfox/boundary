@@ -98,7 +98,13 @@ describe("MCP Binding adapter", () => {
       certainty: "not-started",
       result: { kind: "proposed", proposal: { title: "Controlled" } },
     });
+    const text = (result.content as Array<{ text: string }>)[0]!.text;
+    expect(text.startsWith("todos.create was proposed, not run: a Proposal record now awaits host review")).toBe(true);
+    expect(text).toContain("Do not call again to retry");
     expect(JSON.stringify(result)).not.toMatch(/approve|grant|execute|reconcile/u);
+    const listed = await connected.client.listTools();
+    expect(listed.tools.find((entry) => entry.name === "todo_request")?.description).toContain("Proposes only");
+    expect(listed.tools.find((entry) => entry.name === "todo_create")?.description).not.toContain("Proposes only");
   });
 
   it("returns denied and sanitized fault outcomes without retrying", async () => {
@@ -112,6 +118,7 @@ describe("MCP Binding adapter", () => {
       certainty: "not-started",
       result: { kind: "denied", code: "CALL_NOT_ADMITTED" },
     });
+    expect((deniedResult.content as Array<{ text: string }>)[0]!.text).toMatch(/^todos\.create was denied by the host \(CALL_NOT_ADMITTED\); nothing ran/u);
     expect(denied.fixture.rows).toEqual([]);
 
     await client?.close();
@@ -128,6 +135,8 @@ describe("MCP Binding adapter", () => {
       certainty: "unknown",
       result: { kind: "fault", cause: "realization-failed" },
     });
+    const uncertain = (fault.content as Array<{ text: string }>)[0]!.text;
+    expect(uncertain.startsWith("todos.explode may have run; its outcome is not known (certainty: unknown). Do not repeat it. Check with installation installation:adapter-v1:1")).toBe(true);
     expect(JSON.stringify(fault)).not.toContain("private-adapter-secret");
     expect(exploding.fixture.contexts).toHaveLength(1);
   });

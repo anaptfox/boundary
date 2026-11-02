@@ -12,6 +12,7 @@ import {
   type ModelContextPort,
   type ModelContextTool,
   type WebMcpContextRequest,
+  type WebMcpToolResult,
 } from "@foxworth/boundary/webmcp";
 import { createAdapterFixture } from "./helpers/adapter";
 
@@ -69,11 +70,16 @@ async function invoke(
 ) {
   const registered = host.registered.get(name);
   if (!registered) throw new Error(`missing tool ${name}`);
-  return registered.execute(input, {
+  const result = await registered.execute(input, {
     ...(signal === undefined ? {} : { signal }),
     ...(claims === undefined ? {} : { claims }),
-  });
+  }) as WebMcpToolResult;
+  // Every tool result carries the checked outcome unchanged beside its summary.
+  expect(result.content[0]?.text.endsWith(JSON.stringify(result.structuredContent, null, 2))).toBe(true);
+  lastResults.push(result);
+  return result.structuredContent;
 }
+const lastResults: WebMcpToolResult[] = [];
 
 describe("WebMCP Binding adapter", () => {
   const registrations: Array<Readonly<{ dispose(): void }>> = [];

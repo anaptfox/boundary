@@ -18,6 +18,7 @@ import {
   type McpServerOptions,
 } from "@modelcontextprotocol/server";
 import { compileBindingResolution, interactionKey, resolveSelection, seamOf, selectionsOf, verbForMode, type AnySurfaceHandle, type InteractionSource, type ResolvedBindingInteraction, type SourceAliases, type SourceVerbs, AdapterError } from "@foxworth/boundary/remote";
+import { describeOutcome, outcomeText } from "@foxworth/boundary/remote";
 
 export type McpTool = Readonly<{
   alias: string;
@@ -116,15 +117,27 @@ export type CreateMcpServerOptions<Context> = Readonly<{
   maxToolInputElements?: McpServerOptions["maxToolInputElements"];
 }>;
 
+/**
+ * One tool result per checked outcome. `content[0].text` opens with a sentence
+ * a model can act on (success, declared error, denied, invalid, proposed, or
+ * uncertain) and carries the full envelope after it; `structuredContent` is
+ * the envelope unchanged. Uncertainty is never folded into failure.
+ */
 function mcpResult(outcome: HandoffOutcome) {
-  const text = JSON.stringify(outcome, null, 2);
-  const successful =
-    outcome.result.kind === "returned" || outcome.result.kind === "proposed";
+  const described = describeOutcome(outcome);
   return {
-    content: [{ type: "text" as const, text }],
+    content: [{ type: "text" as const, text: outcomeText(outcome) }],
     structuredContent: outcome as unknown as Record<string, unknown>,
-    ...(successful ? {} : { isError: true as const }),
+    ...(described.isError ? { isError: true as const } : {}),
   };
+}
+
+/** What a tool's description says about its verb; `call` runs, `propose` only proposes. */
+export function toolVerbDescription(mode: InteractionMode, description: string | undefined): string | undefined {
+  if (mode === "request") {
+    return `${description ? `${description} ` : ""}Proposes only: creates a Proposal for host review. The effect does not run when this tool is called.`;
+  }
+  return description;
 }
 
 function failureOutcome(
@@ -225,10 +238,12 @@ export async function createMcpServer<Context>(
     const resolved = resolution.interactions.get(
       interactionKey(declaration.handle.interactionId, declaration.mode),
     )!;
-    const description =
+    const description = toolVerbDescription(
+      resolved.mode,
       declaration.description ??
-      resolved.expected.docs.description ??
-      resolved.expected.docs.summary;
+        resolved.expected.docs.description ??
+        resolved.expected.docs.summary,
+    );
     server.registerTool(
       declaration.name,
       {

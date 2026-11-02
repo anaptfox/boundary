@@ -1,6 +1,6 @@
 import { createHandoffInvocation, type HandoffFaultCause, type HandoffInvocation, type HandoffOutcome } from "@foxworth/boundary/handoff";
 import type { ClientInvokeFraming } from "@foxworth/boundary/client";
-import { RemoteInvocationError } from "@foxworth/boundary/remote";
+import { RemoteInvocationError, describeOutcome, outcomeText } from "@foxworth/boundary/remote";
 import type { JsonValue } from "@foxworth/boundary/program";
 import type { WebMcpContextRequest, WebMcpFrame } from "./types";
 import { PreparedTool } from "./catalog";
@@ -11,6 +11,26 @@ export type LiveTool<Context> = {
   prepared: PreparedTool<Context>;
   controller: AbortController;
 };
+
+/**
+ * What a registered WebMCP tool returns: the same envelope the MCP adapter
+ * emits. `content[0].text` opens with a sentence a browser agent can act on
+ * and `structuredContent` is the checked outcome unchanged.
+ */
+export type WebMcpToolResult = Readonly<{
+  content: readonly Readonly<{ type: "text"; text: string }>[];
+  structuredContent: HandoffOutcome;
+  isError?: true;
+}>;
+
+export function webMcpResult(outcome: HandoffOutcome): WebMcpToolResult {
+  const described = describeOutcome(outcome);
+  return Object.freeze({
+    content: Object.freeze([Object.freeze({ type: "text" as const, text: outcomeText(outcome) })]),
+    structuredContent: outcome,
+    ...(described.isError ? { isError: true as const } : {}),
+  });
+}
 
 function failureOutcome(
   prepared: PreparedTool<any>,
@@ -33,6 +53,19 @@ function failureOutcome(
 }
 
 export async function executeTool<Context>(
+  live: LiveTool<Context>,
+  context:
+    | ((request: WebMcpContextRequest) => Context | Promise<Context>)
+    | undefined,
+  input: Record<string, unknown>,
+  signal: AbortSignal | undefined,
+  frame: WebMcpFrame | undefined,
+  claims: WebMcpContextRequest["claims"],
+): Promise<WebMcpToolResult> {
+  return webMcpResult(await executeChecked(live, context, input, signal, frame, claims));
+}
+
+async function executeChecked<Context>(
   live: LiveTool<Context>,
   context:
     | ((request: WebMcpContextRequest) => Context | Promise<Context>)

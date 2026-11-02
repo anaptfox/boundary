@@ -46,23 +46,159 @@ pub struct ServerInfo {
     pub version: String,
 }
 
+/// What a model must tell apart about one outcome, independent of transport.
+///
+/// Parity target is `describeOutcome` in `packages/core/remote/describe.ts`;
+/// `tests/conformance/v1/mcp-envelope.json` pins the wording for both.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct OutcomeDescription {
+    /// `success`, `proposed`, `declared-error`, `denied`, `invalid`, `failed`, or `uncertain`.
+    pub kind: &'static str,
+    /// One or two sentences a model can act on.
+    pub summary: String,
+    /// Whether the tool result is flagged `isError`.
+    pub is_error: bool,
+}
+
+/// Describes one checked outcome for a model.
+///
+/// Uncertainty is never folded into failure: an outcome whose certainty is
+/// `unknown` or `not-completed` says so, forbids a repeat, and names the
+/// installation to check with.
+#[must_use]
+pub fn describe_outcome(outcome: &Value) -> OutcomeDescription {
+    let id = outcome["interactionId"]
+        .as_str()
+        .unwrap_or("the interaction");
+    let certainty = outcome["certainty"].as_str().unwrap_or("unknown");
+    let installation = outcome["installationId"]
+        .as_str()
+        .unwrap_or("the installation");
+    let result = &outcome["result"];
+    let kind = result["kind"].as_str().unwrap_or("fault");
+    let described = |kind: &'static str, summary: String, is_error: bool| OutcomeDescription {
+        kind,
+        summary,
+        is_error,
+    };
+    match kind {
+        "returned" => described(
+            "success",
+            format!("{id} completed and returned a value (certainty: completed)."),
+            false,
+        ),
+        "proposed" => described(
+            "proposed",
+            format!(
+                "{id} was proposed, not run: a Proposal record now awaits host review (certainty: not-started). Do not call again to retry; the host decides."
+            ),
+            false,
+        ),
+        "declared-error" => {
+            let code = result["code"].as_str().unwrap_or("");
+            described(
+                "declared-error",
+                format!(
+                    "{id} completed with its declared outcome \"{code}\" (certainty: completed). Read details before deciding what to do next."
+                ),
+                true,
+            )
+        }
+        "denied" => {
+            let code = result["code"].as_str().unwrap_or("");
+            described(
+                "denied",
+                format!(
+                    "{id} was denied by the host ({code}); nothing ran (certainty: not-started)."
+                ),
+                true,
+            )
+        }
+        _ if certainty == "unknown" || certainty == "not-completed" => described(
+            "uncertain",
+            format!(
+                "{id} may have run; its outcome is not known (certainty: {certainty}). Do not repeat it. Check with installation {installation} before acting."
+            ),
+            true,
+        ),
+        _ => describe_fault(id, result),
+    }
+}
+
+/// A fault proven not to have started: invalid input or invocation, an
+/// outdated view after revocation, or another named cause.
+fn describe_fault(id: &str, result: &Value) -> OutcomeDescription {
+    let cause = result["cause"].as_str().unwrap_or("realization-failed");
+    let described = |kind: &'static str, summary: String| OutcomeDescription {
+        kind,
+        summary,
+        is_error: true,
+    };
+    match cause {
+        "invalid-input" | "invalid-invocation" => {
+            let what = if cause == "invalid-input" {
+                "input"
+            } else {
+                "invocation"
+            };
+            let issues: Vec<String> = result["issues"]
+                .as_array()
+                .map(|issues| {
+                    issues
+                        .iter()
+                        .map(|issue| {
+                            format!(
+                                "{}: {}",
+                                issue["path"].as_str().unwrap_or(""),
+                                issue["message"].as_str().unwrap_or("")
+                            )
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            let issue_text = if issues.is_empty() {
+                String::new()
+            } else {
+                format!(" Issues: {}.", issues.join("; "))
+            };
+            described(
+                "invalid",
+                format!(
+                    "{id} was not started: the {what} was rejected before anything ran (certainty: not-started).{issue_text} Fix it and call again."
+                ),
+            )
+        }
+        "revoked" => described(
+            "failed",
+            format!(
+                "{id} was not started: this caller's view of the surface is outdated because its Binding was revoked (certainty: not-started). Obtain a fresh connection before calling again."
+            ),
+        ),
+        other => described(
+            "failed",
+            format!("{id} was not started: {other} (certainty: not-started). Nothing ran."),
+        ),
+    }
+}
+
 /// Formats one outcome envelope as an MCP tool result.
 ///
-/// A fault or denial is `isError`, so a model is told plainly that the
-/// interaction did not return, while the envelope itself is carried through in
-/// full. Flattening it to prose would lose the certainty a caller needs in
-/// order to know whether retrying is even safe.
+/// `content[0].text` opens with the reviewed summary so a model is told plainly
+/// whether the interaction returned, was proposed, was denied, was invalid, or
+/// may have run; the envelope itself follows in full. Flattening it to prose
+/// alone would lose the certainty a caller needs in order to know whether
+/// retrying is even safe.
 #[must_use]
 pub fn tool_result(outcome: &Value) -> Value {
-    let kind = outcome["result"]["kind"].as_str().unwrap_or("fault");
-    let successful = matches!(kind, "returned" | "proposed");
-    let text = serde_json::to_string_pretty(outcome).unwrap_or_else(|_| "{}".to_owned());
+    let described = describe_outcome(outcome);
+    let json = serde_json::to_string_pretty(outcome).unwrap_or_else(|_| "{}".to_owned());
+    let text = format!("{}\n{json}", described.summary);
 
     let mut result = json!({
         "content": [{ "type": "text", "text": text }],
         "structuredContent": outcome.clone(),
     });
-    if !successful {
+    if described.is_error {
         result["isError"] = Value::Bool(true);
     }
     result

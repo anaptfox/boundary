@@ -122,3 +122,14 @@ parsed spelling is exactly what differs between implementations; TypeScript
 cannot distinguish `1` from `1.0` after parsing, so Rust must not either.
 `refusedSchemas` lists `enum` declarations whose entries are numerically
 duplicate and must fail schema compilation in both languages.
+
+`mcp-envelope.json` records the model-facing tool result envelope that the
+TypeScript MCP and WebMCP adapters and the Rust MCP server emit for one checked
+Handoff outcome. A result carries the outcome unchanged as `structuredContent`,
+flags `isError` exactly as listed, and opens `content[0].text` with the listed
+summary before the outcome's JSON. The kinds a model must tell apart are
+success, declared-error, denied, invalid, proposed, and uncertain, with failed
+covering faults proven not to have started. `proposed` says the effect has not
+run and awaits host review; `uncertain` says the effect may have run, forbids a
+repeat, and names the installation to check with. Both implementations consume
+the cases independently; neither generates them.

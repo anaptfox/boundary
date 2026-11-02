@@ -100,6 +100,7 @@ vector.
 | `control-recovery.json` | Control recovery traces: apply suppression | `boundary-core/tests/control_lifecycle.rs` | `tests/typescript/control-durable-crash.test.ts` |
 | `reach.json` | Reach record shape | `boundary-reach/tests/reach_conformance.rs` | `tests/typescript/reach-record.test.ts` |
 | `http-framing.json` | HTTP framing of Handoff | `boundary-reach/tests/http_framing_conformance.rs` | `tests/typescript/http-framing-conformance.test.ts` |
+| `mcp-envelope.json` | model-facing tool result envelope | `boundary-mcp/tests/envelope_conformance.rs` | `tests/typescript/mcp-envelope-conformance.test.ts` |
 | `wasm-projection.json` | WIT projection of a Program | `boundary-plugin/tests/wasm_projection_conformance.rs` | `tests/typescript/plugin-wit.test.ts` |
 | `wasm-import-subset.json` | bind-time guest import refusal | `boundary-plugin/tests/wasm_import_subset.rs` | `tests/typescript/wasm-import-subset.test.ts` |
 
