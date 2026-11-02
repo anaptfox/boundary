@@ -17,7 +17,7 @@ export function deriveRealizationIds(
 ): RealizationIds {
   if (typeof version !== "string" || !VERSION.test(version)) {
     return failHost("INVALID_REALIZATION_ID", "version",
-      "expected a host-issued version token (letters, digits, . _ ~ : / -); found an invalid or missing value; fix: pass install(..., { version: \"handlers@1\" })");
+      "expected a host-issued version token (letters, digits, . _ ~ : / -); found an invalid or missing value; fix: pass install(..., { version: \"handlers-1\" })");
   }
   const ids: Record<string, Readonly<{ direct: RealizationId; request?: RealizationId }>> = {};
   for (const [alias, interactionId] of Object.entries(interactionIds)) {

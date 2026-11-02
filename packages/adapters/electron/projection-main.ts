@@ -229,7 +229,7 @@ function windowOptionsFor<Context>(
 }
 
 /**
- * Run one explicit CompiledSurface HTTP handler in Electron's main process.
+ * Run one explicit surface HTTP handler in Electron's main process.
  * HTTP, a privileged scheme, and IPC are doors to the same handler.
  * Renderer placement and window lifecycle remain application decisions.
  */

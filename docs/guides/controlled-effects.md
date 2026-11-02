@@ -1,6 +1,6 @@
 ---
 title: "Controlled effects"
-description: "Separate a request from execution when a returned function is not enough evidence."
+description: "Separate a proposal from execution when a returned function is not enough evidence."
 ---
 
 # Controlled effects
@@ -13,61 +13,49 @@ are common examples. Keep ordinary interactions on the direct path.
 > `@foxworth/boundary/control/host` bridge are current workspace interfaces. Both remain
 > pre-release and unpublished.
 
-## Contribute request mode without execution authority
+## Select propose before a deployment realizes it
 
-A Projection can desire request mode before a deployment realizes it:
+A Surface can select `propose` for an interaction before any Installation
+contributes a proposal path:
 
 ```ts
-const operatorProjection = await projectInteractions(compiled, {
-  publish: {
-    interaction: compiled.handles.publish,
-    modes: ["request"],
-  },
-});
+const operatorSurface = surface(docs, { call: ["status"], propose: ["publish"] });
 ```
 
-The Control-owned bridge contributes an opaque, exact request capability:
+The Control-owned bridge contributes an opaque, exact request capability. On
+the short path it is the `requests` option of `install`, a function of the
+compilation so the bridge can pin the compiled handle:
 
 ```ts
 import { contributeControlRequests } from "@foxworth/boundary/control/host";
 
-const requests = contributeControlRequests(compiled, controlRequester, {
-  publish: {
-    interaction: compiled.handles.publish,
-    control: publishControl,
-    executionRealizationId: publishExecutionRealizationId,
-    actor: context => context.actor,
-  },
-});
-
-const { installation, controller: installationController } =
-  await installInteractions(compiled, {
-  installationId,
-  implementations,
-  requests,
-  realizationIds: {
+const app = await install(docs, {
+  id: "docs:prod:7",
+  version: "publish-3",
+  handlers,
+  requests: (compiled) => contributeControlRequests(compiled, controlRequester, {
     publish: {
-      direct: publishDirectRealizationId,
-      request: publishRequestRealizationId,
+      interaction: compiled.handles.publish,
+      control: publishControl,
+      executionRealizationId: publishExecutionRealizationId,
+      actor: (context) => context.actor,
     },
-  },
-  });
+  }),
+});
 ```
 
 The bridge owns proposal creation only. It cannot approve, grant, apply,
-execute, verify, or reconcile. Without the request capability, atomic bind is
-`unrealized`. The host retains `installationController`; request adapters
-receive only the execution value.
+execute, verify, or reconcile. Without the request capability, `connect`
+refuses the Surface with `missing-request`; the `fix` text says to contribute a
+Control request or move the alias from `propose` to `call`. The host retains
+`app.revoke`; adapters receive only the caller.
 
-After a successful bind:
+After a successful connect, a proposal is one method call that visibly differs
+from a call:
 
 ```ts
-const caller = binding.connect();
-const proposal = await caller.request(
-  operatorProjection.handles.publish,
-  { releaseId },
-  requestContext,
-);
+const operator = await app.connect(operatorSurface, { admit });
+const proposal = await operator.propose.publish({ releaseId }, actor);
 ```
 
 Request ordering is fixed:
@@ -76,8 +64,11 @@ Request ordering is fixed:
 validate -> admission -> plan -> Control request policy -> persist proposal
 ```
 
-Request never performs the effect. Direct-only Host users do not import
-Control and have no `request` method.
+A proposal never performs the effect. Direct-only hosts do not import Control
+and their callers have no `propose` methods. On the explicit pipeline the same
+contribution is `installInteractions(compiled, { requests, realizationIds })`
+with a `request` realization id per proposing alias
+(`realizationIdsFor(compiled, version, { request: ["publish"] })`).
 
 ## See the failure problem
 
@@ -135,18 +126,14 @@ in-memory testing journal is not durable storage.
 ## Keep authority phases separate
 
 ```ts
-const proposal = await caller.request(
-  publishProjection.handles.publish,
-  { body: "after review" },
-  requestContext,
-);
+const proposal = await operator.propose.publish({ body: "after review" }, actor);
 
 await admin.approve(proposal, reviewer);
 const grant = await admin.grant(proposal, owner);
 const result = await admin.execute(grant, executor, executionContext);
 ```
 
-`request` plans and persists. `approve` records review. `grant` records
+`propose` plans and persists. `approve` records review. `grant` records
 execution authority. `execute` persists or replays an attempt, applies at most
 once, verifies, and records a receipt.
 

@@ -3,7 +3,7 @@
  *
  * The root export's `surface`, `install`, and `connect` compose these
  * functions and return their artifacts. Import this subpath when a host needs
- * a step the short path does not take: a CompiledSurface it persists or inspects
+ * a step the short path does not take: a selection it persists or inspects
  * on its own, explicit realization ids, restriction of a live Binding, native
  * dispatch over its own targets, or inspection of candidate artifacts.
  */

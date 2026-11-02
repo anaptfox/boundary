@@ -2,7 +2,7 @@ import type { Context, Env, Input, MiddlewareHandler } from "hono";
 import type { HttpHandler } from "@foxworth/boundary/http";
 
 /**
- * Turn one explicit CompiledSurface HTTP handler into Hono middleware.
+ * Turn one explicit surface HTTP handler into Hono middleware.
  * The Hono application chooses the route or prefix where it is installed.
  */
 export function mountSurface(handler: HttpHandler): MiddlewareHandler {
@@ -12,11 +12,11 @@ export function mountSurface(handler: HttpHandler): MiddlewareHandler {
 /**
  * Creates the already-checked HTTP handler for one native Hono invocation.
  *
- * The application prepares its CompiledSurface Binding outside the request, then
+ * The application prepares its Binding outside the request, then
  * uses this factory to derive host context from Hono middleware, route
  * parameters, bindings, and (when present) the runtime execution context.
  * Receiving a Context selects request data; it neither grants authority nor
- * changes the CompiledSurface's selected interactions.
+ * changes the Surface's selected interactions.
  */
 export type SurfaceHonoHandlerFactory<
   Environment extends Env = Env,
@@ -27,7 +27,7 @@ export type SurfaceHonoHandlerFactory<
 ) => HttpHandler | Promise<HttpHandler>;
 
 /**
- * Adapt a per-invocation CompiledSurface handler factory to Hono middleware.
+ * Adapt a per-invocation surface handler factory to Hono middleware.
  *
  * Unlike {@link mountSurface}, this preserves Hono's typed Context for the
  * host to derive invocation-scoped context. It does not provide automatic

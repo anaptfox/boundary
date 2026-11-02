@@ -177,7 +177,7 @@ Guest builds and execution remain separate evidence from tool availability.
 ## Ownership, recovery, and observation regressions
 
 The unit suite includes mutable-input and accessor attacks against cached
-validation, compiled-schema equivalence, candidate Projection assessment,
+validation, compiled-schema equivalence, candidate Surface assessment,
 shared Handoff response laws, and React/headless lifecycle regressions.
 
 `control-journal-laws.test.ts` runs the same journal laws against memory and
@@ -253,15 +253,15 @@ Assert that:
 - CompiledInteractions contain no handlers, stores, actors, credentials, policy,
   or ambient context.
 
-## Projection tests
+## Surface tests
 
-Construct Projections without an Installation. Assert that:
+Construct Surfaces without an Installation. Assert that:
 
 - only explicit handles and nonempty `direct` or `request` modes are accepted;
-- aliases and modes participate in Projection identity;
-- unselected Program interactions do not affect Projection identity;
+- aliases and modes participate in Surface identity;
+- unselected Program interactions do not affect Surface identity;
 - projected handles expose only selected interactions and typed modes;
-- a Projection remains valid with zero realizations;
+- a Surface remains valid with zero realizations;
 - no group, tag, predicate, registry, or discovery mechanism widens selection.
 
 ## Implementation and Installation tests
@@ -291,10 +291,10 @@ Exercise both branches of `bindSurface`:
 - any missing interaction, incompatible contract or arity, or missing direct or
   request mode yields one exhaustive `unrealized` report;
 - request identity is an actual Installation fact pinned by a successful
-  Binding, not a desired Projection constraint; binding the same Projection to
+  Binding, not a desired Surface constraint; binding the same Surface to
   a different request realization produces a different Binding;
 - no partial Binding or Caller is returned;
-- one Projection can bind to separate Installations, producing separate pinned
+- one Surface can bind to separate Installations, producing separate pinned
   Bindings;
 - an existing Binding never follows replacement;
 - Installation extras never widen the projected surface;
@@ -340,7 +340,7 @@ validation or conservation logic.
 
 ## Adapter tests
 
-Build documentation Adapters from a Projection and serving Adapters from a
+Build documentation Adapters from a Surface and serving Adapters from a
 Binding or Binding manifest. Test explicit HTTP paths, MCP server name/version,
 framework mounts, Electron ports/schemes/partitions/channels, Cloudflare
 bindings, and WebMCP ports.

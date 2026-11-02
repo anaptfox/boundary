@@ -15,8 +15,9 @@ packages/
 ```
 
 Use `defineInteraction` from `@foxworth/boundary` for a declaration, then
-compile, implement, install, project, and bind it. The host retains its domain
-identifiers and execution rules. `@foxworth/boundary/reach` locates a Binding;
+`install` the handlers and `connect` a `surface` for each caller. The explicit
+pipeline behind those calls is `@foxworth/boundary/pipeline`. The host retains
+its domain identifiers and execution rules. `@foxworth/boundary/reach` locates a Binding;
 `/bus` registers local Reach records; `/plugin` admits guest realizations
 against the imports the host provides.
 

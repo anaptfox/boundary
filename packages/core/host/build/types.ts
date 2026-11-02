@@ -37,11 +37,11 @@ export interface HostArtifactInteractionSource extends HostArtifactTypeSource {
   readonly compiled: CompiledInteractions<any>;
 }
 
-/** Source/type facts for one durable CompiledSurface alias. */
+/** Source/type facts for one durable Surface alias. */
 export interface HostArtifactReferenceMember {
   /** Member of the exported interaction-definition record. */
   readonly definition: string;
-  /** Full public request result type; required for Binding requests, forbidden for offline CompiledSurface requests. */
+  /** Full public request result type; required for Binding requests, forbidden for offline Surface requests. */
   readonly requestOutput?: HostArtifactTypeSource;
 }
 

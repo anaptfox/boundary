@@ -159,7 +159,7 @@ absent: the Installation digest already contains the Catalog's control digest,
 so including it would create an identity cycle.
 
 After admission, Host supplies a frozen `RequestInvocationPolicy` carrying
-request mode, Binding and Projection digests, Installation ID and digest,
+request mode, Binding and Surface digests, Installation ID and digest,
 expected and actual Program and contract digests, interaction ID, and request
 Realization ID. Control combines those pins with the execution Realization ID,
 packaged control realization digest, and static control digest in the exact

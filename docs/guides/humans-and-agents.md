@@ -14,9 +14,9 @@ These are application interactions with different callers, not two applications
 with separate definitions of editing and publishing. Boundary connects selected
 interactions to each caller; the application owns permissions, data and UI.
 
-## A projection is a capability interface, not a screen
+## A surface is a capability interface, not a screen
 
-A Projection selects declared interactions and their invocation modes. Its
+A Surface selects declared interactions and their invocation modes. Its
 presentation can describe those interactions without specifying a component
 tree, form layout or renderer. The same interaction may appear as a button,
 command-menu item or agent tool.
@@ -25,7 +25,7 @@ Keep three questions separate:
 
 | Question | Where it is answered |
 | --- | --- |
-| Which interactions and modes are in this caller's surface? | Explicit Projection selection and its checked Binding |
+| Which interactions and modes are in this caller's surface? | Explicit Surface selection and its checked Binding |
 | May this caller perform this particular action now? | Host authentication, admission and any required exact grant |
 | Which records and fields may this caller read? | Application-owned read interactions and data policy |
 

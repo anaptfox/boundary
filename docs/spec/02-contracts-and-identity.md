@@ -77,15 +77,15 @@ An Installation manifest contains its host ID, Program, exact Catalog, and
 Program, and Catalog, excluding the host-issued Installation ID and all live or
 private implementation data.
 
-## Projection identity
+## Surface identity
 
-A Projection artifact contains the expected selected-subset Program, explicit
+A Surface artifact contains the expected selected-subset Program, explicit
 arity, and a non-empty set of direct/request modes for every selection.
 Definition-record aliases are local and MUST normalize away from portable
-identity. Caller-facing Projection aliases are durable: they MUST be unique,
+identity. Caller-facing Surface aliases are durable: they MUST be unique,
 serialized, and included in `boundary.projection/v1` together with the artifact
 schema version, selected Program, interaction identity, arity, and modes. Renaming
-a Projection alias therefore changes Projection identity. Projection identity
+a Surface alias therefore changes Surface identity. Surface identity
 MUST exclude Installation, Catalog, availability, admission, context, and
 liveness.
 

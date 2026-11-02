@@ -98,10 +98,10 @@ is made and again at the socket.
 One MCP server per OS user. Tools are derived from the Binding manifests of
 reachable surfaces.
 
-**The Projection is the only narrowing.** Every interaction on a reachable
+**The Surface is the only narrowing.** Every interaction on a reachable
 Binding's manifest is published as a tool. There is no second list that hides
 one, so there is nothing for this server to fail to honour: narrow what a model
-sees by publishing a narrower Projection, which also keeps the interaction out of
+sees by publishing a narrower Surface, which also keeps the interaction out of
 the Binding. Admission is still the gate — the surface admits every call it
 receives.
 

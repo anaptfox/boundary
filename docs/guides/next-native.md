@@ -191,7 +191,7 @@ not private Control state, leases or
 administrative objects. Production review identity also pins the Next build ID
 and explicit application execution-source set; a new build needs fresh review,
 whereas a restart of the same build can reconcile the existing attempt.
-These are application-owned projections and UI, not
+These are application-owned surfaces and UI, not
 injected components from Boundary. The SaaS and creative examples have their own
 [domain guide](./next-domains.md).
 

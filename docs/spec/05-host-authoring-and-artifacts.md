@@ -16,7 +16,7 @@ require a mutable registry or shallow collection wrapper.
 
 `compileInteractions` MUST snapshot the whole record, reject forged definitions,
 duplicate IDs, invalid schemas and footprints, derive one Program and exact
-inert handles, and grant no execution authority. Compilation, projection,
+inert handles, and grant no execution authority. Compilation, surface,
 installation, and binding are asynchronous because each may derive a portable
 identity using the shared hashing law.
 
@@ -30,13 +30,13 @@ never-reused host-issued Installation ID and exact Realization IDs. It MUST
 validate realization outcomes and derive its Program and Catalog manifest.
 
 `projectInteractions` MUST accept explicit authentic handles and mode sets and
-create a portable unrealized Projection. Caller-facing Projection aliases MUST
-be durable and enter Projection identity; definition-record aliases remain
+create a portable unrealized Surface. Caller-facing Surface aliases MUST
+be durable and enter Surface identity; definition-record aliases remain
 local and MUST NOT. `bindSurface` MUST construct a root live Binding and
 `restrictBinding` MAY derive a narrower live Binding from an existing one. Both
 MUST obey the atomic Binding laws.
 
-An unrealized result MUST retain the attempted Projection manifest, the target
+An unrealized result MUST retain the attempted Surface manifest, the target
 Installation ID, and all realization issues. It MUST NOT expose partial live
 authority.
 
@@ -56,7 +56,7 @@ NOT replace the parent's expected contract. An unselected installation capabilit
 MUST NOT become selected through restriction. Refusal MUST report every affected
 selection and expose no partial live capability.
 Revoked lineage MUST refuse even an empty selection. Its unrealized report MAY
-have no selection issues when the Projection is empty; a synthetic interaction
+have no selection issues when the Surface is empty; a synthetic interaction
 ID MUST NOT be invented to name the global lifecycle refusal.
 
 A successful child MUST retain the parent's exact Installation allocation and
@@ -148,13 +148,13 @@ callers use local handles.
 
 An Installation manifest MUST originate from a live Installation. A version 1
 Binding manifest MUST originate from a successful live Binding. A build tool
-MUST NOT synthesize either from filenames, a Program, a Projection, or config.
+MUST NOT synthesize either from filenames, a Program, a Surface, or config.
 
 Filesystem writing MUST require an explicit destination and touch only files in
 the supplied artifact set plus stale files named by the previous valid inventory
 for that destination. It MUST NOT delete unmanaged files, infer ownership from
 extensions, clean a parent directory, follow a symbolic-link destination or
-managed path component, or write during loading, compilation, Projection,
+managed path component, or write during loading, compilation, Surface,
 Installation, or Binding construction.
 
 Check mode MUST compare exact bytes without writing and report missing, changed,

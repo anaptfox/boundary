@@ -207,7 +207,7 @@ export async function createModuleCompositionHost(options: Readonly<{
     // #endregion native-installation
   }
 
-  // #region selected-projections
+  // #region selected-surfaces
   const localCompiled = {
     tasks: await compileInteractions(taskModule),
     capacity: await compileInteractions(capacityModule),
@@ -215,7 +215,7 @@ export async function createModuleCompositionHost(options: Readonly<{
   const taskEditor = await projectSurface(localCompiled.tasks, surface.all(taskModule));
   const taskReader = await projectSurface(localCompiled.tasks, surface(taskModule, { call: ["query"] }));
   const capacityReader = await projectSurface(localCompiled.capacity, surface(capacityModule, { call: ["query"] }));
-  // #endregion selected-projections
+  // #endregion selected-surfaces
 
   // #region admission
   const admit: Admission<Context> = request => {

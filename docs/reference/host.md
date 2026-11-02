@@ -16,7 +16,7 @@ accept / reject lives at `@foxworth/boundary/drafts`: a host-supplied store,
 never a live Program mutation.
 
 ```text
-definitions --compile--> CompiledInteractions --project--> Projection
+definitions --compile--> CompiledInteractions --project--> CompiledSurface
      |                       |
      |                       +-- Program + inert typed handles
      |
@@ -27,7 +27,7 @@ CompiledInteractions + implementations --install--> InstalledInteractions
                                                      |          +-- host-only controller
                                                      +-- InteractionInstallation
 
-Projection + InteractionInstallation + admission --bind--> Binding
+CompiledSurface + InteractionInstallation + admission --bind--> Binding
                                                         +-- host-only controller
                                                         +--connect--> caller
 ```
@@ -211,7 +211,7 @@ export const interactions = {
 ```
 
 The containing record is ordinary closed TypeScript. Its keys are local aliases
-for type-safe access; they do not enter interaction, Program, Projection, or wire
+for type-safe access; they do not enter interaction, Program, Surface, or wire
 identity. There is no `defineInteractions` registry or mutable registration API.
 
 ## `compileInteractions`
@@ -233,7 +233,7 @@ same validated declaration snapshot and compiler version. Native host adapters
 may supply an `InteractionLowering`; evaluating that adapter is host code, so the
 determinism claim begins at its validated portable output.
 
-Compilation, projection, installation, and binding are asynchronous because
+Compilation, surface, installation, and binding are asynchronous because
 their portable identities use the shared cross-runtime hashing foundation.
 Definitions, implementations, and connected callers remain synchronous values.
 
@@ -263,7 +263,7 @@ const implementations = implementInteractions(interactions, {
 
 Missing, extra, duplicate, or invalid implementations fail both statically where
 TypeScript can express the law and again at construction. The value contains no
-Program, Catalog, Projection, handles, manifest, availability, installation
+Program, Catalog, Surface, handles, manifest, availability, installation
 identity, or serialization. Partial deployment uses an explicitly smaller
 closed definition record whose every member is implemented exactly once; it
 does not use optional implementations, fallback handlers, or a registry.
@@ -398,11 +398,11 @@ that names fewer tools than this selection hides nothing the Binding still
 carries; a narrower Surface is how a caller is given less.
 
 Each selection names one authentic compiled handle and one non-empty set of
-`"direct"` and/or `"request"` modes. Projection aliases are durable
-caller-facing names and therefore enter Projection identity. Definition-record
+`"direct"` and/or `"request"` modes. Surface aliases are durable
+caller-facing names and therefore enter Surface identity. Definition-record
 aliases remain local and do not.
 
-A Projection contains its exact expected subset Program, durable aliases,
+A Surface contains its exact expected subset Program, durable aliases,
 arities, modes,
 `projectionDigest`, and inert `projection.handles`. The digest uses
 `boundary.projection/v1` over the selected Program digest and canonical alias-bearing
@@ -410,17 +410,17 @@ selections. It excludes Installations, Catalogs,
 availability, implementations, authorization, context, routes, presentation,
 and unselected interactions.
 
-A Projection may remain unrealized indefinitely. Creating one does not inspect
+A Surface may remain unrealized indefinitely. Creating one does not inspect
 an Installation, reject currently unavailable modes, create authority, or bind
 execution.
 
-An unrealized bind report durably retains the attempted Projection manifest,
+An unrealized bind report durably retains the attempted Surface manifest,
 the target Installation ID, and every issue. It never returns a partial live
 Binding.
 
 ## `bindSurface`
 
-Binding is the atomic live conjunction of one Projection, one exact
+Binding is the atomic live conjunction of one Surface, one exact
 InteractionInstallation, and one explicit admission interface.
 
 ```ts
@@ -437,7 +437,7 @@ const caller = result.binding.connect();
 const created = await caller.call(agent.handles.create, input, context);
 ```
 
-Binding checks the whole Projection before exposing execution. It returns
+Binding checks the whole Surface before exposing execution. It returns
 exactly one of:
 
 - `bound`, carrying a `Binding` plus a host-held
@@ -469,7 +469,7 @@ installation's unselected capabilities cannot be added through restriction.
 Diagnostics identify `interaction-not-selected`, `contract-not-selected`,
 `arity-not-selected`, or mode-specific `mode-not-selected`, with
 `binding-revoked` or `installation-revoked` when the lineage is no longer live.
-Restriction of a revoked lineage also refuses an empty Projection. That global
+Restriction of a revoked lineage also refuses an empty Surface. That global
 lifecycle refusal has an empty `issues` list because no selection exists to
 name; its `unrealized` status exposes no live Binding.
 
@@ -498,7 +498,7 @@ revocation, checked before admission and immediately before dispatch. The
 Binding passed to adapters has no revocation method. Revocation cannot claim to
 cancel work that already started.
 
-Its `BindingManifest` is data only. It pins the Projection,
+Its `BindingManifest` is data only. It pins the Surface,
 Installation, expected and actual selected Programs and contracts, modes,
 arities, realization IDs, and request preview/control identity. It excludes
 admission code, context, native targets, handlers, liveness, and revocation
@@ -553,7 +553,7 @@ const bound = await bindSurface(agentProjection, installation, {
 
 Publication is awaited. Publication failure cannot change the invocation result,
 and a failed correlation function omits correlation. The observer receives exact
-binding, projection, installation, contract, and realization pins, mode, certainty,
+binding, surface, installation, contract, and realization pins, mode, certainty,
 result kind, and actual contract footprints. Inputs, outputs, and context are
 excluded; correlation is explicitly host-selected portable JSON. The host owns
 timeouts, delivery, persistence, access control, ordering, and replay. This is
@@ -569,7 +569,7 @@ authenticate the host-chosen event channel before delivering events to a UI.
 inspectable agent presentation. Only prose can be overridden. Interaction identity,
 modes, arity, input schema, direct output/error schemas, and footprints come from
 the selected declaration. Request-only selections omit direct output/error
-schemas: a Projection cannot invent a realization's proposal schema. Empty
+schemas: a Surface cannot invent a realization's proposal schema. Empty
 presentations have an empty interactions array.
 
 The presentation has its own `presentationDigest`; editing prose changes that
@@ -622,8 +622,8 @@ never mutates a live Program, Installation or source file. Declaring the
 accepted contract is the host's ordinary recompilation. A rejection carries one
 of `DRAFT_REJECT_REASONS`.
 
-Three Projection presets split the authority: `proposerSurface` selects
+Three Surface presets split the authority: `proposerSurface` selects
 propose only, `authorSurface` selects accept and reject in request mode,
 and `runnerSurface` selects nothing. No preset grants every Draft
-capability; a host that wants that composes its own Projection from
+capability; a host that wants that composes its own Surface from
 `compiled.handles`.

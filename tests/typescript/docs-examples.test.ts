@@ -4,6 +4,7 @@ import {
   runHttpAdapterExample,
 } from "../../examples/snippets/typescript/http-adapter";
 import { runWebMcpAdapterExample } from "../../examples/snippets/typescript/webmcp-adapter";
+import { runAgentDemo } from "../../examples/snippets/typescript/agent-demo";
 import { runReadmeExample } from "../../examples/snippets/typescript/readme";
 import { runWalkthroughExample } from "../../examples/snippets/typescript/walkthrough";
 import {
@@ -12,6 +13,14 @@ import {
 } from "../../examples/snippets/typescript/host-lifecycle";
 
 describe("public documentation examples", () => {
+  it("serves the README's assistant surface over MCP and keeps delete out of its reach", async () => {
+    const result = await runAgentDemo();
+    expect(result.tools).toEqual(["documents.search"]);
+    expect(result.firstLine).toBe("documents.search completed and returned a value (certainty: completed).");
+    expect(result.assistantSees).toEqual(["search"]);
+    expect(result.editorSees).toEqual(["search", "delete"]);
+  });
+
   it("runs the additional Todo projection-helper example", async () => {
     const result = await runReadmeExample();
     expect(result.done).toEqual({ id: 1, title: "Ship Boundary", done: true });

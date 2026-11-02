@@ -13,19 +13,19 @@ An **interaction definition** is an inert native declaration of one host-authore
 identity and portable contract. **CompiledInteractions** derives a handler-free
 **Program**, exact inert handles, and private provenance from a closed definition
 set. An **InteractionInstallation** is one live deployment of exact direct and
-optional request realizations. A durable **Projection** selects expected
+optional request realizations. A durable **Surface** selects expected
 interactions and modes without requiring an Installation. A live
-**Binding** atomically pins that Projection to one Installation. A
+**Binding** atomically pins that Surface to one Installation. A
 **Handoff** validates and conserves one bound invocation into native dispatch.
 There is no adapter-level subset of a Binding: a tool list presents the whole
-Binding, and a caller that must see less is bound to a narrower Projection.
+Binding, and a caller that must see less is bound to a narrower Surface.
 
 ## Laws
 
 ### Declared is not implemented
 
 A definition and Program MUST remain representable without executable code. A
-Program and Projection MUST NOT require an installed realization.
+Program and Surface MUST NOT require an installed realization.
 
 ### The host owns meaning and identity
 
@@ -39,15 +39,15 @@ Compilation MAY derive schemas, arity, descriptors, digests, Programs, and
 typed inert handles. It MUST NOT infer interaction meaning from filenames, routes,
 tools, function bodies, or visibility and MUST NOT grant execution authority.
 
-### Implementation, Installation, and Projection are distinct
+### Implementation, Installation, and Surface are distinct
 
 An implementation supplies native behavior. An Installation makes exact
-realizations live under one never-reused `InstallationId`. A Projection states
+realizations live under one never-reused `InstallationId`. A Surface states
 durable desired caller surface. None MAY silently stand in for another.
 
 ### Binding is atomic
 
-Binding MUST check one complete Projection against one exact Installation and
+Binding MUST check one complete Surface against one exact Installation and
 return `bound` or an exhaustive `unrealized` report. It MUST NOT expose a
 partial caller. A successful Binding MUST retain both expected and actual
 identity when structural compatibility is used.
@@ -79,7 +79,7 @@ certainty `unknown` until application evidence establishes more.
 
 ### Identity is not correctness
 
-Contract, Program, Installation, Projection, Binding, Realization, attempt, and
+Contract, Program, Installation, Surface, Binding, Realization, attempt, and
 receipt identities establish their declared facts only. They MUST NOT be
 described as behavioral equivalence, correct policy, live authority, or domain
 correctness.

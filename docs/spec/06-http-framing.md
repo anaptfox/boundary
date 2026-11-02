@@ -34,7 +34,7 @@ bodies MUST use `application/json; charset=utf-8`. Requests carry
 
 ## Manifest and cache validation
 
-The manifest route MUST return the version 1 Projection Binding manifest with
+The manifest route MUST return the version 1 Surface Binding manifest with
 status `200`, `cache-control: no-cache`, and an `etag` of the binding digest in
 double quotes.
 
@@ -116,5 +116,5 @@ not a grant. The receiver MUST derive invocation context from its own native
 request handling; a header, cookie, or transport principal is input to that
 resolution and MUST NOT be treated as identity by mere presence. Admission
 still evaluates every invocation, and every Handoff validation stated in
-[section 4](./04-projections-handoffs-and-conformance.md) applies unchanged.
+[section 4](./04-surfaces-handoffs-and-conformance.md) applies unchanged.
 Transports frame bytes; they never reconstruct conservation rules.

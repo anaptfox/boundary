@@ -115,16 +115,16 @@ const artifacts = renderHostArtifacts({
 The portable outputs are:
 
 - one explicitly named `*.program.json` for each supplied Program;
-- one explicitly named `*.projection.json` for each supplied Projection;
-- optional `*.references.ts` modules from a Projection or successful Binding, only when the
+- one explicitly named `*.projection.json` for each supplied Surface;
+- optional `*.references.ts` modules from a Surface or successful Binding, only when the
   caller supplies explicit definition-record, member, generated-export, and
   request-output type metadata for a real package, process, build, or language
   seam.
 
-Program and Projection artifacts contain no handlers, implementations,
+Program and Surface artifacts contain no handlers, implementations,
 availability invented by the build tool, policy, context, credentials, or
-authority. Projection artifacts preserve durable caller-facing aliases because
-those aliases name the selected interface and enter Projection identity.
+authority. Surface artifacts preserve durable caller-facing aliases because
+those aliases name the selected interface and enter Surface identity.
 Definition-record aliases, presentation names, and output filenames stay
 outside identity.
 
@@ -133,14 +133,14 @@ Typed references are opt-in. Same-package callers use `compiled.handles` or
 interaction ID, expected contract digest, arity, and selected modes. Their imports
 are type-only, so they do not depend on the JavaScript module instance that
 created the surface. Supply exactly one of `projection` or `binding`.
-Projection-based request references return `JsonValue` and reject a
+Surface-based request references return `JsonValue` and reject a
 `requestOutput` override because the proposal schema is not yet realized.
 Binding-based request references require an explicit full public request-output type. The renderer never reverse-engineers TypeScript module
 names, source bindings, request types, or phantom types from runtime values.
 
 The renderer authenticates `source.compiled` and proves that every
 `members[alias].definition` names the exact interaction ID, contract digest, and
-arity selected by the Projection or Binding. The `source.module` and `source.export` strings
+arity selected by the Surface or Binding. The `source.module` and `source.export` strings
 remain trusted type-only build metadata: Boundary cannot prove that a future module
 at that specifier still exports the same definition record, nor can runtime
 validation prove that TypeScript annotations inside that module honestly
@@ -151,13 +151,13 @@ drift from the live Binding, but it cannot authenticate erased TypeScript types.
 An `InstallationManifest` may be rendered only from an actual live
 `InteractionInstallation`. A `BindingManifest` may be rendered
 only from an actual successful Binding. The build module does not synthesize
-either from a Program, Catalog, Projection, filename, or deployment config.
+either from a Program, Catalog, Surface, filename, or deployment config.
 
 ## Explicit filesystem writer
 
 `writeHostArtifacts(artifacts, { destination })` is the only filesystem effect.
 The destination is required. There is no current-working-directory default,
-config-file lookup, or implicit write during loading, compilation, Projection,
+config-file lookup, or implicit write during loading, compilation, Surface,
 Installation, or Binding construction.
 
 The writer may create or replace only:
@@ -180,13 +180,13 @@ evaluation or behavioral correctness.
 ## Artifact commitment policy
 
 Definitions remain authoring truth. Generated files are derived artifacts.
-Commit a Program, Projection, or typed-reference file only when another package,
+Commit a Program, Surface, or typed-reference file only when another package,
 process, language, deployment review, or drift gate consumes it. Generated
 output must never overwrite reviewed conformance vectors.
 
 The build entry exposes library functions, not a generic CLI. A framework or
 application may place a thin command around them while keeping entry,
-destination, Projection selection, and write/check policy explicit.
+destination, Surface selection, and write/check policy explicit.
 
 For offline generation, replace `binding: agentBinding` in the example with
 `projection: agentProjection` and omit every `requestOutput` member. No

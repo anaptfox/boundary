@@ -160,7 +160,7 @@ export function createCaller<
   const handles = (metadata.projection as CompiledSurface).handles;
   const caller = Object.create(null) as Record<string, unknown>;
   const propose = Object.create(null) as Record<string, unknown>;
-  // Methods follow the CompiledSurface's declaration order, not the manifest's sorted order.
+  // Methods follow the selection's declaration order, not the manifest's sorted order.
   for (const alias of Object.keys(handles)) {
     if (RESERVED_CALLER_KEYS.includes(alias)) {
       return failHost("INVALID_PROJECTION", `createCaller.${alias}`,

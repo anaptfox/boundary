@@ -97,11 +97,11 @@ worker: [ inspect, makeThumbnail, delete ]
 ```
 
 A **Program** holds the portable interaction declarations and their derived
-identities. A **Projection** selects the interactions and modes a caller needs;
+identities. A **Surface** selects the interactions and modes a caller needs;
 it can exist before any implementation is available.
 
 An **Installation** supplies live implementations. A **Binding** records a
-successful check of the entire Projection against one Installation. Its
+successful check of the entire Surface against one Installation. Its
 **Caller** invokes that selected surface.
 
 Try one more prediction: a caller requires both inspection and thumbnail

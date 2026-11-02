@@ -10,7 +10,7 @@ interface. They do not discover interactions, create a second dispatcher, infer
 domain meaning, broaden modes, establish policy, or mint authority.
 
 Descriptive adapters such as OpenAPI may consume a durable unrealized
-Projection. Every adapter that can execute takes a connected caller (the value
+Surface. Every adapter that can execute takes a connected caller (the value
 `connect()` or the pipeline's `createCaller(binding)` returns) or a remote
 client pinned to its version 1 Binding manifest. A caller carries its Binding
 manifest and Handoff seam and no controller, so handing it to an adapter can
@@ -112,12 +112,12 @@ const proposal = await client.request(todoReferences.remove, { id: 42 });
 ```
 
 `createSurfaceClient` validates and pins one
-`BindingManifest`, including `bindingDigest`, Projection and
+`BindingManifest`, including `bindingDigest`, Surface and
 Installation identity, expected and actual Programs and contracts, exact mode,
 arity, and `RealizationId`. It sends only version 1 invocations and validates
 that every version 1 outcome echoes those pins.
 
-A changed deployment, Installation, realization, Projection, or Binding
+A changed deployment, Installation, realization, Surface, or Binding
 requires an explicit new handshake. The client never silently follows a newer
 manifest. It rejects every other wire version; there is no dual-stack client or
 compatibility facade.
@@ -126,7 +126,7 @@ Application-owned or generated remote references are data only. They contain
 the exact Binding pins needed for the selected interaction; callable native
 handles and implementations never cross. Request preview typing is generated
 only after successful request-mode Binding because the preview/control identity
-belongs to that actual contribution, not to the unrealized Projection alone.
+belongs to that actual contribution, not to the unrealized Surface alone.
 
 `handlesFromBinding(client)` hydrates projected handles from that handshake,
 and `client.inspect()` returns the manifest itself, which WebMCP and other
@@ -294,7 +294,7 @@ execution faults; `isDomainErrorFor` narrows a caught error to one interaction's
 declared domain error.
 
 These are headless interaction interfaces. The application supplies its own
-editor, chat, review controls and visual design; a Projection does not contain
+editor, chat, review controls and visual design; a Surface does not contain
 a page layout. Descriptive metadata does not authorize an invocation or redact
 private fields from a read result. For delegated jobs and the separate
 interaction, world and agent-runtime responsibilities, see
@@ -304,7 +304,7 @@ interaction, world and agent-runtime responsibilities, see
 
 Generic mounts connect an already-created handler. Native helpers additionally
 connect explicit host-owned context and lifecycle functions. Neither compiles
-interactions, installs a host, widens a Projection or establishes authority.
+interactions, installs a host, widens a Surface or establishes authority.
 
 `createNextServerCaller({ caller, context })` wraps a connected caller for
 direct server reads and actions without self-HTTP: `read.<alias>(input)`,

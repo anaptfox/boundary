@@ -15,7 +15,7 @@ decision and acceptance gate.
 
 | Crate | Job | Tier | Min Rust | TypeScript counterpart |
 | --- | --- | --- | --- | --- |
-| [`boundary-core`](../../crates/boundary-core/README.md) | Interactions, Program contracts, Projection, Installation, Binding, Handoff, Control, observations | pure | 1.88 | `@foxworth/boundary`, `/program`, `/handoff`, `/control`, `/observations`, `/drafts` |
+| [`boundary-core`](../../crates/boundary-core/README.md) | Interactions, Program contracts, Surface, Installation, Binding, Handoff, Control, observations | pure | 1.88 | `@foxworth/boundary`, `/program`, `/handoff`, `/control`, `/observations`, `/drafts` |
 | [`boundary-macros`](../../crates/boundary-macros/README.md) | `#[derive(Interaction)]` and `#[derive(Fault)]`, behind the `derive` feature of `boundary-core` | pure | 1.88 | `defineInteraction` from `@foxworth/boundary` |
 | [`boundary-cli`](../../crates/boundary-cli/README.md) | The `boundary` command: local bus and interaction discovery | binary | 1.96 | none (`/bus` and `/mcp` are the library counterparts) |
 | [`boundary-ffi`](../../crates/boundary-ffi/README.md) | Synchronous C ABI over the checked lifecycle | composition | 1.96 | none (Rust and C only) |
@@ -62,7 +62,7 @@ Public paths are what a Rust host imports. Source paths are under
 | Program, contracts, digests, changes | `boundary_core::{Program, InteractionContract, ContractDigest, contract_changes, contract_compatibility}` | `program.rs`, `program/` |
 | Draft (inert proposal) | `boundary_core::Draft`, `boundary_core::lifecycle::{propose, accept, reject}` | `program/draft.rs`, `lifecycle/drafts.rs` |
 | Compiled interaction | `boundary_core::lifecycle::{compile_interaction, CompiledInteraction}` | `lifecycle/compiled.rs` |
-| Projection | `boundary_core::lifecycle::{project, select, Projection, ProjectionHandle}` | `lifecycle/projection.rs` |
+| Surface | `boundary_core::lifecycle::{project, select, Projection, ProjectionHandle}` | `lifecycle/projection.rs` |
 | Installation and realizations | `boundary_core::lifecycle::{install, direct_realization, request_realization, dispatch_realization, declared_interaction, observed_read_realization, RealizationId, InstallationId}` | `lifecycle/installation.rs`, `installation/adapter.rs`, `installation/observed.rs`, `installation/native.rs` |
 | Binding and Caller | `boundary_core::lifecycle::{bind, BindResult, Binding, Caller, CallerError, AdmitAll, admit_all, restrict_binding, coordinate_binding}` | `lifecycle/binding.rs`, `lifecycle/binding/` |
 | Presentation | `boundary_core::lifecycle::present_projection` | `lifecycle/presentation.rs` |
@@ -88,7 +88,7 @@ vector.
 | --- | --- | --- | --- |
 | `program.json` | canonical JSON, contract and Program identity | `boundary-core/tests/program_conformance.rs` | `tests/typescript/cross-language-conformance.test.ts` |
 | `contract-compatibility.json` | directional `contractCompatibility` | `boundary-core/tests/program_compatibility.rs` | `tests/typescript/program-compatibility.test.ts` |
-| `host-lifecycle.json` | Projection, atomic Binding, pinned manifest, four certainties | `boundary-core/tests/host_lifecycle_conformance.rs` | `tests/typescript/host-lifecycle-conformance.test.ts` |
+| `host-lifecycle.json` | Surface, atomic Binding, pinned manifest, four certainties | `boundary-core/tests/host_lifecycle_conformance.rs` | `tests/typescript/host-lifecycle-conformance.test.ts` |
 | `composition.json` | empty surfaces, observation envelope, presentation digest | `boundary-core/tests/composition.rs` | `tests/typescript/model-composition.test.ts` |
 | `binding-restriction.json` | subset selection, admission order, revocation lineage | `boundary-core/tests/binding_restriction.rs` | `tests/typescript/binding-restriction.test.ts` |
 | `invocation-coordination.json` | invocation coordination | `boundary-core/tests/binding_coordination.rs` | `tests/typescript/native-dispatch.test.ts` |
@@ -101,7 +101,7 @@ vector.
 | `reach.json` | Reach record shape | `boundary-reach/tests/reach_conformance.rs` | `tests/typescript/reach-record.test.ts` |
 | `http-framing.json` | HTTP framing of Handoff | `boundary-reach/tests/http_framing_conformance.rs` | `tests/typescript/http-framing-conformance.test.ts` |
 | `mcp-envelope.json` | model-facing tool result envelope | `boundary-mcp/tests/envelope_conformance.rs` | `tests/typescript/mcp-envelope-conformance.test.ts` |
-| `wasm-projection.json` | WIT projection of a Program | `boundary-plugin/tests/wasm_projection_conformance.rs` | `tests/typescript/plugin-wit.test.ts` |
+| `wasm-projection.json` | WIT surface of a Program | `boundary-plugin/tests/wasm_projection_conformance.rs` | `tests/typescript/plugin-wit.test.ts` |
 | `wasm-import-subset.json` | bind-time guest import refusal | `boundary-plugin/tests/wasm_import_subset.rs` | `tests/typescript/wasm-import-subset.test.ts` |
 
 Paths under `boundary-core/`, `boundary-reach/`, and `boundary-plugin/` are
@@ -164,7 +164,7 @@ struct CompleteTodo {
 
 `compile_interaction::<O>()` returns a handler-free `CompiledInteraction<O>` with
 the portable descriptor, input arity, and exact contract identity. The compiled
-interaction has no call method. Projection and Installation assembly derive their
+interaction has no call method. Surface and Installation assembly derive their
 closed Programs from these compiled interactions, so authors do not maintain a
 second registry by hand.
 
@@ -214,26 +214,26 @@ not on the crate root, and the lifecycle module neither installs it nor grants i
 authority. A request realization creates public request data; it does not apply
 the interaction.
 
-## Durable Projection and atomic Binding
+## Durable Surface and atomic Binding
 
-`project` constructs a serializable, data-only Projection from explicit
-`select(alias, compiled_interaction, modes)` values. Projection creation does not
+`project` constructs a serializable, data-only Surface from explicit
+`select(alias, compiled_interaction, modes)` values. Surface creation does not
 inspect an Installation, so desired caller surfaces may remain unrealized and
 be realized later. Typed handles are recovered with
 `projection.handles().get(alias, &compiled_interaction)` and carry the exact
-Projection and contract identity.
+Surface and contract identity.
 
-`bind` checks one complete Projection against one exact Installation and
+`bind` checks one complete Surface against one exact Installation and
 returns `BindResult::Bound` with an execution-only Binding plus controller, or
 an exhaustive `BindResult::Unrealized` report.
 Expected-to-actual contracts are checked directionally. The resulting manifest
-pins the Projection's expected selected Program and the Installation's actual
+pins the Surface's expected selected Program and the Installation's actual
 selected Program independently. It never exposes a partial Caller and never
 follows a replacement Installation.
 
 Only the host-held controller can revoke the live Binding; code receiving the
 Binding cannot. Its serializable version 1 manifest pins the
-Projection, Installation, expected and actual contract identities, modes,
+Surface, Installation, expected and actual contract identities, modes,
 arities, and Realization IDs without containing handlers, invocation context,
 admission policy, liveness, or revocation authority.
 
@@ -277,7 +277,7 @@ through `portable_input`.
 Rust declared errors remain ordinary typed values. `Caller::call` returns
 `Result<Output, CallerError<DomainError>>` and distinguishes
 `CallerError::Declared(error)` from denial, revocation, invalid input, wrong
-Projection, and an `Unknown` execution fault. Each failure also reports a
+Surface, and an `Unknown` execution fault. Each failure also reports a
 portable certainty and result category.
 
 Every `Interaction::Error` implements `PortableFault`. The `Fault` derive is the
@@ -300,7 +300,7 @@ trips.
 
 The portable contract and Program domains remain
 `boundary.interaction-contract/v1` and `boundary.program/v1`. Rust serializes and validates
-Projection, Installation, and version 1 Binding artifacts.
+Surface, Installation, and version 1 Binding artifacts.
 
 Rust exposes the complete transport-neutral version 1 Handoff boundary from
 `boundary_core::handoff`:
@@ -336,7 +336,7 @@ exists only where both independent suites assert the same vector field.
 
 `project(Vec::new())` yields an authentic empty surface which can bind and
 handshake without exposing an interaction. `lifecycle::present_projection` accepts
-a Projection and a `BTreeMap<String, InteractionPresentationOverride>`. It produces
+a Surface and a `BTreeMap<String, InteractionPresentationOverride>`. It produces
 the same presentation identity and schema-derived facts as TypeScript
 (`composition.json`); only title and description may be overridden.
 

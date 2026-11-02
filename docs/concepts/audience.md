@@ -16,7 +16,7 @@ its first caller, realization, or execution path.
 
 This is the first public audience. A framework can keep its native interaction
 syntax and provide one lowering Adapter plus native dispatch integration. Boundary
-then derives deterministic Programs, caller Projections, live Installations,
+then derives deterministic Programs, caller Surfaces, live Installations,
 atomic Bindings, and portable manifests without taking over application policy,
 state, or execution.
 
@@ -30,11 +30,11 @@ See the [adapter reference](../reference/adapters.md) and the
 ## 2. Platform and protocol Adapter authors
 
 Platform teams often see one action redefined across an operator UI, HTTP API,
-CLI, desktop channel, worker, and agent tool. A Projection gives each caller an
+CLI, desktop channel, worker, and agent tool. A Surface gives each caller an
 explicit exact expected surface; a Binding gives serving Adapters only the
 selected live capability they need.
 
-Documentation and build Adapters can consume a portable Projection without any
+Documentation and build Adapters can consume a portable Surface without any
 Installation. Serving Adapters consume a Binding or Binding manifest. They do
 not receive the whole host dispatcher or infer policy from visibility.
 

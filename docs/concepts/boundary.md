@@ -41,7 +41,7 @@ application declarations             application implementations
         Program                              Installation
            |                                      |
            v                                      |
-       Projection ─────── checked binding ────────┘
+        Surface ────────── checked binding ────────┘
                                  |
                                  v
                               Caller

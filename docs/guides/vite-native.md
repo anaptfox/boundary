@@ -8,7 +8,7 @@ description: "Replace a Vite host during development and clean it up when the se
 `@foxworth/boundary/frameworks/vite` provides two Vite integrations:
 
 - `mountSurface({ handler, mount })` mounts an already-prepared HTTP
-  projection at explicit Connect paths.
+  surface at explicit Connect paths.
 - `mountSurfaceLifecycle({ entry, validate, mount })` adds explicit
   development/preview entry replacement and cleanup around that same HTTP
   seam.
@@ -21,7 +21,7 @@ The tested executable harness is
 [`tests/fixtures/runtimes/vite/run.mjs`](../../tests/fixtures/runtimes/vite/run.mjs), and its
 focused lifecycle cases are in
 [`vite.native-lifecycle.test.ts`](../../tests/typescript/vite.native-lifecycle.test.ts).
-The harness uses a real bound `vite.todos.list`/`vite.todos.create` projection
+The harness uses a real bound `vite.todos.list`/`vite.todos.create` surface
 over a JSON-backed application store. It proves that a created todo remains
 visible after implementation replacement, an unrelated frontend edit does not
 replace the useful generation, a rejected candidate leaves the prior bound
@@ -52,7 +52,7 @@ uses Vite's `configureServer`, `configurePreviewServer`, `handleHotUpdate`,
 and `closeBundle` hooks. It does not depend on Vite's experimental Environment
 API. For Workers-backed Vite applications, keep the Cloudflare workerd-backed
 plugin as the runtime owner and use this adapter only for the explicit Boundary
-projection mount.
+surface mount.
 
 Current support and remaining acceptance work are tracked on the
 [availability page](../concepts/current-status.md); this guide describes the

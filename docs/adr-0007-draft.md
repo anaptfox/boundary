@@ -33,7 +33,7 @@ const editorSurface    = surface(docs, { call: ["search", "delete"] });
 // surface.all(docs) spells out the everything case; nothing is selected by default
 
 const app = await install(docs, {
-  version: "docs-handlers@3",          // required, host-owned
+  version: "docs-handlers-3",          // required, host-owned
   handlers: { search, delete: del },   // or dispatch: { targets, dispatchers }
   id: "docs:local",                    // optional; visibly generated default (D2)
   requests: (compiled) => contributeControlRequests(compiled, ...), // optional Control bridge
@@ -83,10 +83,10 @@ Everything that holds authority stays on `app`, which only the host has.
 The spec carries this mapping table once. Guides and the glossary use the
 API words only; no "aka" tier.
 
-### D1: Projection becomes Surface in the API and prose
+### D1: Surface becomes Surface in the API and prose
 
-`CONTEXT.md` recorded "surface" as an avoided word for Projection, because a
-surface sounds like something that exists while a Projection may stay
+`CONTEXT.md` recorded "surface" as an avoided word for Surface, because a
+surface sounds like something that exists while a Surface may stay
 unrealized. That reason still holds and is answered in the docs: a Surface is
 inert data over a declaration record and may stay unconnected forever. In
 favour: the README already named its variables `editorSurface`, and newcomers

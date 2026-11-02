@@ -1,27 +1,43 @@
 ---
-title: "4. Projections, Bindings, Handoffs, and conformance"
-description: "How projections bind to installations and what shared evidence establishes parity."
+title: "4. Surfaces, Bindings, Handoffs, and conformance"
+description: "How surfaces bind to installations and what shared evidence establishes parity."
 ---
 
-# 4. Projections, Bindings, Handoffs, and conformance
+# 4. Surfaces, Bindings, Handoffs, and conformance
 
 **Status:** Current and normative.
 
-## Projection is durable desired surface
+## Vocabulary and wire names
 
-A Projection MUST be constructed from explicit authentic compiled handles and
+The API and this specification use one word per concept. Version 1 artifacts
+and the wire keep the field names below; they change only with a deliberate
+version 2.
+
+| Concept | Word | Wire and artifact names |
+| --- | --- | --- |
+| Caller selection | Surface | `projection`, `projectionDigest`, `boundary.projection/v1`, `*.projection.json` |
+| Live conjunction | Binding | `binding`, `bindingDigest`, `boundary.projection-binding/v1`, `*.binding.json` |
+| Run now | `call` | mode `direct` |
+| Create a Proposal | `propose` | mode `request` |
+| Live implementations | Installation | `installation`, `installationId`, `installationDigest`, `boundary.installation/v1` |
+| Per-mode identity | version, realization | `realizationId` |
+| Caller presentation | presentation | `boundary.projection-presentation/v1`, `presentationDigest` |
+
+## Surface is durable desired selection
+
+A Surface MUST be constructed from explicit authentic compiled handles and
 non-empty mode sets containing only `"direct"` and `"request"`. It MUST contain
 the expected selected-subset Program, exact contract identity, input arity, and
 mode selections. Definition-record aliases remain local, but each caller-facing
-Projection alias MUST survive serialization and enter Projection identity.
+Surface alias MUST survive serialization and enter Surface identity.
 
-A Projection MUST NOT contain an Installation, Catalog, implementation,
+A Surface MUST NOT contain an Installation, Catalog, implementation,
 dispatcher, admission function, context, route, or authority. It MAY exist
 indefinitely without any realization.
 
 ## Binding is total and live
 
-Binding MUST evaluate the whole Projection against one exact Installation. It
+Binding MUST evaluate the whole Surface against one exact Installation. It
 MUST return `bound` or an exhaustive `unrealized` report and MUST NOT expose a
 partial caller. Expected-to-actual compatibility MUST be checked before any
 live capability is returned, and both identities MUST remain pinned.
@@ -113,7 +129,7 @@ private properties.
 
 ## Remote pinning
 
-A remote client MUST pin one `bindingDigest`. A changed Projection,
+A remote client MUST pin one `bindingDigest`. A changed Surface,
 Installation, realization, Binding, or deployment requires an explicit new
 handshake. Clients MUST NOT silently follow replacement state.
 
@@ -127,7 +143,7 @@ invocation, or outcome version MUST be rejected.
 
 ## Adapter law
 
-Descriptive adapters MAY consume an unrealized Projection. Any adapter that can
+Descriptive adapters MAY consume an unrealized Surface. Any adapter that can
 execute MUST consume a successful Binding or a remote client pinned to its
 Binding manifest. Adapters MAY translate routes, tools, procedures, encoding,
 or presentation but MUST NOT invent interactions, broaden footprints, change
@@ -135,7 +151,7 @@ modes, create context authority, flatten `unknown`, or acquire Control Admin.
 
 There is no adapter-level subset of a Binding. A tool list, route table, or
 procedure set MUST present the whole Binding. A caller that must see less is
-bound to a narrower Projection, which also keeps unselected interactions out of
+bound to a narrower Surface, which also keeps unselected interactions out of
 the Binding. Presentation (title, description, and documentation) stays outside
 identity. Admission remains the execution gate.
 
@@ -145,13 +161,13 @@ A conforming implementation SHOULD test at least:
 
 - identity stability under implementation and interface changes;
 - identity changes under interaction ID, schema, `reads`, and `changes` changes;
-- handler-free Program and indefinitely unrealized Projection serialization;
+- handler-free Program and indefinitely unrealized Surface serialization;
 - authentic handle provenance and duplicate/collision rejection;
 - total Bound/Unrealized Binding outcomes and no partial caller;
 - restriction subset refusal, inherited admission order, and parent/child
   revocation during awaited admission;
 - expected-to-actual compatibility with both identities retained;
-- caller-facing alias changes altering Projection identity;
+- caller-facing alias changes altering Surface identity;
 - Installation and Realization ID drift, replacement, and revocation;
 - direct and request conservation for one interaction identity;
 - stateless exact-reference context through admission and dispatch;
@@ -179,11 +195,11 @@ distinguish focused evidence from integrated or production proof.
 
 ## Composition evidence
 
-A Projection MAY select zero interactions. Its closed Program and selection list
+A Surface MAY select zero interactions. Its closed Program and selection list
 MUST both be empty; binding and handshake MUST preserve its authenticated empty
 surface. An empty surface MUST NOT make an unselected invocation executable.
 
-An invocation observation MUST include version 1, binding/projection/installation
+An invocation observation MUST include version 1, binding/surface/installation
 identities, expected/actual contract digests, interaction ID, realization ID, mode,
 certainty, result kind, and actual read/change footprints. Only an optional
 portable JSON `correlation` field is allowed beyond those fields. Inputs, outputs,
@@ -220,7 +236,7 @@ private observed-read tokens/scopes automatically. Publication failure MUST
 retain invocation and subject truth. Successful publisher return establishes
 only that local publication completed, not delivery to every consumer.
 
-A Projection presentation MUST derive schemas, modes, arity, footprints, and
+A Surface presentation MUST derive schemas, modes, arity, footprints, and
 interaction identity from its selected declarations. Overrides MAY supply only
 `title` and `description` for selected aliases. Request-only selections MUST omit
 direct output/error schemas. The presentation identity is version 1,

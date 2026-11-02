@@ -29,7 +29,7 @@ an exported subpath or a successful e2e run alone does not establish it.
 ## TypeScript
 
 `@foxworth/boundary` provides interaction definitions, deterministic compilation,
-portable Projections, native implementations, live Installations, atomic
+portable Surfaces, native implementations, live Installations, atomic
 Binding, per-call context, and host-held revocation. Its optional Control
 bridge creates requests for consequential effects.
 

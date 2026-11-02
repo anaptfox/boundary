@@ -19,7 +19,7 @@ conformance.
 1. [Model and laws](./01-model-and-laws.md)
 2. [Contracts and identity](./02-contracts-and-identity.md)
 3. [Control and recovery](./03-control-and-recovery.md)
-4. [Projections, Bindings, Handoffs, and conformance](./04-projections-handoffs-and-conformance.md)
+4. [Surfaces, Bindings, Handoffs, and conformance](./04-surfaces-handoffs-and-conformance.md)
 5. [Host authoring and artifacts](./05-host-authoring-and-artifacts.md)
 6. [HTTP framing for version 1 Handoff](./06-http-framing.md)
 
@@ -35,7 +35,7 @@ implementation behavior disagree.
 Artifact and wire versions are separate:
 
 - interaction-contract, Program, and Draft artifacts use version 1;
-- Installation and Projection artifacts use version 1; and
+- Installation and Surface artifacts use version 1; and
 - Binding manifests, Handoff invocations, Handoff outcomes, and
   Control durable records use version 1.
 
@@ -50,7 +50,7 @@ actual identities.
 
 ## Normative boundary
 
-Boundary specifies portable contracts, Programs, explicit Projections, live
+Boundary specifies portable contracts, Programs, explicit Surfaces, live
 Installations, atomic Bindings, Handoffs, direct and request modes, controlled
 authority and recovery, generated artifacts, package artifacts, and conformance.
 A conforming host may keep any native framework, dispatcher, policy, stores,

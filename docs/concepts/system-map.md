@@ -1,6 +1,6 @@
 ---
 title: "System map"
-description: "The Host lifecycle from declarations through projection, binding, and dispatch."
+description: "The Host lifecycle from declarations through surface, binding, and dispatch."
 ---
 
 # System map
@@ -20,9 +20,9 @@ Application or framework
       CompiledInteractions    InteractionInstallation
         Program + handles       Catalog + live identity
              |
-             | project desired caller surface
+             | select the caller's Surface
              v
-         Projection
+       CompiledSurface
              |
              +------------- bind atomically -------------+
                                                           v
@@ -35,12 +35,12 @@ Application or framework
                                                   native dispatcher
 ```
 
-The Projection and Installation are peers. Neither contains the other.
-Projection is portable desired truth and may have zero realizations.
+The Surface and Installation are peers. Neither contains the other.
+Surface is portable desired truth and may have zero realizations.
 Installation is live available execution and may contain unrelated extras.
 Binding pins one complete compatible conjunction or returns `unrealized`.
 A tool list or page presents that whole Binding; there is no adapter-level
-subset. A caller that must see less is bound to a narrower Projection.
+subset. A caller that must see less is bound to a narrower Surface.
 
 ## Bare TypeScript path
 
@@ -64,7 +64,7 @@ framework lifecycle, or Control.
 | --- | --- |
 | portable contracts, Programs, and exact identities | interaction IDs, domain meaning, and native declarations |
 | CompiledInteractions and inert handles | implementation behavior and application state |
-| caller-specific Projections | caller purpose and which surfaces exist |
+| caller-specific Surfaces | caller purpose and which surfaces exist |
 | Installation availability and realization pins | dispatch, runtime health, routing, replicas, and failover |
 | atomic Binding and per-call admission seam | authentication, policy, actors, credentials, and capabilities |
 | input, output, and declared-error validation | transactions, stores, external systems, and domain evidence |
@@ -120,7 +120,7 @@ remote:
 ```
 
 Transports frame data; Handoff alone accepts untrusted serialized invocation.
-Remote clients pin a Projection Binding manifest and explicitly re-handshake
+Remote clients pin a Binding manifest and explicitly re-handshake
 after Installation replacement.
 
 ## Optional request path

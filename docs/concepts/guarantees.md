@@ -28,27 +28,27 @@ must supply. See [current availability](./current-status.md) for release status.
 | Tool list hides an interaction that is still in the Binding | Visibility changed; admission still governs calls |
 | A mutation may have started and its response is lost | Unknown consequence; no automatic permission to retry |
 
-## Compilation and Projection
+## Compilation and Surface
 
 The target checks that:
 
 - the host-authored interaction ID is preserved byte-for-byte;
 - every normative portable contract field participates in identity;
 - compilation is deterministic for the same validated in-memory definitions;
-- a Projection contains only explicit compiled interactions and nonempty modes;
-- Projection identity covers only its selected expected surface, aliases,
+- a Surface contains only explicit compiled interactions and nonempty modes;
+- Surface identity covers only its selected expected surface, aliases,
   arity, and modes, not unrelated Program interactions or runtime availability;
-- a Projection can remain valid with zero Installations.
+- a Surface can remain valid with zero Installations.
 
-Compilation does not make an interaction executable. Projection selection does
+Compilation does not make an interaction executable. Surface selection does
 not grant authority.
 
 ## Installation and Binding
 
 An Installation derives availability from exact per-handle binding entries.
-Binding checks every Projection entry atomically. A successful Binding pins:
+Binding checks every Surface entry atomically. A successful Binding pins:
 
-- one Projection and one live Installation identity;
+- one Surface and one live Installation identity;
 - each expected interaction contract to one structurally compatible actual
   contract and concrete realization;
 - each expected mode to one installed contribution;
@@ -90,7 +90,7 @@ It validates the versioned Binding identity, exact pins, mode, and input before
 producing an opaque checked invocation. Transports parse and frame bytes; they
 do not reconstruct conservation rules.
 
-Remote clients pin a Projection Binding manifest and digest. Installation
+Remote clients pin a Binding manifest and digest. Installation
 replacement produces `stale` and requires an explicit new handshake. A manifest
 describes identity and selected availability; it is not live authority.
 
@@ -131,6 +131,6 @@ Those remain application evidence obligations.
 ## Conformance
 
 Conformance vectors can establish that TypeScript or Rust obeyed specific
-identity, compilation, Projection, Installation, Binding, Handoff, certainty,
+identity, compilation, Surface, Installation, Binding, Handoff, certainty,
 and Control laws for those vectors. They do not certify untested behavior or
 the host's domain implementation.

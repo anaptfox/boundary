@@ -18,7 +18,7 @@ explicit: interaction meaning, portable contracts, authority, or failure truth.
 | --- | --- | --- | --- |
 | [Algebraic effects and handlers](https://homepages.inf.ed.ac.uk/gdp/publications/handling-algebraic-effects.pdf) | an interaction separated from its interpreter | one interaction may outlive one realization | Boundary uses inspectable application contracts across caller, deployment, and process seams; it is not a language effect system |
 | [Smithy](https://smithy.io/2.0/spec/service-types.html#interaction) and [OpenAPI](https://spec.openapis.org/oas/v3.1.1.html#interaction-object) | portable service or HTTP contracts | named interactions and schemas can produce concrete interfaces | Boundary begins with the application-owned interaction before choosing HTTP, MCP, UI, or another caller interface |
-| [Object-capability systems](https://www.erights.org/talks/thesis/markm-thesis.pdf) | explicit authority that can be narrowed | callers should receive no more capability than needed | Projection selects and Binding attenuates a live surface, but host admission still evaluates each call |
+| [Object-capability systems](https://www.erights.org/talks/thesis/markm-thesis.pdf) | explicit authority that can be narrowed | callers should receive no more capability than needed | Surface selects and Binding attenuates a live surface, but host admission still evaluates each call |
 | [Temporal](https://docs.temporal.io/temporal) and [Restate](https://docs.restate.dev/foundations/key-concepts) | durable execution and recovery | consequential effects need stronger truth than a returned promise | Boundary keeps Control optional and leaves journals, execution, verification, and reconciliation with the host |
 
 ## Algebraic effects: interaction apart from realization
@@ -33,7 +33,7 @@ todos.complete contract
         -> later packaged realization
 ```
 
-The portable definition and Projection contain no handler. Installation binds
+The portable definition and Surface contain no handler. Installation binds
 one live realization later. The analogy stops there: Boundary is not a language
 effect system, and declared `reads` and `changes` are not inferred effect rows.
 
@@ -54,13 +54,13 @@ todos.complete
 
 An OpenAPI `interactionId`, route, or Smithy shape can be an excellent interface
 identity. Boundary does not replace it. A projector derives that interface from a
-Projection or Binding manifest and returns checked invocation to the host.
+Surface or Binding manifest and returns checked invocation to the host.
 
 ## Capabilities: selection and authority are different
 
 ```text
-screen Projection: complete + clear
-agent Projection:  complete
+screen Surface: complete + clear
+agent Surface:  complete
 
 agent -> clear -> absent from its bound surface
 ```
@@ -69,11 +69,11 @@ Capability systems call this narrowing *attenuation*. Boundary keeps three facts
 separate:
 
 - Program declaration says an interaction exists;
-- Projection says a caller surface may ever call it;
+- Surface says a caller surface may ever call it;
 - Binding plus per-invocation admission makes one checked live path available.
 
 A tool list or page presents the whole Binding. There is no softer layer that
-shows a subset: the Projection is the only narrowing, because it is the one
+shows a subset: the Surface is the only narrowing, because it is the one
 that is enforced.
 
 None is an organization-wide IAM system or proof that policy is correct.

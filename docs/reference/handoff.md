@@ -11,7 +11,7 @@ outcomes. Transports only frame and carry those values; they do not establish
 identity, selection, admission, or execution authority.
 
 ```text
-Projection + Installation --atomic bind--> Binding
+Surface + Installation --atomic bind--> Binding
                                                |
                                                v
                                    version 1 Binding manifest
@@ -25,7 +25,7 @@ version 1 artifact types, not on Host. Live execution uses a narrow
 re-export or depend on Control. Request-mode execution is contributed
 separately through `@foxworth/boundary/control/host`.
 
-## Projection binding manifest version 1
+## Surface binding manifest version 1
 
 A remote handshake publishes one exact `BindingManifest` derived
 from a successful live Binding:
@@ -63,13 +63,13 @@ type BindingInteraction = {
 There is one canonical interaction entry per selected `(alias, mode)`, sorted by
 alias and then mode using unsigned UTF-8 byte order. `request` is present
 exactly when `mode` is `"request"` and absent for direct mode. The expected
-Program is the durable Projection's selected contract set. The actual Program
+Program is the durable Surface's selected contract set. The actual Program
 and Catalog are the selected subset pinned from one Installation.
 
 Validators recompute both Programs, validate the Catalog and every interaction
 entry, and confirm all explicit digest fields. `boundary.projection-binding/v1`
 hashes the canonical manifest without `bindingDigest`. The digest includes the
-Projection digest, Installation ID and digest, durable caller aliases, expected
+Surface digest, Installation ID and digest, durable caller aliases, expected
 and actual Program and contract identities, modes, arities, realization IDs,
 and request preview/control identity.
 
@@ -118,7 +118,7 @@ Version 1 is the only Handoff protocol. Unknown or future versions are rejected.
 ## Stateless context and admission
 
 Caller context is supplied per connected invocation surface and remains a live
-host value. It never appears in a Program, Projection, Installation manifest,
+host value. It never appears in a Program, Surface, Installation manifest,
 Binding manifest, invocation envelope, outcome envelope, or persisted Control
 record.
 
@@ -129,7 +129,7 @@ validation. A header, cookie, token, or transport principal is input to the
 host's context resolver; Handoff does not treat it as trusted identity by mere
 presence.
 
-Admission belongs to the Binding. Projection selection is not authorization,
+Admission belongs to the Binding. Surface selection is not authorization,
 and a valid Binding manifest is not a grant.
 
 ## Outcome version 1
@@ -274,4 +274,4 @@ cannot retract a manifest already copied elsewhere or cancel work that already
 started. Remote calls against a revoked or missing Binding fail closed.
 
 Continue with [Host](./host.md), [Program](./program.md), [Control](./control.md),
-and the [normative Handoff laws](../spec/04-projections-handoffs-and-conformance.md).
+and the [normative Handoff laws](../spec/04-surfaces-handoffs-and-conformance.md).

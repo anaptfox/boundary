@@ -15,7 +15,7 @@ The small direct-composition sketch in
 [`tests/fixtures/runtimes/durable-object/workspace.ts`](../../tests/fixtures/runtimes/durable-object/workspace.ts)
 illustrates the boundary only; it is not an accepted native lifecycle proof.
 The application constructs native request context from its authenticated
-request or RPC boundary. A Projection selects available interactions; it does
+request or RPC boundary. A Surface selects available interactions; it does
 not grant a caller authority.
 
 `createSurfaceDurableObject()` remains a valid generic job where an

@@ -17,16 +17,16 @@ from one implementation.
 An implementation consuming this vector must establish all of these laws:
 
 - contract and Program identity pins are stable;
-- a Projection durably retains its caller alias, exact contract, input arity,
+- a Surface durably retains its caller alias, exact contract, input arity,
   and the closed set of `direct` and/or `request` modes before realization;
-- a durable alias is part of Projection identity, so renaming it changes the
-  Projection digest;
+- a durable alias is part of Surface identity, so renaming it changes the
+  Surface digest;
 - an Installation and each mode realization have distinct host-issued IDs;
 - binding is atomic: it yields either one complete binding or unrealized data,
   never a partial caller;
 - a bound manifest pins the expected and actual contract identities,
   Installation ID, realization ID, and exact mode;
-- compatibility is directional from the Projection's expected contract to the
+- compatibility is directional from the Surface's expected contract to the
   Installation's actual contract; the compatible nonidentical vector pins
   distinct contract and Program digests and proves that reversing the direction
   is incompatible;

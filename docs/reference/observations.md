@@ -100,7 +100,7 @@ an uncertain effect.
 
 ## Evidence and diagnostics
 
-Evidence is private host state. It does not change Program, Projection, or
+Evidence is private host state. It does not change Program, Surface, or
 Binding digests, nor the existing invocation observation envelope, HTTP
 observation stream, or coarse client invalidation behavior.
 

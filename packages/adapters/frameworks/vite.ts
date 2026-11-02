@@ -74,7 +74,7 @@ function internalError(): Response {
   });
 }
 
-/** Connect middleware around one explicit CompiledSurface HTTP handler. */
+/** Connect middleware around one explicit surface HTTP handler. */
 export function createSurfaceMiddleware(
   handler: HttpHandler,
   options: Pick<SurfaceViteOptions, "onError"> = {},
@@ -106,7 +106,7 @@ export function createSurfaceMiddleware(
   };
 }
 
-/** Mount one injected CompiledSurface HTTP handler in Vite dev and preview. */
+/** Mount one injected surface HTTP handler in Vite dev and preview. */
 export function mountSurface(options: SurfaceViteOptions): Plugin {
   const paths = mountPaths(options.mount);
   const middleware = createSurfaceMiddleware(options.handler, options);

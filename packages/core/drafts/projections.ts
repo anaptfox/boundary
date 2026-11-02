@@ -1,12 +1,12 @@
 /**
- * Three CompiledSurface presets over the compiled Draft interactions, one per authority.
+ * Three Surface presets over the compiled Draft interactions, one per authority.
  *
  * A worker proposes. An author accepts or rejects. Neither implies the
  * other, and a host that only needs to gate invocation of already-declared
  * interactions needs neither: {@link runnerSurface} selects nothing at all.
  * No preset here hands out every Draft capability; that convenience would
  * erase the authority split the other two presets exist to express. A host
- * that genuinely wants every capability composes its own CompiledSurface from
+ * that genuinely wants every capability composes its own selection from
  * `compiled.handles` directly — this module does not ship that shortcut.
  */
 import { projectInteractions } from "@foxworth/boundary/pipeline";

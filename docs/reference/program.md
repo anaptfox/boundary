@@ -243,7 +243,7 @@ Catalogs, and digests only. They do not contain handlers, admission, context,
 or revocation.
 
 Handoff imports those types from `@foxworth/boundary/program`. Host still creates the
-live Installation, Projection, and Binding values and re-exports the artifact
+live Installation, Surface, and Binding values and re-exports the artifact
 types that appear on that authoring path.
 
 Continue with [Host](./host.md), [Handoff](./handoff.md), and the
@@ -265,7 +265,7 @@ host publication, independent Rust support and evidence limits.
 `SurfacePresentation`, `PresentedInteraction`, and
 `InteractionPresentationOverride` describe handler-free agent presentation data.
 The Host derives this artifact with `presentSurface`; its independent digest
-records presentation changes without changing Program or Projection identity.
+records presentation changes without changing Program or Surface identity.
 `bindingDescriptions` joins selected declaration pins from a previously checked
 Binding manifest without authenticating its source. Native integrations use
 `describeBinding` for an authentic capability. `isInvocationFaultLegal` checks

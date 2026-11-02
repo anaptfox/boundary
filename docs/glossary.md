@@ -1,158 +1,119 @@
 ---
 title: "Boundary glossary"
-description: "Host, Program, Handoff, Control, and related terms used throughout Boundary."
+description: "One word per concept, the TypeScript API that carries it, and the version 1 wire name it keeps."
 ---
 
 # Boundary glossary
 
-This page defines Boundary's concepts and maps them to the TypeScript APIs and
-artifacts that carry them.
+One tier, one word per concept. The second table maps each word to the field
+name it keeps on the wire and in artifacts; those names stay until a deliberate
+version 2.
 
-## Host integration terms
+## Concepts
 
 **Interaction**
 
-Application-owned meaningful work with a stable explicit ID and portable
-input, output, declared-error, read, and change contracts.
-
-**Interaction definition**
-
-An inert author-owned value created by `defineInteraction`. It contains no
-handler, policy, state, lifecycle, or authority. A plain `as const` record of
-definitions is the normal bare-TypeScript source.
-
-**Compiled interactions**
-
-The deterministic result of compiling a closed definition record or lowering
-native host declarations. It contains a Program and inert typed `.handles`.
-
-**Compiled handle**
-
-An inert typed reference to one compiled interaction contract. It is useful for
-constructing a Projection or Installation; it is not callable authority.
-
-**Interaction implementations**
-
-A process-local immutable Adapter created by `implementInteractions` for bare
-TypeScript. It gives every supplied definition exactly one correlated
-implementation and owns no availability, policy, Control, or lifecycle.
-
-**Interaction Installation**
-
-One live immutable availability snapshot that binds exact interaction handles to
-native targets and dispatchers or bare implementations. It has an opaque live
-identity and derives its Catalog. Its separately returned host controller owns
-revocation authority.
-
-**Installation manifest**
-
-A versioned portable Program-and-Catalog description of an Installation. It is
-not the live capability and does not prove implementation behavior.
-
-**Projection**
-
-A portable exact expected caller surface: explicit aliases and interactions.
-Each selected interaction has a nonempty set of direct or request modes. The
-surface may select zero interactions and may remain unrealized indefinitely. It
-contains no Installation, admission, dispatcher, or context.
-
-**Projected handle**
-
-An inert caller-facing handle from `projection.handles`. Its type is restricted
-to the modes selected by that Projection.
-
-**Projection Binding**
-
-The atomic live conjunction of one Projection, one Installation, and one
-admission Adapter. Every selected entry binds or the result is `unrealized`;
-there is no partial Binding or automatic rebinding.
-
-**Projection Binding manifest**
-
-A versioned portable description of a Binding's expected-to-actual pins,
-durable aliases, selected modes, Realization IDs, live Installation identity,
-and binding digest. It carries no admission policy, context, execution
-capability, or liveness guarantee.
-
-**Revocation controller**
-
-A host-held capability returned beside an Installation or successful Binding.
-It can revoke that exact live value. Execution values passed to adapters do not
-carry the controller.
-
-**Caller**
-
-A stateless typed calling Interface obtained from a Binding. Each `call` or
-`request` receives context as its final argument; contextless callers omit it.
-
-**Admission**
-
-The host-owned per-invocation decision made after input validation and before
-dispatch or request planning. Admission may allow or deny; a broken admission
-Adapter is a fault, not a denial.
-
-**Declared interaction error**
-
-An expected domain alternative declared by the interaction contract and
-validated at runtime. It is distinct from denial, invalid realization output,
-or infrastructure failure.
-
-## Portable foundations
+Application-owned meaningful work with a stable explicit id and portable
+input, output, declared-error, read, and change contracts. Declared with
+`defineInteraction`; the declaration contains no handler, policy, state, or
+authority.
 
 **Interaction contract**
 
-The exact portable identity of one interaction: version, host-authored ID, input
-and output schemas, optional declared-error schema, `reads`, and `changes`.
-`boundary.interaction-contract/v1` hashes those fields. Runtime implementation, policy,
-documentation annotations, arity, modes, and context are excluded. Arity
-belongs to Projection and Binding artifacts.
+The exact portable identity of one interaction: version, id, input and output
+schemas, optional declared-error schema, `reads`, and `changes`. Hashed under
+`boundary.interaction-contract/v1`. Implementation, policy, documentation
+annotations, arity, modes, and context are outside it.
 
 **Program**
 
-A serializable canonical set of interaction contracts and its digest. It
-contains no handlers, stores, credentials, policy, or ambient authority.
+The canonical set of interaction contracts and its digest, with no handlers,
+stores, credentials, policy, or ambient authority. Inspection only on the
+short path: `app.program`.
 
-**Draft**
+**Surface**
 
-An inert artifact proposing one full interaction contract that does not yet
-exist. It wraps that complete contract plus a gap, opaque proposer, and
-host-supplied timestamp. It is not a Program entry and is not callable.
+What one caller may see: a selection of interactions from a declaration record,
+each in `call` mode, `propose` mode, or both. Created by `surface(record, { call, propose })`
+or spelled out with `surface.all(record)`. A Surface is inert: it names no
+implementation, admission, or context, and it may never connect. Compiled, it
+becomes a portable `CompiledSurface` with its own digest.
+
+**Installation**
+
+Live implementations of a declaration record under host-issued identity,
+created by `install(record, { version, handlers | dispatch, id? })`. Its
+manifest carries the Program, the Catalog of realized modes, and the
+installation digest. Only the host holds the Installation, and only it can
+revoke.
 
 **Realization**
 
-The exact installed contribution for one `(interactionId, mode)`. Direct and
-request modes have distinct host-issued Realization IDs. Changing that
-contribution requires a new Realization ID.
+The installed contribution for one `(interaction, mode)`, with its own
+host-issued id. The short path derives ids from the host's `version`:
+`<interactionId>:direct:<version>` and `<interactionId>:request:<version>`.
+Changing executable behaviour means changing the version.
 
 **Catalog**
 
-A portable description of the direct and request availability contributed by
-one Installation. It is derived from exact installation entries and does not
-change Program identity.
+The direct and request availability one Installation contributes, derived from
+its realizations. It does not change Program identity.
 
-**Handoff**
+**Binding**
 
-The foundation that accepts untrusted serialized invocation data, validates
-version, Binding identity, exact pins, mode, and input, and produces an opaque
-checked invocation. Transports only frame bytes around it.
+A Surface connected to one Installation under one admission rule, created by
+`app.connect(surface, { admit })`. Either every selected interaction is
+realized, or the result is `unrealized` with an exhaustive report; there is no
+partial caller. A Binding pins expected and actual contracts, the Installation
+and realization ids, and its own digest. It never spans Installations and never
+rebinds.
+
+**Caller**
+
+What `connect` returns: one method per `call` alias, `propose.<alias>` per
+`propose` alias, the read-only Binding `manifest`, and the `handoff` seam. It
+carries no controller, so handing it to an adapter cannot widen or revoke
+anything. Each method takes the declared input, then the actor; zero-input
+interactions take only the actor; contextless installations take neither.
+
+**Admission**
+
+The host's per-invocation decision, made after input validation and before
+dispatch. `admit` is required on every `connect`; `admitWhen(predicate, reason)`
+builds one from an actor predicate. Admission may allow or deny; a broken rule
+is a fault, not a denial.
 
 **Context**
 
-Opaque ephemeral host data supplied to each invocation. The same reference
-reaches admission and native dispatch. Boundary does not serialize, hash, enrich,
-persist, or interpret it.
+Opaque host data supplied to each invocation; examples name the value `actor`.
+The same reference reaches admission and the implementation. Boundary never
+serializes, hashes, persists, or interprets it.
+
+**Declared error**
+
+A domain outcome the contract declares and the runtime validates, raised with
+`declaredInteractionError` and narrowed with `isDeclaredInteractionError`. It
+is distinct from denial, an invalid outcome, or infrastructure failure.
+
+**Handoff**
+
+The checked seam that accepts untrusted serialized invocations, validates
+version, Binding identity, pins, mode, and input, and produces one checked
+invocation. Transports only frame bytes around it; every caller carries its
+seam as `caller.handoff`.
+
+**Certainty**
+
+What is known about one invocation's consequence: `not-started`,
+`not-completed`, `completed`, or `unknown`. Neither `not-completed` nor
+`unknown` is permission to retry.
 
 ## Control terms
 
-**Controlled execution**
-
-An optional path that separates request, review, authority, attempt,
-verification, and recovery. It is owned by Control, not Host.
-
 **Proposal**
 
-A durable reviewable plan for one exact interaction input before its effect is
-attempted.
+The durable, reviewable plan one `propose` call creates for an exact input
+before its effect is attempted. A proposal never runs the effect.
 
 **Grant**
 
@@ -160,28 +121,34 @@ Durable authority to execute one proposal under a recorded policy decision.
 
 **Attempt**
 
-The record persisted before applying one granted proposal.
-
-**Lease**
-
-The compare-and-swap claim on an active attempt, including expiry, renewal, and
-a fencing token.
+The record persisted before applying one granted proposal, with its lease,
+expiry, renewal, and fencing token.
 
 **Receipt**
 
 A record that apply returned, output validation passed, and the configured
-verifier passed. It is bounded application evidence, not proof of correctness.
-There is no generic Host Installation receipt in the target.
+verifier passed: bounded application evidence, not proof of correctness.
 
 **Uncertain**
 
-The durable Control outcome used when an effect may have started but its final
-result is not known. It is the persisted form of an invocation's `unknown`
-certainty. It must be reconciled rather than blindly retried.
+The durable outcome used when an effect may have started but its final result
+is not known. It is reconciled, never blindly retried, and tool results say so
+in those words.
 
-**Certainty**
+## Wire and artifact names
 
-What is known about one invocation's consequence: `not-started`,
-`not-completed`, `completed`, or `unknown`. Binding outcomes, Handoff
-outcomes, native dispatch faults, and guest faults all use these four words.
-Neither `not-completed` nor `unknown` is permission to retry.
+The TypeScript API uses the words above. Version 1 artifacts and the wire keep
+these field names; the specification is normative for them.
+
+| Concept | API word | Wire or artifact name |
+| --- | --- | --- |
+| Caller selection | Surface, `surface()` | `projection`, `projectionDigest`, `boundary.projection/v1`, `*.projection.json` |
+| Compiled selection artifact | `CompiledSurface` | `ProjectionManifest` shape: `version`, `program`, `interactions`, `projectionDigest` |
+| Live conjunction | Binding, `connect()` | `binding`, `bindingDigest`, `boundary.projection-binding/v1`, `*.binding.json` |
+| Binding manifest | `BindingManifest` | the version 1 Binding manifest handshake |
+| Run now | `call`, method per alias | mode `direct` |
+| Create a Proposal | `propose.<alias>` | mode `request` |
+| Live implementations | Installation, `install()` | `installation`, `installationId`, `installationDigest`, `boundary.installation/v1` |
+| Per-mode identity | `version` option | `realizationId` |
+| Caller presentation | `presentSurface` | `boundary.projection-presentation/v1`, `presentationDigest` |
+| Host data per call | Context (`actor`) | never on the wire |

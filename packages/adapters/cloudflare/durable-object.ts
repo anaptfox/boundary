@@ -11,7 +11,7 @@ export type DurableObjectHandlerFactory<State = unknown, Environment = unknown> 
   (state: State, environment: Environment) => HttpHandler;
 
 /**
- * Give each Durable Object instance its own prebuilt CompiledSurface HTTP handler.
+ * Give each Durable Object instance its own prebuilt surface HTTP handler.
  * State and environment stay in the application-owned factory.
  */
 export function createSurfaceDurableObject<

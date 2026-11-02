@@ -222,6 +222,86 @@ and select caller interfaces from it before connecting any implementations.
 building around those descriptions.**
 
 You decide what the actions mean and supply the code that performs them.
+
+## Declare, install, connect
+
+Three calls carry the whole model. Declare the interactions once; install the
+application's functions under a host-owned version; connect a Surface for each
+caller. The assistant below sees search and nothing else, and the same caller
+is what an agent reaches over MCP.
+
+<!-- snippet:examples/snippets/typescript/agent-demo.ts#declare -->
+```ts
+import { z } from "zod";
+import { admitWhen, defineInteraction, install, surface } from "@foxworth/boundary";
+import { createMcpHandler, toolsFor } from "@foxworth/boundary/mcp";
+
+const Document = z.strictObject({ id: z.string(), title: z.string() });
+
+export const docs = {
+  search: defineInteraction({
+    id: "documents.search",
+    input: z.strictObject({ query: z.string().min(1) }),
+    output: z.array(Document),
+    reads: ["documents"],
+    description: "Find documents whose title contains the query.",
+  }),
+  delete: defineInteraction({
+    id: "documents.delete",
+    input: z.strictObject({ id: z.string() }),
+    output: z.strictObject({ deleted: z.boolean() }),
+    changes: ["documents"],
+    description: "Delete one document by id.",
+  }),
+} as const;
+```
+
+<!-- snippet:examples/snippets/typescript/agent-demo.ts#install -->
+```ts
+const app = await install(docs, {
+  version: "documents-1",
+  handlers: {
+    search: ({ query }, _actor: Actor) =>
+      [...documents.values()].filter((entry) => entry.title.toLowerCase().includes(query.toLowerCase())),
+    delete: ({ id }, _actor: Actor) => ({ deleted: documents.delete(id) }),
+  },
+});
+```
+
+<!-- snippet:examples/snippets/typescript/agent-demo.ts#connect -->
+```ts
+// The assistant sees search and nothing else. The editor sees both.
+const assistant = await app.connect(surface(docs, { call: ["search"] }), {
+  admit: admitWhen((actor: Actor) => actor.kind === "assistant", "Assistant required"),
+});
+const editor = await app.connect(surface.all(docs), {
+  admit: admitWhen((actor: Actor) => actor.kind === "editor", "Editor required"),
+});
+```
+
+<!-- snippet:examples/snippets/typescript/agent-demo.ts#serve -->
+```ts
+// One MCP tool per selected interaction; the host still admits every call.
+const mcp = createMcpHandler({
+  name: "documents",
+  version: "1.0.0",
+  caller: assistant,
+  context: () => ({ id: "assistant", kind: "assistant" as const }),
+  tools: toolsFor(assistant),
+});
+```
+
+`admit` is required on every connect; holding a Surface or a caller is never
+authority. The caller carries no controller, so handing it to an adapter cannot
+widen or revoke anything; `app.revoke(assistant)` and `app.revoke()` stay with
+the host. A tool result tells the model which of six things happened: success,
+a declared error, denied, invalid, proposed (a Proposal awaits review; nothing
+ran), or uncertain (the effect may have run; do not repeat it). The
+[executable demo](./examples/snippets/typescript/agent-demo.ts) drives these
+tools with an in-process MCP client; `delete` is unreachable through them.
+
+[Boundary in one page](./docs/core.md) is the whole model on one page. The
+walkthrough below adds the review rules an application brings.
 Boundary gives callers, adapters, and supporting machinery a shared
 description to work from.
 
@@ -516,6 +596,13 @@ implementation, or deployment. An editor, developer tool, framework, or service
 can keep its own model while giving each caller a checked interface to it.
 A private helper whose callers and implementation always change together can
 remain an ordinary function.
+
+Each of these is its own page, added on top of the three calls above:
+
+- [Live refresh](./docs/guides/humans-and-agents.md#make-shared-updates-truthful) — an observation of a change refreshes the reads that depend on it.
+- [Review and Control](./docs/guides/controlled-effects.md) — `propose` creates a Proposal; approval, execution, verification, and reconciliation stay with the host.
+- [Transports](./docs/guides/adding-a-caller.md) — HTTP, MCP, WebMCP, Next, tRPC, and Electron adapters take the caller and nothing wider.
+- [Inspect and port](./docs/reference/build.md) — persist Programs and Surfaces as artifacts, generate typed references, and compare deployments.
 
 Other examples show different reasons to make that agreement explicit:
 

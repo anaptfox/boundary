@@ -9,6 +9,10 @@ Start with a thumbnail button. Add a script, change the implementation, and
 predict which connections should still work. Then give an agent a smaller
 surface over the same application.
 
+[Boundary in one page](./core.md) is the whole model on one page: the three
+calls, the vocabulary, and the laws, written to be read whole by a person or an
+agent.
+
 ## Follow the example
 
 1. [Why interactions?](./concepts/interaction-first-programming.md) — see what stays fixed as callers and implementations change.
@@ -24,6 +28,7 @@ you already know the audience and job.
 ## Bring your own application
 
 - [The short path: surface, install, connect](./reference/host.md#the-short-path) — the TypeScript entry the README teaches
+- [The explicit pipeline](./guides/pipeline.md) — compile, implement, install, project, and bind as separate steps
 - [Compose native modules](./guides/module-composition.md)
 - [Native dispatch](./guides/native-dispatch.md) — select, inspect and coordinate a library's own dispatcher
 - [Embed Boundary in a native C or C++ host](./guides/native-embedding.md)
@@ -61,7 +66,7 @@ with `@foxworth/boundary`; existing frameworks can lower their own declarations.
 
 | Import | Job | Reference |
 | --- | --- | --- |
-| `@foxworth/boundary` | Definitions, compilation, installations, projections, bindings, callers | [Host](./reference/host.md) |
+| `@foxworth/boundary` | Definitions, compilation, installations, surfaces, bindings, callers | [Host](./reference/host.md) |
 | `@foxworth/boundary/build` | Explicit loading and artifact generation | [Build](./reference/build.md) |
 | `@foxworth/boundary/artifact` | Node-only verification and supplied artifact comparison | [Artifacts](./reference/artifact.md) |
 | `@foxworth/boundary/drafts` | Propose, accept, and reject Drafts over a host-supplied store | [Host](./reference/host.md) |
@@ -70,13 +75,13 @@ with `@foxworth/boundary`; existing frameworks can lower their own declarations.
 | `@foxworth/boundary/handoff` | Checked invocations across process seams | [Handoff](./reference/handoff.md) |
 | `@foxworth/boundary/remote` | Remote invocation errors, Binding resolution and result envelopes for adapters | [Adapters](./reference/adapters.md) |
 | `@foxworth/boundary/control` and `@foxworth/boundary/control/host` | Controlled effects and their Host contribution | [Control](./reference/control.md) |
-| `@foxworth/boundary/http` | HTTP, clients, and interface projections | [Adapters](./reference/adapters.md) |
+| `@foxworth/boundary/http` | HTTP, clients, and interface surfaces | [Adapters](./reference/adapters.md) |
 | `@foxworth/boundary/mcp` and `@foxworth/boundary/webmcp` | Agent and browser tools | [Adapters](./reference/adapters.md) |
 | `@foxworth/boundary/inspector` | Browser inspection and explicit invocation of a selected Binding | [Interaction inspector](./guides/interaction-inspector.md) |
 | `@foxworth/boundary/react` and `@foxworth/boundary/react/styles.css` | React calls, invalidation, and optional styles | [Adapters](./reference/adapters.md) |
 | `@foxworth/boundary/cloudflare` and `@foxworth/boundary/electron` | Platform integration | [Adapters](./reference/adapters.md) |
-| `@foxworth/boundary/yjs` and `@foxworth/boundary/automerge` | **Experimental** local CRDT snapshot capture and JSON projection | [CRDT snapshots](./guides/crdt-snapshots.md) |
-| `@foxworth/boundary/plugin` | WIT projection, plugin inspection, and loading | [Plugins](./reference/plugin.md) |
+| `@foxworth/boundary/yjs` and `@foxworth/boundary/automerge` | **Experimental** local CRDT snapshot capture and JSON surface | [CRDT snapshots](./guides/crdt-snapshots.md) |
+| `@foxworth/boundary/plugin` | WIT surface, plugin inspection, and loading | [Plugins](./reference/plugin.md) |
 | `@foxworth/boundary/reach` and `@foxworth/boundary/bus` | Reach records and the local bus client | [Reach](./reference/reach.md) |
 
 The [Rust reference](./reference/rust.md) describes the independent native

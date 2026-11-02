@@ -15,7 +15,7 @@ export type SurfaceWorkerInvocation<Environment = unknown, Execution = unknown> 
   }>;
 
 /**
- * Creates the already-checked CompiledSurface HTTP handler for one Worker request.
+ * Creates the already-checked surface HTTP handler for one Worker request.
  *
  * Keep reusable bindings outside this factory. The application derives
  * invocation-scoped authentication and host context here; environment or a
@@ -29,7 +29,7 @@ export type SurfaceWorkerHandlerFactory<
 ) => HttpHandler | Promise<HttpHandler>;
 
 export type SurfaceWorkerOptions<Environment = unknown, Execution = unknown> = {
-  /** Optional framework mount path(s). Omit to send every request to CompiledSurface. */
+  /** Optional framework mount path(s). Omit to send every request to the surface handler. */
   readonly mount?: string | readonly string[];
   /** Called for requests outside `mount`; defaults to a plain 404. */
   readonly fallback?: WorkerFetch<Environment, Execution>;
@@ -67,7 +67,7 @@ function internalError(): Response {
   return new Response("Internal Server Error", { status: 500 });
 }
 
-/** Adapt one explicit CompiledSurface HTTP handler to a Workers module `fetch`. */
+/** Adapt one explicit surface HTTP handler to a Workers module `fetch`. */
 export function createSurfaceWorkerFetch<
   Environment = unknown,
   Execution = unknown,
@@ -95,7 +95,7 @@ export function createSurfaceWorkerFetch<
 /**
  * Adapt a native Worker invocation factory to module `fetch`.
  *
- * Only matched requests create a CompiledSurface handler. Fallback routing keeps
+ * Only matched requests create a surface handler. Fallback routing keeps
  * the application's request, environment, and execution context unchanged.
  */
 export function createSurfaceWorkerFetchWithContext<

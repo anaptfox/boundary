@@ -86,7 +86,7 @@ aliases and duplicate interaction IDs. It does not infer a namespace, check
 application module dependencies, or assign write ownership.
 
 An alias change is observable through the compiled handle record and any
-projection that uses that alias. Preserve exposed aliases unless a deliberate
+surface that uses that alias. Preserve exposed aliases unless a deliberate
 interface change calls for new ones. Handler changes alone leave portable
 declaration identity intact; the host chooses realization versions separately.
 
@@ -156,10 +156,10 @@ direct interactions.
 
 ## Bind selected local interfaces to the shared installation
 
-Build each caller's projection from the relevant module's own compilation.
+Build each caller's surface from the relevant module's own compilation.
 Local aliases remain convenient even though installation aliases differ:
 
-<!-- snippet:examples/snippets/typescript/module-composition.ts#selected-projections -->
+<!-- snippet:examples/snippets/typescript/module-composition.ts#selected-surfaces -->
 ```ts
 const localCompiled = {
   tasks: await compileInteractions(taskModule),
@@ -172,7 +172,7 @@ const capacityReader = await projectSurface(localCompiled.capacity, surface(capa
 
 `bindSurface` matches expected interactions to installed realizations by
 identity and compatibility, then pins the actual realization. It does not
-require matching alias names between the projection and installation. A task
+require matching alias names between the surface and installation. A task
 reader selects only `query`; the installation's other interactions do not
 widen that surface. A failed binding returns an exhaustive unrealized result
 with no partial caller.
