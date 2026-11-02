@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
-import { projectInteractions } from "@foxworth/boundary";
 import { createMcpHandler, serveHost, tool, toolsFor } from "@foxworth/boundary/mcp";
 import { createAdapterFixture, type AdapterContext } from "./helpers/adapter";
 
@@ -17,42 +16,28 @@ describe("MCP Binding adapter", () => {
 
   async function connect(role: AdapterContext["role"] = "owner") {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: {
-        interaction: fixture.compiled.handles.list,
-        modes: ["direct"],
-      },
-      create: {
-        interaction: fixture.compiled.handles.create,
-        modes: ["direct", "request"],
-      },
-      explode: {
-        interaction: fixture.compiled.handles.explode,
-        modes: ["direct"],
-      },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list", "create", "explode"], propose: ["create"] });
     const context = Object.freeze({ role, marker: {} });
     handler = createMcpHandler({
       name: "todo-test",
       version: "2.0.0",
-      binding,
+      caller,
       context: () => context,
       tools: [
-        tool(projection.handles.list, {
+        tool(caller, "list", {
           name: "todo_list",
           title: "Todo list",
         }),
-        tool(projection.handles.create, {
-          mode: "direct",
+        tool(caller, "create", {
+          mode: "call",
           name: "todo_create",
           description: "Create a todo through MCP",
         }),
-        tool(projection.handles.create, {
-          mode: "request",
+        tool(caller, "create", {
+          mode: "propose",
           name: "todo_request",
         }),
-        tool(projection.handles.explode, { name: "todo_explode" }),
+        tool(caller, "explode", { name: "todo_explode" }),
       ],
     });
     const transport = new StreamableHTTPClientTransport(
@@ -149,16 +134,12 @@ describe("MCP Binding adapter", () => {
 
   it("presents every projected interaction and types extra.http.req", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-      create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list", "create"] });
     const seen: Array<{ hasRequest: boolean; actor: string | null }> = [];
     handler = createMcpHandler({
       name: "todo-surface",
       version: "2.0.0",
-      binding,
+      caller,
       context: ({ extra, request }) => {
         seen.push({
           hasRequest: request instanceof Request,
@@ -169,11 +150,11 @@ describe("MCP Binding adapter", () => {
         return Object.freeze({ role: "owner" as const, marker: {} });
       },
       // The tool list is fixed for the life of the handler. There is no
-      // per-request predicate: a model that must see less gets a Binding of
-      // a narrower Projection, which also keeps the interaction out of reach.
+      // per-request predicate: a model that must see less gets a caller of
+      // a narrower Surface, which also keeps the interaction out of reach.
       tools: [
-        tool(projection.handles.list, { name: "todo_list" }),
-        tool(projection.handles.create, { mode: "direct", name: "todo_create" }),
+        tool(caller, "list", { name: "todo_list" }),
+        tool(caller, "create", { mode: "call", name: "todo_create" }),
       ],
     });
     const fetch = (url: string | URL, init?: RequestInit) => {
@@ -199,15 +180,16 @@ describe("MCP Binding adapter", () => {
     await client.close();
     expect(seen.some((entry) => entry.hasRequest && entry.actor === "agent-9")).toBe(true);
 
+    const { caller: listOnly } = await fixture.connect({ call: ["list"] });
     const serving = serveHost({
       doors: [],
       mcp: {
         path: "/mcp",
         name: "todo-surface",
         version: "2.0.0",
-        binding,
+        caller: listOnly,
         context: () => Object.freeze({ role: "owner" as const, marker: {} }),
-        tools: toolsFor({ handles: { list: projection.handles.list } }),
+        tools: toolsFor(listOnly),
       },
     });
     const listed = await serving.handler(

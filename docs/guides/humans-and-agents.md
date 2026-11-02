@@ -153,6 +153,7 @@ options. It may also provide `onError` for connection feedback.
 import { createInvocationState, createProjectionClient, pinProjectionReferences } from "@foxworth/boundary/client";
 import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client/cache";
 import { subscribeToObservations } from "@foxworth/boundary/client/observations";
+import { createCaller } from "@foxworth/boundary/pipeline";
 ```
 
 <!-- snippet:examples/snippets/typescript/scoped-observations.ts#client -->

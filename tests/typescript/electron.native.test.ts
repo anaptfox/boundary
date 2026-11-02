@@ -25,6 +25,7 @@ import {
   TEST_DOORS,
   TEST_PROTOCOL_URL,
 } from "./helpers/electron";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 const firstWindowFrame = { url: TEST_PROTOCOL_URL, parent: null, isDestroyed: () => false } as unknown as ElectronIpcSenderFrame;
 const secondWindowFrame = { url: TEST_PROTOCOL_URL, parent: null, isDestroyed: () => false } as unknown as ElectronIpcSenderFrame;
@@ -102,7 +103,7 @@ describe("@foxworth/boundary/electron native trust seam", () => {
       subscribers.get(workspaceId)!.add((event) => delivered.get(workspaceId)!.push(event));
     }
     const handler = createProtocolHandler<Context>({
-      binding: bound.binding,
+      caller: createCaller(bound.binding),
       path: "/_boundary",
       context: (request) => ({ workspaceId: request.headers.get("x-host-workspace") as Context["workspaceId"] }),
     });

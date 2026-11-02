@@ -1,4 +1,3 @@
-import { direct, projectInteractions } from "@foxworth/boundary";
 import { createHttpHandler, route } from "@foxworth/boundary/http";
 import { createProjectionWorkerFetchWithContext } from "@foxworth/boundary/cloudflare";
 import { describe, expect, it, vi } from "vitest";
@@ -41,22 +40,19 @@ describe("@foxworth/boundary/cloudflare native Worker context", () => {
 
   it("uses request, environment, and execution for matched invocations without sharing them", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: direct(fixture.compiled.handles.list),
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list"] });
     const createHandler = vi.fn(({ request, environment, execution }) => {
       const tenant = request.headers.get("x-tenant");
       const marker = { tenant, environment, execution };
       const role: "owner" | "viewer" =
         request.headers.get("x-role") === "owner" ? "owner" : "viewer";
       return createHttpHandler({
-        binding,
+        caller,
         context: () => ({
           role,
           marker,
         }),
-        routes: [route(projection.handles.list, { method: "GET", path: "/boundary/todos" })],
+        routes: [route(caller, "list", { method: "GET", path: "/boundary/todos" })],
       });
     });
     const fallback = vi.fn(async (request: Request, environment: { assets: string }, execution: { trace: string }) =>

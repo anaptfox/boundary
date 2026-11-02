@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { projectInteractions } from "@foxworth/boundary";
 import {
   createProtocolHandler,
   fetchTransport,
@@ -86,13 +85,13 @@ describe("WebMCP Binding adapter", () => {
 
   it("reports activity only for live registered tools and removes listeners on disposal", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, { list: { interaction: fixture.compiled.handles.list, modes: ["direct"] } });
+    const { caller } = await fixture.connect({ call: ["list"] });
     const host = createFakeHost();
     const events = new EventTarget();
     host.addEventListener = (type, listener) => events.addEventListener(type, listener as EventListener);
     host.removeEventListener = (type, listener) => events.removeEventListener(type, listener as EventListener);
     const activity: Array<{ toolName: string; state: string }> = [];
-    const registration = await registerWebMcpBinding({ binding: await fixture.bind(projection), context: () => ({ role: "owner" as const }), modelContext: host, tools: [webMcpTool(projection.handles.list, { name: "list" })], onActivity: (entry) => activity.push(entry) });
+    const registration = await registerWebMcpBinding({ caller, context: () => ({ role: "owner" as const }), modelContext: host, tools: [webMcpTool(caller, "list", { name: "list" })], onActivity: (entry) => activity.push(entry) });
     const emit = (type: string, toolName: string) => events.dispatchEvent(Object.assign(new Event(type), { toolName }));
     emit("toolactivated", "unrelated"); emit("toolactivated", "list"); emit("toolcancel", "list");
     expect(activity).toEqual([{ toolName: "list", state: "started" }, { toolName: "list", state: "cancelled" }]);
@@ -127,7 +126,7 @@ describe("WebMCP Binding adapter", () => {
     expect(isWebMcpAvailable()).toBe(false);
     await expect(
       registerWebMcpBinding({
-        binding: {} as never,
+        caller: {} as never,
         tools: [],
         context: () => ({ role: "owner" as const }),
       }),
@@ -149,23 +148,19 @@ describe("WebMCP Binding adapter", () => {
 
   it("registers explicit handles with names, schema/docs annotations, and v1 outcomes", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-      create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list", "create"] });
     const host = createFakeHost();
     const context = Object.freeze({ role: "owner" as const, marker: {} });
     const contextRequests: WebMcpContextRequest[] = [];
     const registration = await registerWebMcpBinding({
-      binding,
+      caller,
       context: (request) => {
         contextRequests.push(request);
         return context;
       },
       tools: [
-        webMcpTool(projection.handles.list, { untrustedContentHint: true }),
-        webMcpTool(projection.handles.create, {
+        webMcpTool(caller, "list", { untrustedContentHint: true }),
+        webMcpTool(caller, "create", {
           name: "todo_create",
           title: "Add a todo",
         }),
@@ -230,13 +225,9 @@ describe("WebMCP Binding adapter", () => {
 
   it("registers a remote Binding through an explicit transport", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-      create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list", "create"] });
     const protocol = createProtocolHandler({
-      binding,
+      caller,
       context: () => Object.freeze({ role: "owner" as const, marker: {} }),
       path: "/_boundary/agent",
     });
@@ -247,8 +238,8 @@ describe("WebMCP Binding adapter", () => {
         fetch: (url, init) => protocol(new Request(url, init)),
       }),
       tools: [
-        webMcpTool(projection.handles.list, { untrustedContentHint: true }),
-        webMcpTool(projection.handles.create),
+        webMcpTool(caller, "list", { untrustedContentHint: true }),
+        webMcpTool(caller, "create"),
       ],
       modelContext: host,
     });
@@ -275,21 +266,18 @@ describe("WebMCP Binding adapter", () => {
 
   it("forwards exposedTo and re-registers when the origin allowlist changes", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list"] });
     const host = createFakeHost();
     const partner = ["https://trusted-partner.example"];
 
     expect(() =>
-      webMcpTool(projection.handles.list, { exposedTo: [" "] }),
+      webMcpTool(caller, "list", { exposedTo: [" "] }),
     ).toThrow(WebMcpError);
 
     const registration = await registerWebMcpBinding({
-      binding,
+      caller,
       context: () => ({ role: "owner" as const }),
-      tools: [webMcpTool(projection.handles.list, { exposedTo: partner })],
+      tools: [webMcpTool(caller, "list", { exposedTo: partner })],
       modelContext: host,
     });
     registrations.push(registration);
@@ -300,15 +288,15 @@ describe("WebMCP Binding adapter", () => {
     expect(registration.tools[0]).toMatchObject({ exposedTo: partner });
 
     await registration.sync({
-      binding,
-      tools: [webMcpTool(projection.handles.list, { exposedTo: partner })],
+      caller,
+      tools: [webMcpTool(caller, "list", { exposedTo: partner })],
     });
     expect(host.added.filter((name) => name === "todos.list")).toHaveLength(1);
 
     await registration.sync({
-      binding,
+      caller,
       tools: [
-        webMcpTool(projection.handles.list, {
+        webMcpTool(caller, "list", {
           exposedTo: ["https://other-partner.example"],
         }),
       ],
@@ -321,30 +309,24 @@ describe("WebMCP Binding adapter", () => {
 
   it("requires an explicit WebMCP-safe name for a valid versioned interaction id", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      invalidName: {
-        interaction: fixture.compiled.handles.invalidName,
-        modes: ["direct"],
-      },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["invalidName"] });
     const host = createFakeHost();
 
     await expect(
       registerWebMcpBinding({
-        binding,
+        caller,
         context: () => ({ role: "owner" as const }),
-        tools: [webMcpTool(projection.handles.invalidName)],
+        tools: [webMcpTool(caller, "invalidName")],
         modelContext: host,
       }),
     ).rejects.toMatchObject({ code: "INVALID_TOOL" });
     expect(host.registered.size).toBe(0);
 
     const registration = await registerWebMcpBinding({
-      binding,
+      caller,
       context: () => ({ role: "owner" as const }),
       tools: [
-        webMcpTool(projection.handles.invalidName, { name: "todos.versioned" }),
+        webMcpTool(caller, "invalidName", { name: "todos.versioned" }),
       ],
       modelContext: host,
     });
@@ -358,20 +340,14 @@ describe("WebMCP Binding adapter", () => {
 
   it("fails the complete preflight when a selected tool has no description", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      untitled: {
-        interaction: fixture.compiled.handles.untitled,
-        modes: ["direct"],
-      },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["untitled"] });
     const host = createFakeHost();
 
     await expect(
       registerWebMcpBinding({
-        binding,
+        caller,
         context: () => ({ role: "owner" as const }),
-        tools: [webMcpTool(projection.handles.untitled)],
+        tools: [webMcpTool(caller, "untitled")],
         modelContext: host,
       }),
     ).rejects.toMatchObject({ code: "INVALID_TOOL" });
@@ -380,35 +356,25 @@ describe("WebMCP Binding adapter", () => {
 
   it("keeps request proposals powerless and returns denied, fault, and cancellation evidence", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      create: {
-        interaction: fixture.compiled.handles.create,
-        modes: ["direct", "request"],
-      },
-      explode: {
-        interaction: fixture.compiled.handles.explode,
-        modes: ["direct"],
-      },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["create", "explode"], propose: ["create"] });
     const host = createFakeHost();
     let role: "owner" | "viewer" = "owner";
     const registration = await registerWebMcpBinding({
-      binding,
+      caller,
       context: () => ({ role }),
       tools: [
-        webMcpTool(projection.handles.create, {
-          mode: "direct",
+        webMcpTool(caller, "create", {
+          mode: "call",
           name: "create_direct",
           consequentialHint: false,
           debugging: true,
         }),
-        webMcpTool(projection.handles.create, {
-          mode: "request",
+        webMcpTool(caller, "create", {
+          mode: "propose",
           name: "create_request",
           consequentialHint: true,
         }),
-        webMcpTool(projection.handles.explode),
+        webMcpTool(caller, "explode"),
       ],
       modelContext: host,
     });
@@ -464,29 +430,22 @@ describe("WebMCP Binding adapter", () => {
 
   it("syncs explicit Binding/tool sets without churning retained tools, then disposes", async () => {
     const first = await createAdapterFixture();
-    const listed = await projectInteractions(first.compiled, {
-      list: { interaction: first.compiled.handles.list, modes: ["direct"] },
-    });
-    const writable = await projectInteractions(first.compiled, {
-      list: { interaction: first.compiled.handles.list, modes: ["direct"] },
-      create: { interaction: first.compiled.handles.create, modes: ["direct"] },
-    });
-    const listedBinding = await first.bind(listed);
-    const writableBinding = await first.bind(writable);
+    const { caller: writableCaller } = await first.connect({ call: ["list", "create"] });
+    const { caller: listedCaller } = await first.connect({ call: ["list"] });
     const host = createFakeHost();
     const registration = await registerWebMcpBinding({
-      binding: listedBinding,
+      caller: listedCaller,
       context: () => ({ role: "owner" as const }),
-      tools: [webMcpTool(listed.handles.list)],
+      tools: [webMcpTool(listedCaller, "list")],
       modelContext: host,
     });
     registrations.push(registration);
 
     await registration.sync({
-      binding: writableBinding,
+      caller: writableCaller,
       tools: [
-        webMcpTool(writable.handles.list),
-        webMcpTool(writable.handles.create),
+        webMcpTool(writableCaller, "list"),
+        webMcpTool(writableCaller, "create"),
       ],
     });
     expect([...host.registered.keys()].sort()).toEqual([
@@ -496,8 +455,8 @@ describe("WebMCP Binding adapter", () => {
     expect(host.added.filter((name) => name === "todos.list")).toHaveLength(1);
 
     await registration.sync({
-      binding: listedBinding,
-      tools: [webMcpTool(listed.handles.list)],
+      caller: listedCaller,
+      tools: [webMcpTool(listedCaller, "list")],
     });
     expect([...host.registered.keys()]).toEqual(["todos.list"]);
     expect(host.removed).toEqual(["todos.create"]);
@@ -507,29 +466,21 @@ describe("WebMCP Binding adapter", () => {
     expect(host.registered.size).toBe(0);
     await expect(
       registration.sync({
-        binding: listedBinding,
-        tools: [webMcpTool(listed.handles.list)],
+        caller: listedCaller,
+        tools: [webMcpTool(listedCaller, "list")],
       }),
     ).rejects.toMatchObject({ code: "DISPOSED_REGISTRATION" });
   });
 
   it("rolls back every newly added tool when an explicit sync only partly registers", async () => {
     const fixture = await createAdapterFixture();
-    const listed = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-    });
-    const wider = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-      create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
-      explode: { interaction: fixture.compiled.handles.explode, modes: ["direct"] },
-    });
-    const listedBinding = await fixture.bind(listed);
-    const widerBinding = await fixture.bind(wider);
+    const { caller: widerCaller } = await fixture.connect({ call: ["list", "create", "explode"] });
+    const { caller: listedCaller } = await fixture.connect({ call: ["list"] });
     const host = createFakeHost();
     const registration = await registerWebMcpBinding({
-      binding: listedBinding,
+      caller: listedCaller,
       context: () => ({ role: "owner" as const }),
-      tools: [webMcpTool(listed.handles.list)],
+      tools: [webMcpTool(listedCaller, "list")],
       modelContext: host,
     });
     registrations.push(registration);
@@ -544,11 +495,11 @@ describe("WebMCP Binding adapter", () => {
 
     await expect(
       registration.sync({
-        binding: widerBinding,
+        caller: widerCaller,
         tools: [
-          webMcpTool(wider.handles.list),
-          webMcpTool(wider.handles.create),
-          webMcpTool(wider.handles.explode),
+          webMcpTool(widerCaller, "list"),
+          webMcpTool(widerCaller, "create"),
+          webMcpTool(widerCaller, "explode"),
         ],
       }),
     ).rejects.toMatchObject({ code: "REGISTRATION_FAILED" });
@@ -557,34 +508,27 @@ describe("WebMCP Binding adapter", () => {
 
   it("skips stale queued syncs before disposal", async () => {
     const fixture = await createAdapterFixture();
-    const listed = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-    });
-    const writable = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-      create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
-    });
-    const listedBinding = await fixture.bind(listed);
-    const writableBinding = await fixture.bind(writable);
+    const { caller: writableCaller } = await fixture.connect({ call: ["list", "create"] });
+    const { caller: listedCaller } = await fixture.connect({ call: ["list"] });
     const host = createFakeHost();
     const registration = await registerWebMcpBinding({
-      binding: listedBinding,
+      caller: listedCaller,
       context: () => ({ role: "owner" as const }),
-      tools: [webMcpTool(listed.handles.list)],
+      tools: [webMcpTool(listedCaller, "list")],
       modelContext: host,
     });
     registrations.push(registration);
 
     const stale = registration.sync({
-      binding: writableBinding,
+      caller: writableCaller,
       tools: [
-        webMcpTool(writable.handles.list),
-        webMcpTool(writable.handles.create),
+        webMcpTool(writableCaller, "list"),
+        webMcpTool(writableCaller, "create"),
       ],
     });
     const latest = registration.sync({
-      binding: listedBinding,
-      tools: [webMcpTool(listed.handles.list)],
+      caller: listedCaller,
+      tools: [webMcpTool(listedCaller, "list")],
     });
     await Promise.all([stale, latest]);
 
@@ -594,23 +538,20 @@ describe("WebMCP Binding adapter", () => {
 
   it("republishes presentation changes so browser metadata and the local summary agree", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list"] });
     const host = createFakeHost();
     const registration = await registerWebMcpBinding({
-      binding,
+      caller,
       context: () => ({ role: "owner" as const }),
-      tools: [webMcpTool(projection.handles.list, { title: "Todos" })],
+      tools: [webMcpTool(caller, "list", { title: "Todos" })],
       modelContext: host,
     });
     registrations.push(registration);
 
     await registration.sync({
-      binding,
+      caller,
       tools: [
-        webMcpTool(projection.handles.list, {
+        webMcpTool(caller, "list", {
           title: "Notebook",
           description: "Read the current todo collection.",
           untrustedContentHint: true,
@@ -639,7 +580,7 @@ describe("WebMCP Binding adapter", () => {
     });
 
     // Removing an explicit hint restores the derived default at the browser.
-    await registration.sync({ binding, tools: [webMcpTool(projection.handles.list)] });
+    await registration.sync({ caller, tools: [webMcpTool(caller, "list")] });
     expect(host.registered.get("todos.list")?.annotations).toEqual({
       readOnlyHint: true,
       consequentialHint: false,
@@ -651,10 +592,8 @@ describe("WebMCP Binding adapter", () => {
     "rejects a non-boolean %s before publishing a tool",
     async (annotation) => {
       const fixture = await createAdapterFixture();
-      const projection = await projectInteractions(fixture.compiled, {
-        list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-      });
-      expect(() => webMcpTool(projection.handles.list, { [annotation]: "true" } as never))
+      const { caller } = await fixture.connect({ call: ["list"] });
+      expect(() => webMcpTool(caller, "list", { [annotation]: "true" } as never))
         .toThrowError(expect.objectContaining({
           code: "INVALID_TOOL",
           path: `webMcpTool.${annotation}`,
@@ -664,16 +603,14 @@ describe("WebMCP Binding adapter", () => {
 
   it("snapshots host-selected annotation values before registration", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-    });
+    const { caller } = await fixture.connect({ call: ["list"] });
     const options = { consequentialHint: true, debugging: true };
-    const tool = webMcpTool(projection.handles.list, options);
+    const tool = webMcpTool(caller, "list", options);
     options.consequentialHint = false;
     options.debugging = false;
     const host = createFakeHost();
     const registration = await registerWebMcpBinding({
-      binding: await fixture.bind(projection),
+      caller,
       context: () => ({ role: "owner" as const }),
       tools: [tool],
       modelContext: host,
@@ -688,14 +625,10 @@ describe("WebMCP Binding adapter", () => {
 
   it("registers every projected interaction without a second Binding handshake", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-      create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list", "create"] });
     let inspects = 0;
     const protocol = createProtocolHandler({
-      binding,
+      caller,
       context: () => Object.freeze({ role: "owner" as const, marker: {} }),
       path: "/_boundary/agent",
     });
@@ -715,8 +648,8 @@ describe("WebMCP Binding adapter", () => {
           }).invoke(invocation, framing),
       },
       tools: [
-        webMcpTool(projection.handles.list),
-        webMcpTool(projection.handles.create),
+        webMcpTool(caller, "list"),
+        webMcpTool(caller, "create"),
       ],
       modelContext: host,
     });
@@ -736,13 +669,10 @@ describe("WebMCP Binding adapter", () => {
 
   it("stamps per-invoke transport headers from a host frame", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["create"] });
     const seen: string[] = [];
     const protocol = createProtocolHandler({
-      binding,
+      caller,
       context: (request) => {
         seen.push(request.headers.get("x-host-run") ?? "");
         return Object.freeze({ role: "owner" as const, marker: {} });
@@ -755,7 +685,7 @@ describe("WebMCP Binding adapter", () => {
         baseUrl: "http://test.local/_boundary/agent",
         fetch: (url, init) => protocol(new Request(url, init)),
       }),
-      tools: [webMcpTool(projection.handles.create)],
+      tools: [webMcpTool(caller, "create")],
       modelContext: host,
       frame: (request) => ({
         headers: { "x-host-run": request.claims?.run ?? "missing" },
@@ -771,10 +701,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("rejects a live-name collision instead of silently replacing another owner", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list"] });
     const host = createFakeHost({ keepAfterAbort: true });
     await host.registerTool({
       name: "todos.list",
@@ -783,17 +710,17 @@ describe("WebMCP Binding adapter", () => {
     });
     await expect(
       registerWebMcpBinding({
-        binding,
+        caller,
         context: () => ({ role: "owner" as const }),
-        tools: [webMcpTool(projection.handles.list)],
+        tools: [webMcpTool(caller, "list")],
         modelContext: host,
       }),
     ).rejects.toBeInstanceOf(WebMcpError);
     await expect(
       registerWebMcpBinding({
-        binding,
+        caller,
         context: () => ({ role: "owner" as const }),
-        tools: [webMcpTool(projection.handles.list)],
+        tools: [webMcpTool(caller, "list")],
         modelContext: host,
       }),
     ).rejects.toMatchObject({ code: "INCOMPATIBLE_LIVE_REPLACEMENT" });
@@ -809,12 +736,9 @@ function deferred() {
 describe("WebMCP publication lifetime across awaits", () => {
   it("disposal during a pending handshake prevents publication", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller, binding } = await fixture.connect({ call: ["list"] });
     const host = createFakeHost();
-    const tools = [webMcpTool(projection.handles.list)];
+    const tools = [webMcpTool(caller, "list")];
     const registration = await registerWebMcpTransport({
       modelContext: host, tools: [],
       transport: { inspect: async () => binding.manifest, invoke: async () => { throw new Error("unused"); } },
@@ -836,10 +760,7 @@ describe("WebMCP publication lifetime across awaits", () => {
   for (const action of ["dispose", "supersede"] as const) {
     it(`${action} during pending registration aborts publication ownership`, async () => {
       const fixture = await createAdapterFixture();
-      const projection = await projectInteractions(fixture.compiled, {
-        list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-      });
-      const binding = await fixture.bind(projection);
+      const { caller, binding } = await fixture.connect({ call: ["list"] });
       const host = createFakeHost();
       const started = deferred();
       const release = deferred();
@@ -851,7 +772,7 @@ describe("WebMCP publication lifetime across awaits", () => {
       };
       const transport = { inspect: async () => binding.manifest, invoke: async () => { throw new Error("unused"); } };
       const registration = await registerWebMcpTransport({ modelContext: host, transport, tools: [] });
-      const first = registration.sync({ transport, tools: [webMcpTool(projection.handles.list)] });
+      const first = registration.sync({ transport, tools: [webMcpTool(caller, "list")] });
       await started.promise;
       const latest = action === "dispose"
         ? (registration.dispose(), Promise.resolve())

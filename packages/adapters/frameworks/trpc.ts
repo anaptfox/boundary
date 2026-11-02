@@ -1,7 +1,4 @@
-import type {
-  InteractionMode,
-  ProjectionBinding,
-} from "@foxworth/boundary";
+import type { AnyCaller, InteractionMode } from "@foxworth/boundary";
 import { createCheckedHandoff } from "@foxworth/boundary/handoff";
 import { initTRPC, type AnyRouter } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
@@ -17,18 +14,21 @@ import {
   type RemoteCallResult,
 } from "@foxworth/boundary/remote";
 import {
-  modeForHandle,
   interactionKey,
-  snapshotProjectedHandle,
+  resolveSelection,
+  seamOf,
   type AnyProjectedInteractionHandle,
+  type InteractionSource,
+  type SourceAliases,
+  type SourceVerbs,
 } from "@foxworth/boundary/remote";
 
 export type TrpcProcedureKind = "query" | "mutation";
 
-export type TrpcProcedure<
-  Handle extends AnyProjectedInteractionHandle = AnyProjectedInteractionHandle,
-> = Readonly<{
-  handle: Handle;
+export type TrpcProcedure = Readonly<{
+  alias: string;
+  handle: AnyProjectedInteractionHandle;
+  /** Wire mode; `direct` is the caller's `call`, `request` its `propose`. */
   mode: InteractionMode;
   name: string;
   kind: TrpcProcedureKind;
@@ -37,16 +37,18 @@ export type TrpcProcedure<
 const procedureDeclarations = new WeakSet<object>();
 const PROCEDURE_NAME = /^[A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z][A-Za-z0-9_-]*)*$/u;
 
-export function procedure<Handle extends AnyProjectedInteractionHandle>(
-  handleValue: Handle,
+/** Declare one tRPC procedure over an alias the caller (or, offline, a Projection) selects. */
+export function procedure<S extends InteractionSource, const Alias extends SourceAliases<S>>(
+  source: S,
+  alias: Alias,
   options: Readonly<{
     name?: string;
     kind: TrpcProcedureKind;
-    mode?: InteractionMode;
+    /** `call` or `propose`; required when the alias is selected for both. */
+    mode?: SourceVerbs<S, Alias>;
   }>,
-): TrpcProcedure<Handle> {
-  const handle = snapshotProjectedHandle(handleValue, "procedure.handle");
-  const mode = modeForHandle(handle, options.mode, "procedure.mode");
+): TrpcProcedure {
+  const { handle, mode } = resolveSelection(source, alias, options.mode as never, "procedure");
   const name = options.name ?? handle.interactionId;
   if (!PROCEDURE_NAME.test(name)) {
     throw new AdapterError("INVALID_DECLARATION", "procedure.name", "procedure name must contain dot-separated identifier segments");
@@ -54,7 +56,7 @@ export function procedure<Handle extends AnyProjectedInteractionHandle>(
   if (options.kind !== "query" && options.kind !== "mutation") {
     throw new AdapterError("INVALID_DECLARATION", "procedure.kind", "procedure kind must be query or mutation");
   }
-  const declaration = Object.freeze({ handle, mode, name, kind: options.kind });
+  const declaration: TrpcProcedure = Object.freeze({ alias, handle, mode, name, kind: options.kind });
   procedureDeclarations.add(declaration);
   return declaration;
 }
@@ -95,12 +97,12 @@ export type CreateTrpcRouterOptions<
   ProjectionContext,
   TrpcContext extends object,
 > = Readonly<{
-  binding: ProjectionBinding<any, ProjectionContext>;
+  caller: AnyCaller<ProjectionContext>;
   context(context: TrpcContext): ProjectionContext | Promise<ProjectionContext>;
   procedures: readonly TrpcProcedure[];
 }>;
 
-/** Create a router containing only explicitly declared Binding procedures. */
+/** Create a router containing only explicitly declared procedures over one connected caller. */
 export async function createTrpcRouter<
   ProjectionContext,
   TrpcContext extends object,
@@ -115,7 +117,7 @@ export async function createTrpcRouter<
   }
   let exposure: Awaited<ReturnType<typeof compileExposure>>;
   try {
-    const handoff = await createCheckedHandoff(options.binding);
+    const handoff = await createCheckedHandoff(seamOf(options.caller, "createTrpcRouter.caller"));
     exposure = await compileExposure(handoff, options.procedures.map((entry) => ({
       handle: entry.handle,
       mode: entry.mode,
@@ -184,7 +186,7 @@ export async function createTrpcRouter<
 }
 
 export type CreateTrpcHandlerOptions<ProjectionContext> = Readonly<{
-  binding: ProjectionBinding<any, ProjectionContext>;
+  caller: AnyCaller<ProjectionContext>;
   context(request: Request): ProjectionContext | Promise<ProjectionContext>;
   procedures: readonly TrpcProcedure[];
   endpoint?: string;
@@ -195,7 +197,7 @@ export function createTrpcHandler<ProjectionContext>(
 ): HttpHandler {
   const endpoint = options.endpoint ?? "/trpc";
   const router = createTrpcRouter({
-    binding: options.binding,
+    caller: options.caller,
     context: (context: { request: Request }) => options.context(context.request),
     procedures: options.procedures,
   });

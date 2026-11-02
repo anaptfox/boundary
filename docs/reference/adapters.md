@@ -10,18 +10,22 @@ interface. They do not discover interactions, create a second dispatcher, infer
 domain meaning, broaden modes, establish policy, or mint authority.
 
 Descriptive adapters such as OpenAPI may consume a durable unrealized
-Projection. Every adapter that can execute requires a successful live
-`ProjectionBinding` or a remote client pinned to its version 1 Binding manifest.
+Projection. Every adapter that can execute takes a connected caller (the value
+`connect()` or the pipeline's `createCaller(binding)` returns) or a remote
+client pinned to its version 1 Binding manifest. A caller carries its Binding
+manifest and Handoff seam and no controller, so handing it to an adapter can
+neither widen nor revoke anything.
 
 ## Shared execution seam
 
 ```ts
+const todos = await app.connect(surface(docs, { call: ["list", "create"] }), { admit });
 const routes = [
-  route(publicTodos.handles.list, {
+  route(todos, "list", {
     method: "GET",
     path: "/todos",
   }),
-  route(publicTodos.handles.create, {
+  route(todos, "create", {
     method: "POST",
     path: "/todos",
     successStatus: 201,
@@ -29,16 +33,18 @@ const routes = [
 ];
 
 const handler = createHttpHandler({
-  binding,
+  caller: todos,
   context: request => contextFromRequest(request),
   routes,
 });
 ```
 
-The route consumes a projected inert handle. The handler uses the Binding to
-validate selection and dispatch. Its context resolver creates a stateless
-per-invocation host value; Handoff passes that exact reference to admission and
-the installed realization without serializing it.
+A declaration names an alias the caller selected; `mode: "call"` or
+`mode: "propose"` picks the verb when the alias is selected for both. The
+handler invokes through the caller's Handoff seam to validate selection and
+dispatch. Its context resolver creates a stateless per-invocation host value;
+Handoff passes that exact reference to admission and the installed realization
+without serializing it.
 
 A Binding manifest, cookie, header, bearer token, MCP principal, or Electron
 channel is not authority by itself. Each adapter resolves native request data
@@ -122,10 +128,12 @@ handles and implementations never cross. Request preview typing is generated
 only after successful request-mode Binding because the preview/control identity
 belongs to that actual contribution, not to the unrealized Projection alone.
 
-`handlesFromBinding(client)` hydrates projected handles from that handshake.
-`pinProjectionReferences(client, references)` revalidates those same Binding
-pins against the current handshake before the UI treats a generated reference
-as callable. The browser does not compile interactions to call.
+`handlesFromBinding(client)` hydrates projected handles from that handshake,
+and `client.inspect()` returns the manifest itself, which WebMCP and other
+declarations accept as a source (`webMcpTool(manifest, "get", ...)`).
+`pinProjectionReferences(client, references)` revalidates generated references
+against the current handshake before the UI treats one as callable. The browser
+does not compile interactions to call.
 
 `client.call` returns validated portable output or a declared domain error.
 `client.request` returns one typed public proposal. It cannot approve, grant,
@@ -138,25 +146,26 @@ them in the invocation body.
 
 ## MCP — `@foxworth/boundary/mcp`
 
-`tool(handle, presentation)` maps one projected handle to one explicit MCP tool
-name and presentation. `toolsFor(projection)` is that mapping for every handle
-on a Projection. `createMcpServer` and `createMcpHandler` require a live
-Binding plus a context resolver. They expose only supplied tool declarations.
+`tool(caller, alias, presentation)` maps one selected alias to one explicit
+MCP tool name and presentation; `mode: "call"` or `"propose"` picks the verb
+when both are selected. `toolsFor(caller)` is that mapping for every selection:
+`call` tools keep the interaction id as their name and `propose` tools add
+`.propose`. `createMcpServer` and `createMcpHandler` take a connected caller
+plus a context resolver. They expose only supplied tool declarations.
 Changing a tool name does not change interaction identity. The context resolver
 receives the official `extra` (including `extra.http.req`) and a `request`
-when the SDK supplied one. The tool list presents the Binding; omitting a
-projected interaction from it hides nothing and changes no admission.
+when the SDK supplied one. The tool list presents the caller's Binding;
+omitting a selected interaction from it hides nothing and changes no admission.
 `serveHost({ doors, mcp })` composes protocol doors and an optional MCP mount
 into one Fetch handler. MCP `tools` is a fixed array for the life of that
-handler; a model that must see less is served a Binding of a narrower
-Projection.
+handler; a model that must see less is served a caller of a narrower Surface.
 
 The adapter requires `@modelcontextprotocol/server` 2.3.1 or later and serves
 protocol **2026-07-28**. HTTP handlers reject legacy protocol requests.
 `extra` is the upstream `ServerContext`; verified identity is available at
 `extra.http?.authInfo` after the host passes it to `handler.fetch`.
 
-`tool(handle, { scopeChallenge })` accepts the upstream scope preflight.
+`tool(caller, alias, { scopeChallenge })` accepts the upstream scope preflight.
 The host authenticates before selecting a Binding; scope checks only narrow
 admission. `createMcpHandler(options, handlerOptions)` and
 `serveHost({ mcp: { handlerOptions, ... } })` expose body limits and response
@@ -170,16 +179,17 @@ are sanitized by the same Handoff interface used by every other transport.
 ## WebMCP — `@foxworth/boundary/webmcp`
 
 `isWebMcpAvailable()` detects `document.modelContext.registerTool`.
-`registerWebMcpBinding()` registers an
-explicitly supplied in-process Binding and presentation map on that port.
+`registerWebMcpBinding({ caller, tools, context })` registers an explicitly
+supplied in-process caller and presentation map on that port.
 Registration is asynchronous and each published tool receives its own
 `AbortSignal`. Disposing a registration withdraws that tool from the document;
 it does not cancel an invocation that the browser has already started.
 `registerWebMcpTransport()` presents one already-pinned remote Binding through
-an explicit Handoff transport. `webMcpTools(projection)` maps each handle the
-same way `webMcpTool` does. `webMcpTool({ exposedTo })` forwards the spec's
-per-tool origin allowlist; same-origin callers and the browser agent stay
-visible without it.
+an explicit Handoff transport; its tools are declared from the inspected
+manifest. `webMcpTools(source)` maps each selection the same way
+`webMcpTool(source, alias)` does. `webMcpTool(source, alias, { exposedTo })`
+forwards the spec's per-tool origin allowlist; same-origin callers and the
+browser agent stay visible without it.
 
 The page must be a secure, origin-keyed context. Cross-origin iframes also
 need `allow="tools"` (Permissions-Policy `"tools"`, default `'self'`). Chrome
@@ -190,10 +200,10 @@ The browser then rejects `registerTool` with `NotAllowedError` or
 does not discover an application, receive native realizations, or acquire
 Control administration.
 
-`sync({ binding, tools })` replaces the registered live surface after
+`sync({ caller, tools })` replaces the registered live surface after
 validating its new version 1 manifest. There is no way to register a subset of
-that surface: a page that must expose less syncs a Binding of a narrower
-Projection. Changing a tool's contract, mode, origin list, title, description,
+that surface: a page that must expose less syncs a caller of a narrower
+Surface. Changing a tool's contract, mode, origin list, title, description,
 or browser annotations unregisters and republishes it, so browser metadata and
 the registration summary stay consistent. Presentation changes do not change
 interaction or Program identity. Unchanged tools retain their registration.
@@ -205,7 +215,7 @@ supported.
 Request-mode tools create proposals only. The page remains usable when WebMCP
 is absent.
 
-`webMcpTool(handle, { consequentialHint, debugging, untrustedContentHint })`
+`webMcpTool(source, alias, { consequentialHint, debugging, untrustedContentHint })`
 lets the host describe consequences, developer-only intent, and untrusted
 output. By default, `consequentialHint` is true for direct tools with declared
 changes and false otherwise; the host can override it explicitly.
@@ -283,8 +293,9 @@ Generic mounts connect an already-created handler. Native helpers additionally
 connect explicit host-owned context and lifecycle functions. Neither compiles
 interactions, installs a host, widens a Projection or establishes authority.
 
-`createNextServerCaller` uses a pinned Binding for direct server reads and
-actions without self-HTTP. `createProjectionHonoMiddleware` lets a host derive
+`createNextServerCaller({ caller, context })` wraps a connected caller for
+direct server reads and actions without self-HTTP: `read.<alias>(input)`,
+`action.<alias>(input)`, and `action.propose.<alias>(input)`. `createProjectionHonoMiddleware` lets a host derive
 context from typed Hono middleware and routes. Worker matched invocations can
 use `createProjectionWorkerFetchWithContext` to retain request, environment and
 execution context. Existing generic Hono and Worker mounts keep their raw Fetch
@@ -323,9 +334,9 @@ before interpreting a transport/build smoke test as a complete native workflow.
 
 ## tRPC — `@foxworth/boundary/frameworks/trpc`
 
-`procedure(handle, { name, kind })` declares an explicit query or mutation.
-`createTrpcRouter` builds a router for supplied procedures and one Binding
-context resolver. `createTrpcHandler` exposes that router at an explicit Fetch
+`procedure(caller, alias, { name, kind, mode? })` declares an explicit query or
+mutation over one selected alias. `createTrpcRouter({ caller, context, procedures })`
+builds a router for supplied procedures and one context resolver. `createTrpcHandler` exposes that router at an explicit Fetch
 endpoint.
 
 ## Conservation law

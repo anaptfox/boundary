@@ -1,9 +1,12 @@
 import { restoreDeclaredInteractionError } from "./definitions";
-import { InteractionFault } from "./errors";
+import { InteractionFault, failHost } from "./errors";
 import { metadataForProjectedHandle } from "./projection";
-import type { ProjectedInteractionHandle, ProjectionBinding, RawInvocationOutcome, ResolvedBindingInteraction } from "./types";
+import type { CallerOfBinding } from "./facade-types";
+import type { Projection, ProjectedInteractionHandle, ProjectionBinding, RawInvocationOutcome, ResolvedBindingInteraction } from "./types";
 import { BindingMetadata, bindingMetadata } from "./binding-state";
 import { rawInvoke } from "./dispatch";
+
+const RESERVED_CALLER_KEYS: readonly string[] = ["propose", "manifest", "handoff", "then"];
 
 function throwTyped(outcome: RawInvocationOutcome): never {
   if (outcome.result.kind === "declared-error") {
@@ -53,7 +56,8 @@ function argsForTyped(
   return { input: args[0], context: args[1] };
 }
 
-export function createCaller<Context>(binding: ProjectionBinding<any, Context>) {
+/** The handle-based caller behind `binding.connect()`: `call(handle, ...)` and `request(handle, ...)`. */
+export function createHandleCaller<Context>(binding: ProjectionBinding<any, Context>) {
   const metadata = bindingMetadata.get(binding)! as BindingMetadata<Context>;
   const caller: Record<string, unknown> = {
     async call(handle: ProjectedInteractionHandle, ...args: readonly unknown[]) {
@@ -128,4 +132,58 @@ export function createCaller<Context>(binding: ProjectionBinding<any, Context>) 
     ) => rawInvoke(binding, interaction, "request", input, context as Context);
   }
   return Object.freeze(caller);
+}
+
+function defineOwn(record: object, key: string, value: unknown, enumerable: boolean): void {
+  Object.defineProperty(record, key, { value, enumerable, configurable: false, writable: false });
+}
+
+/**
+ * The caller a host hands to adapters: one method per direct-mode alias,
+ * `propose.<alias>` per request-mode alias, the read-only Binding manifest,
+ * and the Handoff seam. It carries no controller. The short path's `connect`
+ * returns exactly this value; pipeline users build it from their own Binding.
+ */
+export function createCaller<
+  Handles extends Readonly<Record<string, ProjectedInteractionHandle>>,
+  Context,
+>(binding: ProjectionBinding<Handles, Context>): CallerOfBinding<Handles, Context> {
+  const metadata = bindingMetadata.get(binding) as BindingMetadata<Context> | undefined;
+  if (metadata === undefined) {
+    return failHost("INVALID_ARTIFACT", "createCaller.binding",
+      "expected an authentic bound ProjectionBinding; found another value; fix: pass the binding returned by bindProjection or restrictBinding");
+  }
+  const low = createHandleCaller(binding) as Readonly<{
+    call(handle: ProjectedInteractionHandle, ...args: readonly unknown[]): Promise<unknown>;
+    request?(handle: ProjectedInteractionHandle, ...args: readonly unknown[]): Promise<unknown>;
+  }>;
+  const handles = (metadata.projection as Projection).handles;
+  const caller = Object.create(null) as Record<string, unknown>;
+  const propose = Object.create(null) as Record<string, unknown>;
+  // Methods follow the Projection's declaration order, not the manifest's sorted order.
+  for (const alias of Object.keys(handles)) {
+    if (RESERVED_CALLER_KEYS.includes(alias)) {
+      return failHost("INVALID_PROJECTION", `createCaller.${alias}`,
+        `expected an alias that can be a caller method; found reserved name "${alias}"; fix: rename the alias in the Projection`);
+    }
+    const handle = Object.getOwnPropertyDescriptor(handles, alias)?.value as ProjectedInteractionHandle;
+    for (const interaction of binding.manifest.interactions) {
+      if (interaction.alias !== alias) continue;
+      if (interaction.mode === "direct") {
+        defineOwn(caller, alias, (...args: readonly unknown[]) => low.call(handle, ...args), true);
+      } else {
+        defineOwn(propose, alias, (...args: readonly unknown[]) => low.request!(handle, ...args), true);
+      }
+    }
+  }
+  // Non-enumerable, so Object.keys(caller) lists exactly the call aliases.
+  defineOwn(caller, "propose", Object.freeze(propose), false);
+  defineOwn(caller, "manifest", binding.manifest, false);
+  defineOwn(caller, "handoff", Object.freeze({
+    manifest: binding.manifest,
+    resolve: (interactionId: string) => binding.resolve(interactionId),
+    invoke: (invocation: never, context: Context) =>
+      (binding.invoke as unknown as (...args: unknown[]) => Promise<RawInvocationOutcome>)(invocation, context),
+  }), false);
+  return Object.freeze(caller) as unknown as CallerOfBinding<Handles, Context>;
 }

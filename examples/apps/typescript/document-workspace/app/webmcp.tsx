@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createProjectionClient, handlesFromBinding } from "@foxworth/boundary/client";
+import { createProjectionClient } from "@foxworth/boundary/client";
 import { fetchTransport } from "@foxworth/boundary/http/protocol";
 import { isWebMcpAvailable, registerWebMcpTransport, webMcpTool, type WebMcpRegistration } from "@foxworth/boundary/webmcp";
 
@@ -16,17 +16,17 @@ export function FolioWebMcp({ session }: { session: "alice" | "bob" }) {
     const client = createProjectionClient(fetchTransport({ baseUrl: "/api/agent-boundary" }));
     void (async () => {
       try {
-        const handles = await handlesFromBinding(client);
+        const manifest = await client.inspect();
         if (cancelled) return;
         registration = await registerWebMcpTransport({
           onActivity: ({ toolName, state }) => { if (!cancelled) setActivity(`${toolName}: ${state}`); },
           transport: fetchTransport({ baseUrl: "/api/agent-boundary" }),
           tools: [
-            webMcpTool(handles.get!, { name: "getDocument", untrustedContentHint: true }),
-            webMcpTool(handles.publicationStatus!, { name: "publicationStatus", untrustedContentHint: true }),
+            webMcpTool(manifest, "get", { name: "getDocument", untrustedContentHint: true }),
+            webMcpTool(manifest, "publicationStatus", { name: "publicationStatus", untrustedContentHint: true }),
             ...(session === "alice" ? [
-              webMcpTool(handles.save!, { name: "saveDraft" }),
-              webMcpTool(handles.publish!, { mode: "request", name: "requestPublish" }),
+              webMcpTool(manifest, "save", { name: "saveDraft" }),
+              webMcpTool(manifest, "publish", { mode: "propose", name: "requestPublish" }),
             ] : []),
           ],
         });

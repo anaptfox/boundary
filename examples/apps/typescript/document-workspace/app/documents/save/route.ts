@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (richText !== null && (typeof richText !== "string" || !parseRichText(richText))) {
       return new Response("rich text is invalid", { status: 400 });
     }
-    await boundary.action.call(projection.handles.save, {
+    await boundary.action.save({
       id,
       title,
       body,

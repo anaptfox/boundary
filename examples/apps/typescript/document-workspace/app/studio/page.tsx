@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { chooseCandidate, createCandidate, editCandidate } from "./actions";
-import { studioCaller, studioProjection } from "../../lib/studio-boundary";
+import { studioCaller } from "../../lib/studio-boundary";
 import styles from "./studio.module.css";
 
 async function StudioPageContent(
@@ -10,9 +10,9 @@ async function StudioPageContent(
 ) {
   const query = await searchParams;
   const caller = studioCaller(() => ({ role: "maker" as const }));
-  const studio = await caller.read.call(studioProjection.handles.view, {});
+  const studio = await caller.read.view({});
   const comparison = query.left && query.right
-    ? await caller.read.call(studioProjection.handles.compare, {
+    ? await caller.read.compare({
       leftId: query.left,
       rightId: query.right,
     }).catch(() => null)

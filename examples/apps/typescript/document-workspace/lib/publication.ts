@@ -2,12 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { z } from "zod";
-import {
-  type ControlHook,
-  type ControlPolicy,
-  createControlCapabilities,
-  digestControlRealization,
-} from "@foxworth/boundary/control";
+import { type ControlHook, type ControlPolicy, createControlCapabilities, digestControlRealization } from "@foxworth/boundary/control";
 import { hashJson, jsonEquals } from "@foxworth/boundary/program";
 import { compileZodSchema } from "@foxworth/boundary/program/zod";
 import type { InteractionHandle, InteractionInstallation } from "@foxworth/boundary";

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DpopSession } from "@modelcontextprotocol/client";
 import { requireBearerAuth, requireScopes, PROTOCOL_VERSION_META_KEY, CLIENT_INFO_META_KEY, CLIENT_CAPABILITIES_META_KEY } from "@modelcontextprotocol/server";
-import { projectInteractions } from "@foxworth/boundary";
 import { createMcpHandler, serveHost, tool } from "@foxworth/boundary/mcp";
 import { createAdapterFixture } from "./helpers/adapter";
 import { localTokenVerifier } from "../../examples/apps/typescript/document-workspace/lib/local-auth";
@@ -13,10 +12,9 @@ const modern = (name: string) => new Request(resource, { method: "POST", headers
 describe("modern MCP qualification", () => {
   it("rejects legacy requests without resolving context and forwards body limits", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, { create: { interaction: fixture.compiled.handles.create, modes: ["direct"] } });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["create"] });
     let contexts = 0;
-    const server = serveHost({ doors: [], mcp: { path: "/api/mcp", name: "bounded", version: "1", binding, context: () => { contexts++; return { role: "owner" as const, marker: {} }; }, tools: [tool(projection.handles.create)], handlerOptions: { maxRequestBodySize: 256 } } });
+    const server = serveHost({ doors: [], mcp: { path: "/api/mcp", name: "bounded", version: "1", caller, context: () => { contexts++; return { role: "owner" as const, marker: {} }; }, tools: [tool(caller, "create")], handlerOptions: { maxRequestBodySize: 256 } } });
     try {
       const response = await server.handler(new Request(resource, { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-11-25", clientInfo: { name: "old", version: "1" }, capabilities: {} } }) }));
       expect(response.status).toBe(400); expect(await response.json()).toMatchObject({ error: { code: -32022 } }); expect(contexts).toBe(0);
@@ -26,9 +24,9 @@ describe("modern MCP qualification", () => {
   });
   it("challenges missing scopes before host context or effect execution", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, { create: { interaction: fixture.compiled.handles.create, modes: ["direct"] } });
-    const binding = await fixture.bind(projection); let contexts = 0;
-    const handler = createMcpHandler({ name: "scope", version: "1", binding, context: ({ extra }) => { contexts++; expect(extra.http?.authInfo?.clientId).toBe("folio-editor"); return { role: "owner" as const, marker: {} }; }, tools: [tool(projection.handles.create, { name: "create", scopeChallenge: requireScopes("folio:draft") })] }, { responseMode: "json" });
+    const { caller } = await fixture.connect({ call: ["create"] });
+     let contexts = 0;
+    const handler = createMcpHandler({ name: "scope", version: "1", caller, context: ({ extra }) => { contexts++; expect(extra.http?.authInfo?.clientId).toBe("folio-editor"); return { role: "owner" as const, marker: {} }; }, tools: [tool(caller, "create", { name: "create", scopeChallenge: requireScopes("folio:draft") })] }, { responseMode: "json" });
     const verifier = localTokenVerifier(resource);
     try {
       const denied = await handler.fetch(modern("create"), { authInfo: await verifier.verifyAccessToken("folio-local-read") });

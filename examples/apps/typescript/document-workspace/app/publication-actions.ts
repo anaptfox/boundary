@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { demoContextFromCookie } from "../lib/context";
-import { documentCaller, projection, publications } from "../lib/boundary";
+import { documentCaller, publications } from "../lib/boundary";
 import type { PublicationView } from "../lib/publication";
 
 export type PublicationActionResult = {
@@ -22,9 +22,7 @@ export async function publicationAction(
     const mode = form.get("mode");
     if (mode === "request") {
       const revision = Number(form.get("revision"));
-      await documentCaller(() => current).action.request(
-        projection.handles.publish,
-        { id: "doc-1", expectedRevision: revision },
+      await documentCaller(() => current).action.propose.publish({ id: "doc-1", expectedRevision: revision },
       );
     } else if (mode === "approve" || mode === "reconcile") {
       const id = form.get("proposal");

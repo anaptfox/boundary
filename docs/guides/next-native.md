@@ -12,9 +12,9 @@ for an explicit HTTP boundary. It is suitable for browser, MCP, and other
 network callers. It does not turn an HTTP route into the server-side API for
 your own page or form.
 
-`createNextServerCaller` is the server-side alternative. It calls one existing,
-pinned `ProjectionBinding` directly, with host-authenticated context created for
-each invocation. It neither installs a host nor makes a loopback HTTP request.
+`createNextServerCaller` is the server-side alternative. It wraps one connected
+caller directly, with host-authenticated context created for each invocation.
+It neither installs a host nor makes a loopback HTTP request.
 
 The runnable [document workspace](../../examples/apps/typescript/document-workspace/README.md)
 shows the complete application-owned wiring: persisted document state, two
@@ -29,18 +29,19 @@ is not silently reset. Tests use a separate `BOUNDARY_FOLIO_DATA_DIR`.
 
 The host creates and retains the Binding during its own process/deployment
 lifecycle. Do not install interactions in a page, action, request handler, or a
-module-level “current user” singleton. A selected projected handle is not
-permission: every call reaches the Binding's host admission policy with the
-fresh context returned by `context()`.
+module-level “current user” singleton. A connected caller is not permission:
+every call reaches the Binding's host admission policy with the fresh context
+returned by `context()`.
 
 ## Reads, actions, and proposals
 
-Use `boundary.read.call` for a direct server read and `boundary.action.call` for a direct
-action. Both preserve the interaction’s zero-or-one-input and result types.
-`read.call` rejects any interaction that declares changes before context creation
-or dispatch, even if its handle is selected for direct invocation.
-`boundary.action.request` creates a selected request/proposal; it does not perform a
-controlled effect and does not refresh a cache.
+Use `boundary.read.<alias>(input)` for a direct server read and
+`boundary.action.<alias>(input)` for a direct action. Both preserve the
+interaction’s zero-or-one-input and result types. A read rejects any
+interaction that declares changes before context creation or dispatch, even
+if the alias is selected for direct invocation. `boundary.action.propose.<alias>(input)`
+creates a selected proposal; it does not perform a controlled effect and does
+not refresh a cache.
 
 `afterAction` runs only after a direct call has returned successfully. It is the
 place for host-owned Next cache work such as `updateTag` inside a Server Action,

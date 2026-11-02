@@ -1,4 +1,4 @@
-import type { ProjectionBinding } from "@foxworth/boundary";
+import type { AnyCaller } from "@foxworth/boundary";
 import { AdapterError } from "@foxworth/boundary/remote";
 import { type HttpHandler } from "@foxworth/boundary/http";
 import { mountHandlers } from "@foxworth/boundary/http/compose";
@@ -11,7 +11,7 @@ import {
 } from "./server";
 
 export type ServeDoor<Context = unknown> = Readonly<{
-  binding: ProjectionBinding<any, Context>;
+  caller: AnyCaller<Context>;
   context(request: Request): Context | Promise<Context>;
   path: string;
 }>;
@@ -20,7 +20,7 @@ export type ServeHostMcp<Context = unknown> = Readonly<{
   path: string;
   name: string;
   version: string;
-  binding: ProjectionBinding<any, Context>;
+  caller: AnyCaller<Context>;
   context: CreateMcpServerOptions<Context>["context"];
   tools: readonly McpTool[];
   handlerOptions?: BoundaryMcpHttpOptions;
@@ -51,7 +51,7 @@ export function serveHost(options: ServeHostOptions): ServeHostResult {
     ? createMcpHandler({
         name: options.mcp.name,
         version: options.mcp.version,
-        binding: options.mcp.binding,
+        caller: options.mcp.caller,
         context: options.mcp.context,
         tools: options.mcp.tools,
         maxToolInputElements: options.mcp.maxToolInputElements,
@@ -61,7 +61,7 @@ export function serveHost(options: ServeHostOptions): ServeHostResult {
     ...options.doors.map((door) => ({
       path: door.path,
       fetch: createProtocolHandler({
-        binding: door.binding,
+        caller: door.caller,
         context: door.context,
         path: door.path,
       }),

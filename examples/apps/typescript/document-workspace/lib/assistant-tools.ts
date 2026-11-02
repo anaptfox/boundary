@@ -12,7 +12,7 @@ export function createDocumentTools(context: () => DemoContext, afterSave: () =>
   let observed: Document | undefined;
   async function readCurrent() {
     if (signal?.aborted) throw new Error("turn aborted before read");
-    observed = await caller.read.call(projection.handles.get, { id: "doc-1" });
+    observed = await caller.read.get({ id: "doc-1" });
     return observed;
   }
   return {
@@ -24,7 +24,7 @@ export function createDocumentTools(context: () => DemoContext, afterSave: () =>
         inputSchema: documentSchemas.publish,
         execute: async input => {
           if (signal?.aborted) return { status: "not-started" as const };
-          return caller.action.request(projection.handles.publish, input);
+          return caller.action.propose.publish(input);
         },
       }),
       read_document: tool({
@@ -46,7 +46,7 @@ export function createDocumentTools(context: () => DemoContext, afterSave: () =>
           // without richText deliberately becomes plain text, as for other callers.
           const richText = input.richText ?? (observed && input.expectedRevision === observed.revision && input.body === observed.body ? observed.richText : undefined);
           try {
-            const saved = await caller.action.call(projection.handles.save, { ...input, ...(richText ? { richText } : {}) });
+            const saved = await caller.action.save({ ...input, ...(richText ? { richText } : {}) });
             return { status: "saved" as const, revision: saved.revision, title: saved.title };
           } catch (error) {
             return saveFailure(error, projection.handles.save);

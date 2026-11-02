@@ -344,13 +344,13 @@ describe("observed reads", () => {
 
   it("Todo pilot keeps admitted calls, reuses reads, and invalidates query evidence", async () => {
     const todo = await createTodoHost();
-    const first = await todo.screenCaller.call(todo.screen.handles.list, todo.screenContext);
-    expect(await todo.screenCaller.call(todo.screen.handles.list, todo.screenContext)).toEqual(first);
+    const first = await todo.screenCaller.list(todo.screenContext);
+    expect(await todo.screenCaller.list(todo.screenContext)).toEqual(first);
     expect(todo.readStats).toEqual({ evaluations: 1, reuses: 1, validations: 1 });
-    await todo.screenCaller.call(todo.screen.handles.create, { title: "New matching row" }, todo.screenContext);
-    expect(await todo.screenCaller.call(todo.screen.handles.list, todo.screenContext)).toHaveLength(first.length + 1);
+    await todo.screenCaller.create({ title: "New matching row" }, todo.screenContext);
+    expect(await todo.screenCaller.list(todo.screenContext)).toHaveLength(first.length + 1);
     expect(todo.readStats.evaluations).toBe(2);
-    await expect(todo.screenCaller.call(todo.screen.handles.list, todo.agentContext)).rejects.toThrow();
+    await expect(todo.screenCaller.list(todo.agentContext)).rejects.toThrow();
     expect(todo.readStats.evaluations).toBe(2);
   });
 });

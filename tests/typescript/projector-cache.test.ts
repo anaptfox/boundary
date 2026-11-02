@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  projectInteractions,
-  type InteractionDefinition,
-  type InteractionHandle,
-  type ProjectedInteractionHandle,
-} from "@foxworth/boundary";
+import { type InteractionDefinition, type InteractionHandle, type ProjectedInteractionHandle } from "@foxworth/boundary";
 import type { JsonValue } from "@foxworth/boundary/program";
 import {
   createInteractionCacheScope,
@@ -176,13 +171,9 @@ describe("projector footprint cache", () => {
 
   it("invalidates mounted reads without react-ui", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-      create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list", "create"] });
     const protocol = createProtocolHandler({
-      binding,
+      caller,
       context: () => Object.freeze({ role: "owner" as const, marker: {} }),
       path: "/_boundary",
     });
@@ -211,13 +202,10 @@ describe("projector footprint cache", () => {
 
   it("merges per-invoke headers onto the fetch transport", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["create"] });
     const seen: string[] = [];
     const protocol = createProtocolHandler({
-      binding,
+      caller,
       context: (request) => {
         seen.push(request.headers.get("x-host-run") ?? "");
         return Object.freeze({ role: "owner" as const, marker: {} });

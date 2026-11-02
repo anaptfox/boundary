@@ -1,10 +1,4 @@
-import { bindProjection, projectInteractions } from "@foxworth/boundary";
-import type {
-  InteractionDefinition,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-  ProjectionBinding,
-} from "@foxworth/boundary";
+import type { Caller, InteractionDefinition } from "@foxworth/boundary";
 import type { JsonValue } from "@foxworth/boundary/program";
 import { createNextServerCaller } from "@foxworth/boundary/frameworks/next";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
@@ -12,43 +6,27 @@ import { createAdapterFixture } from "./helpers/adapter";
 
 async function nextNativeTypes() {
   const fixture = await createAdapterFixture();
-  const projection = await projectInteractions(fixture.compiled, {
-    list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
-    create: { interaction: fixture.compiled.handles.create, modes: ["direct", "request"] },
-    proposalOnly: { interaction: fixture.compiled.handles.create, modes: ["request"] },
-  });
-  const bound = await bindProjection(projection, fixture.installation, {
-    admit: () => ({ decision: "allow" }),
-  });
-  if (bound.status !== "bound") return;
+  const { caller } = await fixture.connect({ call: ["list", "create"], propose: ["create"] });
   const next = createNextServerCaller({
-    binding: bound.binding,
+    caller,
     context: () => ({ role: "owner" as const }),
   });
 
-  const rows: Promise<Array<{ id: number; title: string }>> = next.read.call(
-    projection.handles.list,
-  );
-  const created: Promise<{ id: number; title: string }> = next.action.call(
-    projection.handles.create,
-    { title: "typed" },
-  );
-  const proposal: Promise<JsonValue> = next.action.request(
-    projection.handles.proposalOnly,
-    { title: "typed" },
-  );
+  const rows: Promise<Array<{ id: number; title: string }>> = next.read.list();
+  const created: Promise<{ id: number; title: string }> = next.action.create({ title: "typed" });
+  const proposal: Promise<JsonValue> = next.action.propose.create({ title: "typed" });
   void rows;
   void created;
   void proposal;
 
   // @ts-expect-error zero-input direct reads accept no input
-  await next.read.call(projection.handles.list, {});
+  await next.read.list({});
   // @ts-expect-error one-input direct actions require input
-  await next.action.call(projection.handles.create);
-  // @ts-expect-error request requires a selected request mode
-  await next.action.request(projection.handles.list);
-  // @ts-expect-error direct action requires a selected direct mode
-  await next.action.call(projection.handles.proposalOnly, { title: "typed" });
+  await next.action.create();
+  // @ts-expect-error a call-only alias has no proposal
+  await next.action.propose.list();
+  // @ts-expect-error an unselected alias is absent
+  await next.action.hidden();
 }
 
 void nextNativeTypes;
@@ -56,60 +34,44 @@ void nextNativeTypes;
 type Todo = Readonly<{ id: number; title: string }>;
 type ListDefinition = InteractionDefinition<"todos.list", null, readonly Todo[], Readonly<Record<string, never>>, 0>;
 type CreateDefinition = InteractionDefinition<"todos.create", Readonly<{ title: string }>, Todo, Readonly<Record<string, never>>, 1>;
-type ListHandle = ProjectedInteractionHandle<InteractionHandle<ListDefinition>, readonly ["direct"]>;
-type CreateHandle = ProjectedInteractionHandle<InteractionHandle<CreateDefinition>, readonly ["direct", "request"]>;
-type ProposalOnlyHandle = ProjectedInteractionHandle<
-  InteractionHandle<CreateDefinition>,
-  readonly ["request"],
-  Readonly<{ proposalId: string }>
->;
-declare const typedBinding: ProjectionBinding<Readonly<{
-  list: ListHandle;
-  create: CreateHandle;
-  proposal: ProposalOnlyHandle;
-}>, Readonly<{ actor: string }>>;
-declare const list: ListHandle;
-declare const create: CreateHandle;
-declare const proposalOnly: ProposalOnlyHandle;
+type Definitions = Readonly<{ list: ListDefinition; create: CreateDefinition; proposal: CreateDefinition }>;
+declare const typedCaller: Caller<Definitions, "list" | "create", "create" | "proposal", Readonly<{ actor: string }>>;
 
 const typedNext = createNextServerCaller({
-  binding: typedBinding,
+  caller: typedCaller,
   context: () => ({ actor: "server" }),
 });
-const typedRows: Promise<readonly Todo[]> = typedNext.read.call(list);
-const typedCreate: Promise<Todo> = typedNext.action.call(create, { title: "typed" });
-const typedProposal: Promise<Readonly<{ proposalId: string }>> = typedNext.action.request(
-  proposalOnly,
-  { title: "typed" },
-);
+const typedRows: Promise<readonly Todo[]> = typedNext.read.list();
+const typedCreate: Promise<Todo> = typedNext.action.create({ title: "typed" });
+const typedProposal: Promise<JsonValue> = typedNext.action.propose.proposal({ title: "typed" });
 void typedRows;
 void typedCreate;
 void typedProposal;
 
-// @ts-expect-error direct call requires a selected direct mode
-typedNext.action.call(proposalOnly, { title: "typed" });
-// @ts-expect-error request requires a selected request mode
-typedNext.action.request(list);
+// @ts-expect-error a propose-only alias has no direct action
+typedNext.action.proposal({ title: "typed" });
+// @ts-expect-error a call-only alias has no proposal
+typedNext.action.propose.list();
 // @ts-expect-error zero-input read accepts no input
-typedNext.read.call(list, {});
+typedNext.read.list({});
 // @ts-expect-error one-input action requires input
-typedNext.action.call(create);
+typedNext.action.create();
 
-// A direct-only Binding must infer its selected map too. Mixed-mode fixtures
-// alone can hide a declaration consumer that accidentally requires request().
-declare const directBinding: ProjectionBinding<Readonly<{ list: ListHandle }>, Readonly<{ actor: string }>>;
+// A direct-only caller must infer its selected map too. Mixed-mode fixtures
+// alone can hide a declaration consumer that accidentally requires propose.
+declare const directCaller: Caller<Definitions, "list", never, Readonly<{ actor: string }>>;
 const directNext = createNextServerCaller({
-  binding: directBinding,
+  caller: directCaller,
   context: () => ({ actor: "server" }),
 });
-const directRows: Promise<readonly Todo[]> = directNext.read.call(list);
+const directRows: Promise<readonly Todo[]> = directNext.read.list();
 void directRows;
-// @ts-expect-error a direct-only Binding does not select this mutation
-directNext.action.call(create, { title: "unselected" });
-// @ts-expect-error a direct-only Binding does not select request mode
-directNext.action.request(list);
+// @ts-expect-error a direct-only caller does not select this mutation
+directNext.action.create({ title: "unselected" });
+// @ts-expect-error a direct-only caller selects no proposal
+directNext.action.propose.list();
 createProtocolHandler({
-  binding: directBinding,
+  caller: directCaller,
   path: "/boundary",
   context: () => ({ actor: "server" }),
 });

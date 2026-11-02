@@ -6,7 +6,7 @@ import {
   recordReview,
   resolveTicket,
 } from "./actions";
-import { triageCaller, triageProjection } from "../../lib/triage-boundary";
+import { triageCaller } from "../../lib/triage-boundary";
 import styles from "./triage.module.css";
 
 async function TriagePageContent(
@@ -33,7 +33,7 @@ async function TriagePageContent(
   const tickets = await triageCaller(() => ({
     tenant,
     actor: "human" as const,
-  })).read.call(triageProjection.handles.list, {});
+  })).read.list({});
   return (
     <main className={styles.shell}>
       <header className={styles.header}>

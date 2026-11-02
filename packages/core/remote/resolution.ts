@@ -1,5 +1,4 @@
 import type {
-  InteractionHandle,
   InteractionMode,
   ProjectedInteractionHandle,
   Projection,
@@ -177,12 +176,8 @@ export async function compileProjectionResolution(
   const projectionInteractions = new Map(
     projection.interactions.map((interaction) => [interaction.interactionId, interaction]),
   );
-  const authenticHandles = new Set<InteractionHandle>(Object.values(projection.handles));
   const interactions = new Map<string, ResolvedProjectionInteraction>();
   for (const [index, declaration] of selected.entries()) {
-    if (!authenticHandles.has(declaration.handle)) {
-      fail("INVALID_DECLARATION", `interactions[${index}].handle`, "handle must belong to this Projection");
-    }
     const handle = snapshotProjectedHandle(declaration.handle, `interactions[${index}].handle`);
     const interaction = projectionInteractions.get(handle.interactionId);
     const descriptor = descriptors.get(handle.interactionId);

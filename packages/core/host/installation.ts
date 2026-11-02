@@ -25,11 +25,9 @@ import type {
 } from "./facade-types";
 import type {
   BindingController,
-  DirectInteractionCaller,
   InteractionDefinitions,
   ProjectionBinding,
   ProjectionSelection,
-  RequestInteractionCaller,
   SchemaAdapter,
   UnrealizedIssue,
   UnrealizedReport,
@@ -119,10 +117,6 @@ function dataRecord(value: unknown, path: string): Record<string, unknown> {
 
 function defineValue(record: object, key: string, value: unknown): void {
   Object.defineProperty(record, key, { value, enumerable: true, configurable: false, writable: false });
-}
-
-function defineHidden(record: object, key: string, value: unknown): void {
-  Object.defineProperty(record, key, { value, enumerable: false, configurable: false, writable: false });
 }
 
 /**
@@ -236,26 +230,7 @@ export async function install<Definitions extends InteractionDefinitions, Contex
       return Object.freeze({ status: "unrealized", report: bound.report });
     }
     const binding = bound.binding;
-    const low = createCaller<Context>(binding) as unknown as RequestInteractionCaller<any, Context> & DirectInteractionCaller<any, Context>;
-    const caller = Object.create(null) as Record<string, unknown>;
-    for (const alias of selected.call) {
-      const handle = projection.handles[alias]!;
-      defineValue(caller, alias, (...args: readonly unknown[]) => low.call(handle, ...(args as never)));
-    }
-    const propose = Object.create(null) as Record<string, unknown>;
-    for (const alias of selected.propose) {
-      const handle = projection.handles[alias]!;
-      defineValue(propose, alias, (...args: readonly unknown[]) => low.request(handle, ...(args as never)));
-    }
-    // Non-enumerable, so Object.keys(caller) lists exactly the call aliases.
-    defineHidden(caller, "propose", Object.freeze(propose));
-    defineHidden(caller, "manifest", binding.manifest);
-    defineHidden(caller, "handoff", Object.freeze({
-      manifest: binding.manifest,
-      resolve: (interactionId: string) => binding.resolve(interactionId),
-      invoke: (invocation: never, context: Context) => (binding.invoke as unknown as (...args: unknown[]) => Promise<never>)(invocation, context),
-    }));
-    Object.freeze(caller);
+    const caller = createCaller(binding);
     bindings.set(caller, Object.freeze({ binding, controller: bound.controller }));
     return Object.freeze({ status: "connected", caller: caller as never });
   }

@@ -31,6 +31,7 @@ import {
   type JsonObject,
   type Sha256Digest,
 } from "../../packages/core/program/index";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 const digest = (character: string): Sha256Digest =>
   `sha256:${character.repeat(64)}`;
@@ -389,7 +390,7 @@ describe("Control capabilities", () => {
       admit: () => ({ decision: "allow" }),
     });
     if (bound.status !== "bound") throw new Error("control fixture did not bind");
-    const handler = createProtocolHandler({ binding: bound.binding, path: "/boundary", context: () => context });
+    const handler = createProtocolHandler({ caller: createCaller(bound.binding), path: "/boundary", context: () => context });
     const client = createProjectionClient(await compositionTransport(handler));
     expect((await client.inspect()).interactions.map((op) => op.interactionId)).toEqual(["articles.publish"]);
     const proposal = await client.request(

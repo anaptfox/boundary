@@ -15,6 +15,7 @@ import { renderHostArtifacts } from "../../packages/core/host/build/index";
 import { stripTypeScriptTypes } from "node:module";
 import { createInteractionCacheScope, mountRead, invalidateReadsForObservation } from "../../packages/callers/client/cache";
 import type { InvocationObservation } from "../../packages/core/program/index";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 const laws = JSON.parse(readFileSync(new URL("../conformance/v1/composition.json", import.meta.url), "utf8"));
 const output = portableSchema<string>({ type: "string" });
@@ -79,7 +80,7 @@ describe("interaction composition through public callers", () => {
     if (agentBound.status !== "bound" || screenBound.status !== "bound") throw new Error("did not bind");
     const context = { run: "run-7", secret: "credential" };
     const clientFor = async (binding: typeof agentBound.binding | typeof screenBound.binding) => {
-      const handler = createProtocolHandler({ binding, path: "/boundary", context: () => context });
+      const handler = createProtocolHandler({ caller: createCaller(binding), path: "/boundary", context: () => context });
       return createProjectionClient(await compositionTransport((request) => handler(request)));
     };
     const human = await clientFor(screenBound.binding);
@@ -114,7 +115,7 @@ describe("interaction composition through public callers", () => {
       });
       const result = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
       if (result.status !== "bound") throw new Error("did not bind");
-      return createProtocolHandler({ binding: result.binding, path: "/boundary", context: () => undefined });
+      return createProtocolHandler({ caller: createCaller(result.binding), path: "/boundary", context: () => undefined });
     }
     let handler = await deploy("release-1");
     const transport = await compositionTransport((request) => handler(request));
@@ -154,7 +155,7 @@ describe("interaction composition through public callers", () => {
     });
     const bound = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
     if (bound.status !== "bound") throw new Error("did not bind");
-    const handler = createProtocolHandler({ binding: bound.binding, path: "/boundary", context: () => undefined });
+    const handler = createProtocolHandler({ caller: createCaller(bound.binding), path: "/boundary", context: () => undefined });
     const client = createProjectionClient(await compositionTransport((request) => handler(request)));
     const refs = await pinProjectionReferences(client, generated.references);
     await expect(client.call(refs.inspect)).resolves.toBe("connected later");
@@ -178,7 +179,7 @@ describe("interaction composition through public callers", () => {
     const bound = await bindProjection(empty, installation, { admit: () => ({ decision: "allow" }) });
     expect(bound.status).toBe(laws.emptySurface.bindStatus);
     if (bound.status !== "bound") throw new Error("observer did not bind");
-    const handler = createProtocolHandler({ binding: bound.binding, path: "/boundary", context: () => undefined });
+    const handler = createProtocolHandler({ caller: createCaller(bound.binding), path: "/boundary", context: () => undefined });
     const client = createProjectionClient(await compositionTransport(handler));
     const manifest = await client.inspect();
     expect(manifest.interactions).toHaveLength(laws.emptySurface.bindingInteractions);

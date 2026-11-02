@@ -3,7 +3,7 @@ import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import { demoContextFromCookie, type DemoContext } from "./context";
 import { requireBearerAuth, requireScopes, type AuthInfo, type OAuthTokenVerifier } from "@modelcontextprotocol/server";
 import { localTokenVerifier } from "./local-auth";
-import { binding, projection, readBinding, readProjection } from "./boundary";
+import { caller, readCaller } from "./boundary";
 import { tracedContext } from "./activity";
 
 function agentContextFromAuth(info: AuthInfo): DemoContext {
@@ -48,40 +48,40 @@ export function browserAgentContextFromRequest(request: Request): DemoContext {
 }
 
 // Two surfaces, two Bindings. A credential that may only read is connected
-// to a Binding of the read Projection, where `saveDraft` does not exist; it is
+// to a caller of the read Surface, where `saveDraft` does not exist; it is
 // not shown the full surface with some tools filtered out. Narrowing is done
 // where it is enforced.
 const readMcpHandler = createMcpHandler({
   name: "folio",
   version: "1.0.0",
-  binding: readBinding,
+  caller: readCaller,
   context: ({ extra }) => {
     const info = extra.http?.authInfo;
     if (!info) throw new Error("verified MCP identity unavailable");
     return tracedContext(agentContextFromAuth(info), "mcp");
   },
   tools: [
-    tool(readProjection.handles.get, { name: "getDocument" }),
-    tool(readProjection.handles.publicationStatus, { name: "publicationStatus" }),
+    tool(readCaller, "get", { name: "getDocument" }),
+    tool(readCaller, "publicationStatus", { name: "publicationStatus" }),
   ],
 });
 
 const draftMcpHandler = createMcpHandler({
   name: "folio",
   version: "1.0.0",
-  binding,
+  caller,
   context: ({ extra }) => {
     const info = extra.http?.authInfo;
     if (!info) throw new Error("verified MCP identity unavailable");
     return tracedContext(agentContextFromAuth(info), "mcp");
   },
   tools: [
-    tool(projection.handles.get, { name: "getDocument" }),
-    tool(projection.handles.publicationStatus, { name: "publicationStatus" }),
-    tool(projection.handles.save, { name: "saveDraft", scopeChallenge: requireScopes("folio:draft") }),
+    tool(caller, "get", { name: "getDocument" }),
+    tool(caller, "publicationStatus", { name: "publicationStatus" }),
+    tool(caller, "save", { name: "saveDraft", scopeChallenge: requireScopes("folio:draft") }),
     // This is request-only. It creates a proposal and never exposes Control
     // administration or publication approval.
-    tool(projection.handles.publish, { mode: "request", name: "requestPublish", scopeChallenge: requireScopes("folio:draft") }),
+    tool(caller, "publish", { mode: "propose", name: "requestPublish", scopeChallenge: requireScopes("folio:draft") }),
   ],
 });
 
@@ -102,7 +102,7 @@ const resource = new URL(process.env.BOUNDARY_FOLIO_MCP_RESOURCE ?? "http://loca
 export const folioMcpHandler = createFolioMcpEntry(localTokenVerifier(resource), resource);
 
 export const agentBoundaryHandler = createProtocolHandler({
-  binding,
+  caller,
   path: "/api/agent-boundary",
   context: (request) => browserAgentContextFromRequest(request),
 });

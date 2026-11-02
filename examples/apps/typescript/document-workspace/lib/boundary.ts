@@ -1,20 +1,8 @@
 import { z } from "zod";
 import { join } from "node:path";
 import { contributeControlRequests } from "@foxworth/boundary/control/host";
-import {
-  bindProjection,
-  admitAll,
-  restrictBinding,
-  compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-  type Admission,
-  type InvocationObserver,
-  type InteractionInstallation,
-} from "@foxworth/boundary";
+import { bindProjection, admitAll, restrictBinding, compileInteractions, declaredInteractionError, defineInteraction, implementInteractions, installInteractions, projectInteractions, type Admission, type InvocationObserver, type InteractionInstallation } from "@foxworth/boundary";
+import { createCaller } from "@foxworth/boundary/pipeline";
 import { createNextServerCaller } from "@foxworth/boundary/frameworks/next";
 import { DocumentConflictError, readDocument, saveDocument } from "./documents";
 import type { DemoContext } from "./context";
@@ -160,16 +148,18 @@ const bindOptions: Readonly<{
 const result = await bindProjection(projection, installation, bindOptions);
 if (result.status !== "bound") throw new Error("next-native demo Binding was not realized");
 export const binding = result.binding;
+export const caller = createCaller(binding);
 const readResult = await restrictBinding(binding, { projection: readProjection, admit: admitAll });
 if (readResult.status !== "bound") throw new Error("next-native demo read Binding was not realized");
 export const readBinding = readResult.binding;
+export const readCaller = createCaller(readBinding);
 
 export function documentCaller(
   context: () => DemoContext | Promise<DemoContext>,
   afterAction?: () => void | Promise<void>,
   source?: EntryPoint,
 ) {
-  return createNextServerCaller({ binding,
+  return createNextServerCaller({ caller,
     context: async () => { const current = await context(); return source ? tracedContext(current, source) : current; },
     afterAction: async (completion) => {
       if (!afterAction) return;

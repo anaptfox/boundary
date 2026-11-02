@@ -9,6 +9,7 @@ import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/p
 import { createInvocationState, createProjectionClient, pinProjectionReferences } from "@foxworth/boundary/client";
 import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client/cache";
 import { subscribeToObservations } from "@foxworth/boundary/client/observations";
+import { createCaller } from "@foxworth/boundary/pipeline";
 // #endregion imports
 
 type Todo = Readonly<{ id: number; title: string }>;
@@ -51,7 +52,7 @@ export async function createScopedObservationExample(
   // Test-only identity checked before dispatch; no production identity system is claimed.
   const context = (request: Request) => request.headers.get("authorization") === "Bearer test-owner"
     ? { role: "owner" as const } : new Response(null, { status: 401 });
-  const protocol = createProtocolHandler({ binding: bound.binding, context: () => ({ role: "owner" as const }), path: "/boundary" });
+  const protocol = createProtocolHandler({ caller: createCaller(bound.binding), context: () => ({ role: "owner" as const }), path: "/boundary" });
   const events = createObservationHttpHandler({
     path: "/events", context,
     subscribe: (_, send) => { listeners.add(send); return () => { listeners.delete(send); }; },

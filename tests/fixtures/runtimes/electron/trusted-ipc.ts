@@ -13,6 +13,7 @@ import {
   allowElectronSender, createProjectionElectronMain, type ElectronApis,
   type ElectronIpcSender, type ElectronIpcSenderFrame, type ProjectionElectronMain,
 } from "@foxworth/boundary/electron";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 export type WorkspaceId = "alpha" | "beta";
 export type WorkspaceContext = Readonly<{ workspaceId: WorkspaceId }>;
@@ -69,7 +70,7 @@ export async function installTrustedProjection(input: {
   const workspaceForSender = (sender: ElectronIpcSender): WorkspaceId | undefined =>
     Object.entries(input.trustedWindows).find(([, value]) => value.sender === sender)?.[0] as WorkspaceId | undefined;
   const handler = createProtocolHandler<WorkspaceContext>({
-    binding: bound.binding, path: "/_boundary",
+    caller: createCaller(bound.binding), path: "/_boundary",
     context: (request) => ({ workspaceId: request.headers.get("x-host-workspace") as WorkspaceId }),
   });
   const main = await createProjectionElectronMain<WorkspaceContext>({

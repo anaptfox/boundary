@@ -68,10 +68,10 @@ export async function createWorkerNativeFetch() {
     const tenant = identity?.tenant ?? requestedTenant ?? "acme";
     const host = await hostFor(environment.TODOS, tenant, hosts);
     const routes = request.method === "POST"
-      ? [route(host.screen.handles.create, { method: "POST", path: "/boundary/todos" })]
-      : [route(host.screen.handles.list, { method: "GET", path: "/boundary/todos" })];
+      ? [route(host.screenCaller, "create", { method: "POST", path: "/boundary/todos" })]
+      : [route(host.screenCaller, "list", { method: "GET", path: "/boundary/todos" })];
     const handler = createHttpHandler({
-      binding: host.screenBinding,
+      caller: host.screenCaller,
       context: () => ({ ...caller(identity, requestedTenant), native: { environment, execution } }),
       routes,
     });
@@ -94,7 +94,7 @@ export async function createWorkerNativeFetch() {
       const tenant = identity?.tenant ?? "acme";
       const host = await hostFor(environment.TODOS, tenant, hosts);
       return createProtocolHandler({
-        binding: host.screenBinding,
+        caller: host.screenCaller,
         context: () => ({ ...caller(identity, identity?.tenant), native: { environment, execution } }),
         path: "/handoff",
       })(request);

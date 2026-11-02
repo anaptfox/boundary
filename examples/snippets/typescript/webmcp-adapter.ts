@@ -1,12 +1,5 @@
 import { portableSchema } from "@foxworth/boundary/program";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { admitWhen, defineInteraction, install, surface } from "@foxworth/boundary";
 import {
   isWebMcpAvailable,
   registerWebMcpBinding,
@@ -57,51 +50,30 @@ const interactions = {
 
 export async function createTodoWebMcpExample(modelContext: ModelContextPort) {
   const rows: Todo[] = [];
-  const compiled = await compileInteractions(interactions);
-  const implementations = implementInteractions<typeof interactions, Actor>(
-    interactions,
-    {
-      list: () => [...rows],
-      create: ({ title }) => {
+  const app = await install(interactions, {
+    id: "docs:webmcp:1",
+    version: "webmcp-1",
+    handlers: {
+      list: (_actor: Actor) => [...rows],
+      create: ({ title }, _actor: Actor) => {
         const todo = { id: rows.length + 1, title };
         rows.push(todo);
         return todo;
       },
     },
-  );
-  const { installation } = await installInteractions<typeof interactions, Actor>(
-    compiled,
-    {
-      installationId: "docs:webmcp:1",
-      implementations,
-      realizationIds: {
-        list: { direct: "docs:webmcp:list:1" },
-        create: { direct: "docs:webmcp:create:1" },
-      },
-    },
-  );
-  const projection = await projectInteractions(compiled, {
-    list: { interaction: compiled.handles.list, modes: ["direct"] },
-    create: { interaction: compiled.handles.create, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
-    admit: ({ context, handle }) =>
-      context.role === "owner" || handle.changes.length === 0
-        ? { decision: "allow" }
-        : { decision: "deny", reason: "viewer is read-only" },
+  const todos = await app.connect(surface.all(interactions), {
+    admit: admitWhen((actor: Actor) => actor.role === "owner", "viewer is read-only"),
   });
-  if (result.status !== "bound") {
-    throw new Error("the WebMCP example Binding could not be realized");
-  }
 
   // #region explicit-webmcp
   const tools = [
-    webMcpTool(projection.handles.list, { untrustedContentHint: true }),
-    webMcpTool(projection.handles.create),
+    webMcpTool(todos, "list", { untrustedContentHint: true }),
+    webMcpTool(todos, "create"),
   ];
   const registration = isWebMcpAvailable(modelContext)
     ? await registerWebMcpBinding({
-        binding: result.binding,
+        caller: todos,
         tools,
         context: () => Object.freeze({ role: "owner" as const }),
         modelContext,
@@ -110,9 +82,9 @@ export async function createTodoWebMcpExample(modelContext: ModelContextPort) {
   // #endregion explicit-webmcp
 
   return {
-    program: compiled.program,
-    binding: result.binding,
-    projection,
+    program: app.program,
+    caller: todos,
+    binding: app.binding(todos),
     registration,
     rows,
   };

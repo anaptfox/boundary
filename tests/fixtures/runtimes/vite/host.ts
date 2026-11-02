@@ -10,6 +10,7 @@ import {
   installInteractions,
   projectInteractions,
 } from "@foxworth/boundary";
+import { createCaller } from "@foxworth/boundary/pipeline";
 import { createHttpHandler, route } from "@foxworth/boundary/http";
 
 const todo = z.strictObject({
@@ -72,13 +73,14 @@ export async function createViteTodoHost(statePath: string) {
   });
   const result = await bindProjection(projection, installation, { admit: admitAll });
   if (result.status !== "bound") throw new Error("Vite native todo projection did not bind");
+  const caller = createCaller(result.binding);
   return {
     handler: createHttpHandler({
-      binding: result.binding,
+      caller,
       context: () => undefined,
       routes: [
-        route(projection.handles.list, { method: "GET", path: "/todos" }),
-        route(projection.handles.create, { method: "POST", path: "/todos" }),
+        route(caller, "list", { method: "GET", path: "/todos" }),
+        route(caller, "create", { method: "POST", path: "/todos" }),
       ],
     }),
   };

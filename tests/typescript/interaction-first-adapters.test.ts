@@ -26,6 +26,7 @@ import { toFetchRequest } from "@foxworth/boundary/http/node";
 import {
   portableSchema,
 } from "@foxworth/boundary/program";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 const Todo = portableSchema<Readonly<{ id: string; title: string }>>({
   type: "object",
@@ -177,6 +178,7 @@ async function fixture() {
   if (result.status !== "bound") throw new Error("fixture did not bind");
   return {
     binding: result.binding,
+    caller: createCaller(result.binding),
     compiled,
     projection,
     rows,
@@ -199,31 +201,31 @@ describe("version 1 projectors", () => {
     const app = await fixture();
     const requestContext = context("http:1");
     const handler = createHttpHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => requestContext,
       routes: [
-        route(app.projection.handles.list, {
+        route(app.caller, "list", {
           method: "GET",
           path: "/todos",
           headers: { "x-adapter": "boundary" },
         }),
-        route(app.projection.handles.create, {
+        route(app.caller, "create", {
           method: "POST",
           path: "/todos",
-          mode: "direct",
+          mode: "call",
           successStatus: 201,
         }),
-        route(app.projection.handles.find, {
+        route(app.caller, "find", {
           method: "GET",
           path: "/todos/{id}",
         }),
-        route(app.projection.handles.create, {
+        route(app.caller, "create", {
           method: "POST",
           path: "/mapped",
-          mode: "direct",
+          mode: "call",
           input: async ({ request }) => ({ title: request.headers.get("x-title") ?? "" }),
         }),
-        route(app.projection.handles.explode, {
+        route(app.caller, "explode", {
           method: "POST",
           path: "/explode",
         }),
@@ -288,12 +290,12 @@ describe("version 1 projectors", () => {
     const app = await fixture();
     const requestContext = context("request:1");
     const handler = createHttpHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => requestContext,
-      routes: [route(app.projection.handles.create, {
+      routes: [route(app.caller, "create", {
         method: "POST",
         path: "/proposals",
-        mode: "request",
+        mode: "propose",
       })],
     });
     const response = await handler(new Request("https://example.test/proposals", {
@@ -319,12 +321,12 @@ describe("version 1 projectors", () => {
     const app = await fixture();
     const requestContext = context("invalid-input");
     const http = createHttpHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => requestContext,
-      routes: [route(app.projection.handles.create, {
+      routes: [route(app.caller, "create", {
         method: "POST",
         path: "/todos",
-        mode: "direct",
+        mode: "call",
       })],
     });
     const httpResponse = await http(new Request("https://example.test/todos", {
@@ -341,14 +343,14 @@ describe("version 1 projectors", () => {
       },
     });
     const contextFailure = createHttpHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => {
         throw new Error("private credential lookup failed");
       },
-      routes: [route(app.projection.handles.create, {
+      routes: [route(app.caller, "create", {
         method: "POST",
         path: "/todos",
-        mode: "direct",
+        mode: "call",
       })],
     });
     const beforeContextFailure = app.directCreates;
@@ -363,7 +365,7 @@ describe("version 1 projectors", () => {
     expect(app.directCreates).toBe(beforeContextFailure);
 
     const protocol = createProtocolHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => requestContext,
       path: "/_boundary",
     });
@@ -410,12 +412,12 @@ describe("version 1 projectors", () => {
     });
 
     const router = await createTrpcRouter({
-      binding: app.binding,
+      caller: app.caller,
       context: (received: { actor: Context }) => received.actor,
-      procedures: [procedure(app.projection.handles.create, {
+      procedures: [procedure(app.caller, "create", {
         name: "todos.create",
         kind: "mutation",
-        mode: "direct",
+        mode: "call",
       })],
     });
     await expect(
@@ -432,7 +434,7 @@ describe("version 1 projectors", () => {
     });
 
     const hostileContextProtocol = createProtocolHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => {
         throw {
           code: "PRIVATE_CONTEXT_CODE",
@@ -471,12 +473,12 @@ describe("version 1 projectors", () => {
   it("describes only explicit routes from either a durable Projection or a live Binding", async () => {
     const app = await fixture();
     const routes = [
-      route(app.projection.handles.list, { method: "GET", path: "/todos" }),
-      route(app.projection.handles.find, { method: "GET", path: "/todos/{id}" }),
-      route(app.projection.handles.create, {
+      route(app.caller, "list", { method: "GET", path: "/todos" }),
+      route(app.caller, "find", { method: "GET", path: "/todos/{id}" }),
+      route(app.caller, "create", {
         method: "POST",
         path: "/proposals",
-        mode: "request",
+        mode: "propose",
       }),
     ] as const;
     const unrealized = await openapi({
@@ -496,7 +498,7 @@ describe("version 1 projectors", () => {
     });
 
     const live = await openapi({
-      binding: app.binding,
+      caller: app.caller,
       title: "Todos",
       version: "1",
       routes,
@@ -589,10 +591,10 @@ describe("version 1 projectors", () => {
       projection: app.projection,
       title: "Opaque",
       version: "1",
-      routes: [route(app.projection.handles.create, {
+      routes: [route(app.caller, "create", {
         method: "POST",
         path: "/opaque",
-        mode: "direct",
+        mode: "call",
         input: () => ({ title: "opaque" }),
       })],
     })).rejects.toMatchObject({ code: "INVALID_DECLARATION" });
@@ -602,7 +604,7 @@ describe("version 1 projectors", () => {
     const app = await fixture();
     const requestContext = context("protocol:1");
     const protocol = createProtocolHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => requestContext,
       path: "/_boundary",
     });
@@ -668,7 +670,7 @@ describe("version 1 projectors", () => {
   it("preserves only server-proven pre-dispatch protocol rejection", async () => {
     const app = await fixture();
     const protocol = createProtocolHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => context("server-rejection"),
       path: "/_boundary",
     });
@@ -739,7 +741,7 @@ describe("version 1 projectors", () => {
     const app = await fixture();
     let contextCalls = 0;
     const protocol = createProtocolHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => {
         contextCalls += 1;
         return context("stale");
@@ -773,14 +775,14 @@ describe("version 1 projectors", () => {
     const app = await fixture();
     const requestContext = context("trpc:1");
     const router = await createTrpcRouter({
-      binding: app.binding,
+      caller: app.caller,
       context: (received: { actor: Context }) => received.actor,
       procedures: [
-        procedure(app.projection.handles.list, { name: "todos.list", kind: "query" }),
-        procedure(app.projection.handles.create, {
+        procedure(app.caller, "list", { name: "todos.list", kind: "query" }),
+        procedure(app.caller, "create", {
           name: "todos.propose",
           kind: "mutation",
-          mode: "request",
+          mode: "propose",
         }),
       ],
     });
@@ -797,15 +799,15 @@ describe("version 1 projectors", () => {
     expect(app.requestContexts).toEqual([requestContext]);
 
     const contextFailure = await createTrpcRouter({
-      binding: app.binding,
+      caller: app.caller,
       context: (_received: { actor: Context }) => {
         throw new Error("private context failure");
       },
       procedures: [
-        procedure(app.projection.handles.create, {
+        procedure(app.caller, "create", {
           name: "todos.create",
           kind: "mutation",
-          mode: "direct",
+          mode: "call",
         }),
       ],
     });
@@ -823,13 +825,16 @@ describe("version 1 projectors", () => {
 
   it("contains rejected HTTP and tRPC exposure initialization before dispatch", async () => {
     const app = await fixture();
-    const staleList = Object.freeze({
-      ...app.projection.handles.list,
-      contractDigest: `sha256:${"f".repeat(64)}`,
-    });
-    const staleRoute = route(staleList, { method: "GET", path: "/stale" });
+    const staleDigest = `sha256:${"f".repeat(64)}` as const;
+    // A manifest whose expected contract no longer matches the live Binding.
+    const staleSource = {
+      ...app.caller.manifest,
+      interactions: app.caller.manifest.interactions.map((entry) =>
+        entry.alias === "list" ? { ...entry, expectedContractDigest: staleDigest } : entry),
+    };
+    const staleRoute = route(staleSource, "list", { method: "GET", path: "/stale" });
     const http = createHttpHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => context("never"),
       routes: [staleRoute],
     });
@@ -840,15 +845,15 @@ describe("version 1 projectors", () => {
       certainty: "not-started",
       error: { code: "ADAPTER_INITIALIZATION_FAILED" },
     });
-    expect(text).not.toContain(staleList.contractDigest);
+    expect(text).not.toContain(staleDigest);
     expect(app.directContexts).toHaveLength(0);
 
-    const staleProcedure = procedure(staleList, {
+    const staleProcedure = procedure(staleSource, "list", {
       name: "todos.stale",
       kind: "query",
     });
     await expect(createTrpcRouter({
-      binding: app.binding,
+      caller: app.caller,
       context: () => context("never"),
       procedures: [staleProcedure],
     })).rejects.toMatchObject({
@@ -857,7 +862,7 @@ describe("version 1 projectors", () => {
     });
 
     const trpc = createTrpcHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => context("never"),
       procedures: [staleProcedure],
     });
@@ -871,16 +876,16 @@ describe("version 1 projectors", () => {
       certainty: "not-started",
       error: { code: "ADAPTER_INITIALIZATION_FAILED" },
     });
-    expect(trpcText).not.toContain(staleList.contractDigest);
+    expect(trpcText).not.toContain(staleDigest);
     expect(app.directContexts).toHaveLength(0);
   });
 
   it("composes REST, OpenAPI, and the exact v1 protocol without claiming the root", async () => {
     const app = await fixture();
     const handler = createCompositeHttpHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => context("composite"),
-      routes: [route(app.projection.handles.list, { method: "GET", path: "/todos" })],
+      routes: [route(app.caller, "list", { method: "GET", path: "/todos" })],
       title: "Composite",
       version: "1",
       protocolPath: "/_boundary///",
@@ -902,7 +907,7 @@ describe("version 1 projectors", () => {
     expect(cached.headers.get("etag")).toBe(etag);
 
     expect(() => createCompositeHttpHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => context("collision"),
       routes: [],
       title: "Collision",
@@ -910,9 +915,9 @@ describe("version 1 projectors", () => {
       protocolPath: "/openapi.json/",
     })).toThrow(/collides with \/openapi\.json/);
     expect(() => createCompositeHttpHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => context("collision"),
-      routes: [route(app.projection.handles.find, {
+      routes: [route(app.caller, "find", {
         method: "GET",
         path: "/_boundary/{document}",
       })],
@@ -945,7 +950,7 @@ describe("version 1 projectors", () => {
   it("narrows typed declared errors from a browser client", async () => {
     const app = await fixture();
     const protocol = createProtocolHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => context("domain"),
       path: "/_boundary",
     });
@@ -972,7 +977,7 @@ describe("version 1 projectors", () => {
   it("hydrates projected handles from the Binding handshake", async () => {
     const app = await fixture();
     const protocol = createProtocolHandler({
-      binding: app.binding,
+      caller: app.caller,
       context: () => context("owner"),
       path: "/_boundary",
     });

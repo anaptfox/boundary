@@ -1,16 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, it } from "vitest";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  type AnyInteractionDefinition,
-  direct,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { bindProjection, compileInteractions, defineInteraction, type AnyInteractionDefinition, direct, directRealizationIds, implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary";
 import {
   createHandoffInvocation,
   executeHandoff,
@@ -31,6 +21,7 @@ import { createProjectionClient } from "@foxworth/boundary/client";
 import { useInteraction } from "@foxworth/boundary/react";
 import { createAdapterFixture } from "../helpers/adapter";
 import { measure, measureSync, recordCase } from "./measure";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -92,7 +83,7 @@ async function hostFixture() {
   if (result.status !== "bound") {
     throw new Error("bench Binding could not be realized");
   }
-  return { compiled, interactions, projection, binding: result.binding };
+  return { compiled, interactions, projection, binding: result.binding, caller: createCaller(result.binding) };
 }
 
 function catalog(count: number) {
@@ -283,7 +274,7 @@ describe("boundary performance baseline", () => {
     });
 
     const protocol = createProtocolHandler({
-      binding: host.binding,
+      caller: host.caller,
       context: () => undefined,
       path: "/boundary",
     });
@@ -313,10 +304,10 @@ describe("boundary performance baseline", () => {
     });
 
     const rest = createHttpHandler({
-      binding: host.binding,
+      caller: host.caller,
       context: () => undefined,
       routes: [
-        route(host.projection.handles.echo, {
+        route(host.caller, "echo", {
           method: "POST",
           path: "/echo",
         }),
@@ -339,10 +330,10 @@ describe("boundary performance baseline", () => {
     });
 
     const composite = createCompositeHttpHandler({
-      binding: host.binding,
+      caller: host.caller,
       context: () => undefined,
       routes: [
-        route(host.projection.handles.list, { method: "GET", path: "/list" }),
+        route(host.caller, "list", { method: "GET", path: "/list" }),
       ],
       title: "Bench",
       version: "0.0.0",
@@ -362,11 +353,7 @@ describe("boundary performance baseline", () => {
     });
 
     const adapter = await createAdapterFixture();
-    const adapterProjection = await projectInteractions(adapter.compiled, {
-      list: direct(adapter.compiled.handles.list),
-      create: direct(adapter.compiled.handles.create),
-    });
-    const adapterBinding = await adapter.bind(adapterProjection);
+    const { binding: adapterBinding, projection: adapterProjection } = await adapter.connect({ call: ["list", "create"] });
     const adapterClient = createProjectionClient({
       inspect: async () => adapterBinding.manifest,
       invoke: (invocation) =>
@@ -411,7 +398,7 @@ describe("boundary performance baseline", () => {
       });
       await waitFor(() => {
         expectReady(list.result.current);
-        if (!list.result.current.data?.some((row) => row.id === 1 && row.title === "bench-created")) {
+        if (!(list.result.current.data as Array<{ id: number; title: string }> | undefined)?.some((row) => row.id === 1 && row.title === "bench-created")) {
           throw new Error("created row has not reached the refreshed list");
         }
       });

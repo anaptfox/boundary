@@ -1,13 +1,5 @@
 import { z } from "zod";
-import {
-  bindProjection,
-  compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { bindProjection, compileInteractions, declaredInteractionError, defineInteraction, implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary";
 import { createNextServerCaller } from "@foxworth/boundary/frameworks/next";
 import {
   type Investigator,
@@ -16,6 +8,7 @@ import {
   type TriageTicket,
   updateTriage,
 } from "./triage-store";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 const Investigator = z.enum(["signal-lens", "runbook-reader"]);
 const conflict = z.strictObject({ actualRevision: z.number().int().positive() });
@@ -325,7 +318,7 @@ const triageBinding = bound.binding;
 export function triageCaller(
   context: () => TriageContext | Promise<TriageContext>,
 ) {
-  return createNextServerCaller({ binding: triageBinding, context });
+  return createNextServerCaller({ caller: createCaller(triageBinding), context });
 }
 export async function delegateInvestigation(
   tenant: TriageTenant,
@@ -334,11 +327,10 @@ export async function delegateInvestigation(
   investigator: Investigator,
 ) {
   const executor = triageCaller(() => ({ tenant, actor: "executor" as const }));
-  const finding = await executor.read.call(triageProjection.handles.inspect, {
+  const finding = await executor.read.inspect({
     id,
     expectedRevision,
     investigator,
   });
-  return triageCaller(() => ({ tenant, actor: "delegator" as const })).action
-    .call(triageProjection.handles.investigate, finding);
+  return triageCaller(() => ({ tenant, actor: "delegator" as const })).action.investigate(finding);
 }

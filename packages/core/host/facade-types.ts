@@ -3,13 +3,14 @@ import type { ControlRequestContributions } from "./request-contributions";
 import type { NativeDispatchOutcome } from "./native-outcome";
 import type { InvocationCoordinator } from "./coordination";
 import type { InvocationObserver } from "./observation";
-import type { Surface, SurfaceAlias } from "./surface";
+import type { ReservedCallerKey, Surface, SurfaceAlias } from "./surface";
 import type {
   Admission,
   CompiledInteractions,
   DefinitionArity,
   DefinitionInput,
   DefinitionOutput,
+  HandleDefinition,
   ImplementationMap,
   InstallationId,
   InstallationManifest,
@@ -17,6 +18,7 @@ import type {
   InteractionInstallation,
   MaybePromise,
   NativeDispatchRequest,
+  ProjectedInteractionHandle,
   ProjectionBinding,
   ProjectionBindingManifest,
   RawInvocationOutcome,
@@ -191,6 +193,8 @@ export type HandoffSeam<Context = unknown> = Readonly<{
   ): Promise<RawInvocationOutcome>;
 }>;
 
+declare const callerTypes: unique symbol;
+
 /**
  * What a caller holds: one method per `call` alias, `propose.<alias>` per
  * `propose` alias, the read-only Binding manifest, and the Handoff seam.
@@ -208,6 +212,12 @@ export type Caller<
   propose: ProposeMethods<Definitions, Propose, Context>;
   manifest: ProjectionBindingManifest;
   handoff: HandoffSeam<Context>;
+  [callerTypes]?: {
+    readonly definitions: Definitions;
+    readonly call: Call;
+    readonly propose: Propose;
+    readonly context: Context;
+  };
 }>;
 
 /** Any caller, for adapters and facade methods that accept every selection. */
@@ -216,6 +226,32 @@ export type AnyCaller<Context = any> = Readonly<{
   manifest: ProjectionBindingManifest;
   handoff: HandoffSeam<Context>;
 }>;
+
+type CallerBrand<C> = C extends { readonly [callerTypes]?: infer Brand } ? NonNullable<Brand> : never;
+/** The declaration record a typed caller was connected from. */
+export type CallerDefinitions<C> = CallerBrand<C> extends { readonly definitions: infer D extends InteractionDefinitions } ? D : InteractionDefinitions;
+export type CallerCallAliases<C> = CallerBrand<C> extends { readonly call: infer A extends string } ? A : never;
+export type CallerProposeAliases<C> = CallerBrand<C> extends { readonly propose: infer A extends string } ? A : never;
+export type CallerContext<C> = CallerBrand<C> extends { readonly context: infer X } ? X : unknown;
+
+type HandleModesOf<Handle> = Handle extends ProjectedInteractionHandle<any, infer Modes, any> ? Modes[number] : never;
+type AliasesInMode<Handles, Mode extends "direct" | "request"> = {
+  [Alias in keyof Handles & string]: Mode extends HandleModesOf<Handles[Alias]> ? Alias : never;
+}[keyof Handles & string];
+type DefinitionsOfHandles<Handles> = {
+  readonly [Alias in keyof Handles & string]: HandleDefinition<Handles[Alias]>;
+};
+
+/** The caller `createCaller(binding)` builds from a Binding's projected handles. */
+export type CallerOfBinding<
+  Handles extends Readonly<Record<string, ProjectedInteractionHandle>>,
+  Context,
+> = Caller<
+  DefinitionsOfHandles<Handles>,
+  Exclude<AliasesInMode<Handles, "direct">, ReservedCallerKey>,
+  Exclude<AliasesInMode<Handles, "request">, ReservedCallerKey>,
+  Context
+>;
 
 export type CallerFor<S, Context> = S extends Surface<infer Definitions, infer Call, infer Propose>
   ? Caller<Definitions, Call, Propose, Context>

@@ -1,4 +1,4 @@
-import type { ProjectionBinding } from "@foxworth/boundary";
+import type { AnyCaller } from "@foxworth/boundary";
 import { AdapterError } from "@foxworth/boundary/remote";
 import {
   createHttpHandler,
@@ -9,7 +9,7 @@ import { openapi } from "./openapi";
 import { createProtocolHandler } from "./protocol";
 
 export type CreateCompositeHttpHandlerOptions<Context> = Readonly<{
-  binding: ProjectionBinding<any, Context>;
+  caller: AnyCaller<Context>;
   context(request: Request): Context | Promise<Context>;
   routes: readonly HttpRoute[];
   title: string;
@@ -43,23 +43,23 @@ export function createCompositeHttpHandler<Context>(
     }
   }
   const rest = createHttpHandler({
-    binding: options.binding,
+    caller: options.caller,
     context: options.context,
     routes: options.routes,
   });
   const protocol = createProtocolHandler({
-    binding: options.binding,
+    caller: options.caller,
     context: options.context,
     path: protocolPath,
   });
   const openapiDocument = openapi({
-    binding: options.binding,
+    caller: options.caller,
     routes: options.routes,
     title: options.title,
     version: options.version,
   }).then((specification) => {
     const body = JSON.stringify(specification);
-    const etag = `"${options.binding.manifest.bindingDigest}"`;
+    const etag = `"${options.caller.manifest.bindingDigest}"`;
     return { body, etag };
   });
 

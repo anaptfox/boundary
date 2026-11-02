@@ -4,7 +4,6 @@ import type {
   InteractionHandle,
   ProjectedInteractionHandle,
 } from "@foxworth/boundary";
-import { projectInteractions } from "@foxworth/boundary";
 import type { JsonValue } from "@foxworth/boundary/program";
 import {
   createInvocationState,
@@ -254,12 +253,9 @@ describe("framework-neutral interaction interactions", () => {
 
   it("submits a request through the checked Binding client", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      create: { interaction: fixture.compiled.handles.create, modes: ["request"] },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller, projection } = await fixture.connect({ propose: ["create"] });
     const protocol = createProtocolHandler({
-      binding,
+      caller,
       context: () => Object.freeze({ role: "owner" as const }),
       path: "/_boundary",
     });

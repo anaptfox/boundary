@@ -1,15 +1,8 @@
 import { z } from "zod";
-import {
-  bindProjection,
-  compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { bindProjection, compileInteractions, declaredInteractionError, defineInteraction, implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary";
 import { createNextServerCaller } from "@foxworth/boundary/frameworks/next";
 import { readStudio, type StudioCandidate, updateStudio } from "./studio-store";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 const Candidate = z.strictObject({
   id: z.string(),
@@ -213,5 +206,5 @@ if (bound.status !== "bound") {
 }
 const studioBinding = bound.binding;
 export function studioCaller(context: () => StudioContext) {
-  return createNextServerCaller({ binding: studioBinding, context });
+  return createNextServerCaller({ caller: createCaller(studioBinding), context });
 }

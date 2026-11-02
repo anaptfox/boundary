@@ -8,6 +8,7 @@ import {
   installInteractions,
   projectInteractions,
 } from "@foxworth/boundary";
+import { createCaller } from "@foxworth/boundary/pipeline";
 import { createMcpServer, tool } from "@foxworth/boundary/mcp";
 
 if (!process.execArgv.includes("--conditions=workerd")) {
@@ -63,6 +64,7 @@ const result = await bindProjection(projection, installation, {
 if (result.status !== "bound") {
   throw new Error("workerd MCP smoke Binding could not be realized");
 }
+const caller = createCaller(result.binding);
 const schema = result.binding.manifest.expectedProgram.interactions[0].contract.inputSchema;
 
 if (!Object.isFrozen(schema)) {
@@ -72,9 +74,9 @@ if (!Object.isFrozen(schema)) {
 const server = await createMcpServer({
   name: "frozen-schema-workerd-smoke",
   version: "2.0.0",
-  binding: result.binding,
+  caller,
   context: () => undefined,
-  tools: [tool(projection.handles.create)],
+  tools: [tool(caller, "create")],
 });
 await server.close();
 

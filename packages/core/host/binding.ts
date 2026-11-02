@@ -8,7 +8,7 @@ import { metadataForInstallation } from "./install";
 import { metadataForProjection } from "./projection";
 import type { Admission, BindResult, BindingController, BindingInvocation, InteractionInstallation, InteractionMode, Projection, ProjectionBinding, ProjectionBindingManifest, ProjectionBindingInteraction, ProjectionSelections, ResolvedBindingMode, ResolvedBindingInteraction, UnrealizedIssue } from "./types";
 import { BindingMetadata, InteractionResolution, ModeEntry, ModeResolution, bindingMetadata, bindingRevoked, resolvedMetadata } from "./binding-state";
-import { createCaller } from "./caller";
+import { createHandleCaller } from "./caller";
 import { rawInvoke } from "./dispatch";
 
 export const PROJECTION_BINDING_DOMAIN = "boundary.projection-binding/v1";
@@ -304,7 +304,7 @@ async function constructBinding<Selections extends ProjectionSelections, Context
   binding = Object.freeze({
     manifest,
     connect() {
-      return createCaller(binding);
+      return createHandleCaller(binding);
     },
     resolve(interactionId: string) {
       return interactionResolutions.get(interactionId)?.public;

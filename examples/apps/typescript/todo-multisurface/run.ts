@@ -2,38 +2,13 @@ import { createTodoHost } from "./host";
 
 export async function runTodoHost() {
   const host = await createTodoHost();
-  const listed = await host.screenCaller.call(
-    host.screen.handles.list,
-    host.screenContext,
-  );
-  const created = await host.screenCaller.call(
-    host.screen.handles.create,
-    { title: "Ship the fixture" },
-    host.screenContext,
-  );
-  const agentListed = await host.agentCaller.call(
-    host.agent.handles.list,
-    host.agentContext,
-  );
-  const agentCompleted = await host.agentCaller.call(
-    host.agent.handles.complete,
-    { id: created.id },
-    host.agentContext,
-  );
-  const screenCompleted = await host.screenCaller.call(
-    host.screen.handles.complete,
-    { id: listed[0]!.id },
-    host.screenContext,
-  );
-  const screenReopened = await host.screenCaller.call(
-    host.screen.handles.reopen,
-    { id: listed[0]!.id },
-    host.screenContext,
-  );
-  const cleared = await host.screenCaller.call(
-    host.screen.handles.clear,
-    host.screenContext,
-  );
+  const listed = await host.screenCaller.list(host.screenContext);
+  const created = await host.screenCaller.create({ title: "Ship the fixture" }, host.screenContext);
+  const agentListed = await host.agentCaller.list(host.agentContext);
+  const agentCompleted = await host.agentCaller.complete({ id: created.id }, host.agentContext);
+  const screenCompleted = await host.screenCaller.complete({ id: listed[0]!.id }, host.screenContext);
+  const screenReopened = await host.screenCaller.reopen({ id: listed[0]!.id }, host.screenContext);
+  const cleared = await host.screenCaller.clear(host.screenContext);
 
   return {
     listed,

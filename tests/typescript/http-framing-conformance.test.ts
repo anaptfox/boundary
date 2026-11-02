@@ -29,6 +29,7 @@ import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import { statusForRemoteResult } from "@foxworth/boundary/remote";
 import { portableSchema } from "@foxworth/boundary/program";
 import type { HandoffOutcome } from "@foxworth/boundary/handoff";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 type StatusCase = {
   readonly name: string;
@@ -137,14 +138,15 @@ async function fixture(options: { readonly admit?: boolean } = {}) {
         : { decision: "allow" as const },
   });
   if (bound.status !== "bound") throw new Error("fixture must bind");
+  const caller = createCaller(bound.binding);
   const handler = createProtocolHandler({
-    binding: bound.binding,
+    caller,
     // This fixture's admission ignores context, so the Binding's Context is
     // void. The handler still resolves one per invocation.
     context: () => {},
     path: BASE,
   });
-  return { handler, binding: bound.binding };
+  return { handler, binding: bound.binding, caller };
 }
 
 function url(suffix: string): string {

@@ -53,21 +53,13 @@ describe("Todo MVP fixture", () => {
     });
 
     await expect(
-      host.agentCaller.call(
-        host.agent.handles.complete,
-        { id: 2 },
-        host.screenContext,
-      ),
+      host.agentCaller.complete({ id: 2 }, host.screenContext),
     ).rejects.toMatchObject({
       cause: "denied",
       certainty: "not-started",
     });
     await expect(
-      host.agentCaller.call(
-        host.agent.handles.complete,
-        { id: 2 },
-        host.screenContext,
-      ),
+      host.agentCaller.complete({ id: 2 }, host.screenContext),
     ).rejects.toBeInstanceOf(InteractionFault);
   });
 

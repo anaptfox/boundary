@@ -22,20 +22,13 @@ vi.mock("@modelcontextprotocol/server", async (importOriginal) => {
   };
 });
 
-import { projectInteractions } from "@foxworth/boundary";
 import { createMcpServer, tool } from "@foxworth/boundary/mcp";
 import { createAdapterFixture } from "./helpers/adapter";
 
 describe("MCP schema ownership", () => {
   it("detaches frozen Program schemas before Cloudflare validator compilation", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      create: {
-        interaction: fixture.compiled.handles.create,
-        modes: ["direct"],
-      },
-    });
-    const binding = await fixture.bind(projection);
+    const { caller, binding } = await fixture.connect({ call: ["create"] });
     const original = binding.manifest.expectedProgram.interactions[0]!.contract.inputSchema as Record<
       string,
       unknown
@@ -47,9 +40,9 @@ describe("MCP schema ownership", () => {
     const server = await createMcpServer({
       name: "frozen-schema-test",
       version: "1.0.0",
-      binding,
+      caller,
       context: () => ({ role: "owner" as const }),
-      tools: [tool(projection.handles.create)],
+      tools: [tool(caller, "create")],
     });
     await server.close();
 

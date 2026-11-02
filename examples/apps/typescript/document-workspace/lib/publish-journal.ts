@@ -1,24 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
-import {
-  cloneJson,
-  jsonEquals,
-  type JsonValue,
-  type Sha256Digest,
-} from "@foxworth/boundary/program";
-import {
-  type Approval,
-  type AttemptRecord,
-  ControlError,
-  type ControlJournal,
-  type ControlJournalQuery,
-  type ControlRecordKind,
-  type ControlStatusChain,
-  type CreateRecordResult,
-  type Grant,
-  type ProposalRecord,
-  type ReceiptRecord,
-} from "@foxworth/boundary/control";
+import { cloneJson, jsonEquals, type JsonValue, type Sha256Digest } from "@foxworth/boundary/program";
+import { type Approval, type AttemptRecord, ControlError, type ControlJournal, type ControlJournalQuery, type ControlRecordKind, type ControlStatusChain, type CreateRecordResult, type Grant, type ProposalRecord, type ReceiptRecord } from "@foxworth/boundary/control";
 
 const snapshot = <T>(value: T): T => cloneJson(value as JsonValue) as T;
 const conflict = (message: string): never => {

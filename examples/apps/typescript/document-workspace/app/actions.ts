@@ -35,7 +35,7 @@ export async function saveDocumentAction(
   }
   try {
     const boundary = documentCaller(() => context, () => revalidatePath("/"), "human");
-    const saved = await boundary.action.call(projection.handles.save, {
+    const saved = await boundary.action.save({
       id,
       title,
       body,

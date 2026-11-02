@@ -10,6 +10,7 @@ import {
   observedRead, type ObservationSource, type ObservedReadDiagnostic,
 } from "@foxworth/boundary/observations";
 import { portableSchema } from "@foxworth/boundary/program";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 const Input = portableSchema<string>({ type: "string" });
 const Output = portableSchema<string>({ type: "string" });
@@ -158,7 +159,7 @@ describe("integration with main's contract and invocation laws", () => {
           admit() { admissions.push("child"); return { decision: "allow" }; },
         });
         if (child.status !== "bound") throw new Error("child did not bind");
-        const protocol = createProtocolHandler({ binding: child.binding, context: () => context, path: "/_boundary" });
+        const protocol = createProtocolHandler({ caller: createCaller(child.binding), context: () => context, path: "/_boundary" });
         const client = createProjectionClient(fetchTransport({
           baseUrl: "https://example.test/_boundary",
           fetch: (input, init) => protocol(new Request(input, init)),

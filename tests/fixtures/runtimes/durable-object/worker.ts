@@ -26,6 +26,7 @@ import {
 import { contributeControlRequests } from "@foxworth/boundary/control/host";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import { WorkspaceControlJournal } from "./controlJournal";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 type Session = Readonly<{ actorId: string; role: "owner" }>;
 type Context = Readonly<{ workspace: Workspace; session: Session }>;
@@ -220,7 +221,7 @@ export class Workspace extends DurableObject<Environment> {
     const runtime = await this.#bound();
     if (!runtime) return new Response("Workspace installation is absent or stale", { status: 409 });
     return createProtocolHandler({
-      binding: runtime.binding,
+      caller: createCaller(runtime.binding),
       context: () => ({ workspace: this, session }),
       path: "/boundary",
     })(request);

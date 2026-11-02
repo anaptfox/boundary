@@ -9,6 +9,7 @@ import {
 } from "@foxworth/boundary";
 import { createHandoffInvocation, validateHandoffResponse, validateProjectionBindingManifest } from "@foxworth/boundary/handoff";
 import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
+import { createCaller } from "@foxworth/boundary/pipeline";
 import { toFetchRequest, sendFetchResponse } from "@foxworth/boundary/http/node";
 import {
   contractChanges, contractCompatibility, digestInteractionContract,
@@ -51,7 +52,7 @@ const bound = await bindProjection(projection, installed.installation, {
   observation: { publish(observation) { observations.push(observation); } },
 });
 assert.equal(bound.status, "bound");
-const handler = createProtocolHandler({ binding: bound.binding, path: "/handoff", context: () => ({ principal: "owner" }) });
+const handler = createProtocolHandler({ caller: createCaller(bound.binding), path: "/handoff", context: () => ({ principal: "owner" }) });
 const server = createServer((request, response) => {
   Promise.resolve(handler(toFetchRequest(request))).then(result => sendFetchResponse(response, result, request.method)).catch(error => {
     response.statusCode = 500;

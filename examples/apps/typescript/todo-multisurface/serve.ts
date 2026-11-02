@@ -9,9 +9,9 @@ export function createTodoMcpHandler(host: TodoHost) {
   return createMcpHandler({
     name: "todos",
     version: "1.0.0",
-    binding: host.agentBinding,
+    caller: host.agentCaller,
     context: () => host.agentContext,
-    tools: toolsFor(host.agent),
+    tools: toolsFor(host.agentCaller),
   });
 }
 
@@ -20,12 +20,12 @@ export async function createTodoServing() {
   const serving = serveHost({
     doors: [
       {
-        binding: host.screenBinding,
+        caller: host.screenCaller,
         context: () => host.screenContext,
         path: SCREEN_PROTOCOL,
       },
       {
-        binding: host.agentBinding,
+        caller: host.agentCaller,
         context: () => host.agentContext,
         path: AGENT_PROTOCOL,
       },
@@ -34,9 +34,9 @@ export async function createTodoServing() {
       path: MCP_PATH,
       name: "todos",
       version: "1.0.0",
-      binding: host.agentBinding,
+      caller: host.agentCaller,
       context: () => host.agentContext,
-      tools: toolsFor(host.agent),
+      tools: toolsFor(host.agentCaller),
     },
   });
 

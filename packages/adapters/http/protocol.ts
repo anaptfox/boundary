@@ -1,5 +1,5 @@
 import type {
-  ProjectionBinding,
+  AnyCaller,
   ProjectionBindingManifest,
 } from "@foxworth/boundary";
 import {
@@ -10,7 +10,7 @@ import {
   type HandoffInvocation,
   type HandoffOutcome,
 } from "@foxworth/boundary/handoff";
-import { AdapterError, RemoteProtocolRejection } from "@foxworth/boundary/remote";
+import { AdapterError, RemoteProtocolRejection, seamOf } from "@foxworth/boundary/remote";
 import type { HttpHandler } from "./handler";
 import { statusForRemoteResult } from "@foxworth/boundary/remote";
 
@@ -19,7 +19,7 @@ export type ProgramHandshake = ProjectionBindingManifest;
 import type { ClientTransport, ClientInvokeFraming } from "@foxworth/boundary/client";
 
 export type CreateProtocolHandlerOptions<Context> = Readonly<{
-  binding: ProjectionBinding<any, Context>;
+  caller: AnyCaller<Context>;
   context(request: Request): Context | Promise<Context>;
   path: string;
 }>;
@@ -76,7 +76,7 @@ function failure(error: unknown): Response {
   }, known ? (conflict ? 409 : 400) : 500);
 }
 
-/** Opt-in version 1 Handoff protocol for one pinned live Binding. */
+/** Opt-in version 1 Handoff protocol for one connected caller's Binding. */
 export function createProtocolHandler<Context>(
   options: CreateProtocolHandlerOptions<Context>,
 ): HttpHandler {
@@ -84,7 +84,7 @@ export function createProtocolHandler<Context>(
     throw new AdapterError("INVALID_DECLARATION", "createProtocolHandler.context", "context must resolve one invocation-scoped host value");
   }
   const base = protocolPath(options.path);
-  const checked = createCheckedHandoff(options.binding);
+  const checked = createCheckedHandoff(seamOf(options.caller, "createProtocolHandler.caller"));
 
   return async (request: Request): Promise<Response> => {
     const url = new URL(request.url);

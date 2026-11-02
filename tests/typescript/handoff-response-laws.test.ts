@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { projectInteractions } from "@foxworth/boundary";
 import { createHandoffInvocation, executeHandoff, validateHandoffInvocation, validateHandoffOutcome, validateHandoffResponse, validateProjectionBindingManifest } from "@foxworth/boundary/handoff";
 import { RemoteDomainError } from "@foxworth/boundary/remote";
 import { createProjectionClient } from "@foxworth/boundary/client";
@@ -11,12 +10,8 @@ import { createAdapterFixture } from "./helpers/adapter";
 
 async function fixture() {
   const host = await createAdapterFixture();
-  const projection = await projectInteractions(host.compiled, {
-    create: { interaction: host.compiled.handles.create, modes: ["direct", "request"] },
-    list: { interaction: host.compiled.handles.list, modes: ["direct"] },
-  });
-  const binding = await host.bind(projection);
-  return { ...host, binding, projection };
+  const { caller, binding, projection } = await host.connect({ call: ["create", "list"], propose: ["create"] });
+  return { ...host, caller, binding, projection };
 }
 
 type Fixture = Awaited<ReturnType<typeof fixture>>;
@@ -76,7 +71,7 @@ transportLaws("ProjectionClient transport laws", async (f, transport, title) => 
 transportLaws("WebMCP transport laws", async (f, transport, title) => {
   let tool: ModelContextTool | undefined;
   const registration = await registerWebMcpTransport({ transport,
-    tools: [webMcpTool(f.projection.handles.create, { mode: "direct" })],
+    tools: [webMcpTool(f.caller, "create", { mode: "call" })],
     modelContext: { async registerTool(value) { tool = value; } },
   });
   try {
@@ -136,7 +131,7 @@ it("keeps a lost WebMCP request response unknown without fabricating a request f
   let tool: ModelContextTool | undefined;
   let calls = 0;
   const registration = await registerWebMcpTransport({
-    tools: [webMcpTool(f.projection.handles.create, { mode: "request" })],
+    tools: [webMcpTool(f.caller, "create", { mode: "propose" })],
     modelContext: { async registerTool(value) { tool = value; } },
     transport: {
       inspect: async () => f.binding.manifest,

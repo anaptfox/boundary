@@ -68,6 +68,7 @@ describe("Folio MCP and browser agent entries", () => {
     const client = createProjectionClient(fetchTransport({ baseUrl: "https://folio.test/api/agent-boundary", fetch: browserFetch }));
     const handles = await handlesFromBinding(client);
     expect(Object.keys(handles)).toEqual(["get", "publicationStatus", "publish", "save"]);
+    const manifest = await client.inspect();
 
     const registered = new Map<string, ModelContextTool>();
     const port: ModelContextPort = { async registerTool(tool) { registered.set(tool.name, tool); } };
@@ -75,9 +76,9 @@ describe("Folio MCP and browser agent entries", () => {
       modelContext: port,
       transport: fetchTransport({ baseUrl: "https://folio.test/api/agent-boundary", fetch: browserFetch }),
       tools: [
-        webMcpTool(handles.get!, { mode: "direct", name: "getDocument" }),
-        webMcpTool(handles.save!, { mode: "direct", name: "saveDraft" }),
-        webMcpTool(handles.publish!, { mode: "request", name: "requestPublish" }),
+        webMcpTool(manifest, "get", { mode: "call", name: "getDocument" }),
+        webMcpTool(manifest, "save", { mode: "call", name: "saveDraft" }),
+        webMcpTool(manifest, "publish", { mode: "propose", name: "requestPublish" }),
       ],
     });
     registrations.push(registration);

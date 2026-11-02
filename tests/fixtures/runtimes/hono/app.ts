@@ -59,9 +59,9 @@ export async function createHonoNativeApp() {
     const identity = context.var.identity;
     const host = await hostFor(identity?.tenant ?? "acme");
     const handler = createHttpHandler({
-      binding: host.screenBinding,
+      caller: host.screenCaller,
       context: () => contextFor(identity, context.req.param("tenant")),
-      routes: [route(host.screen.handles.list, { method: "GET", path: "/boundary/todos" })],
+      routes: [route(host.screenCaller, "list", { method: "GET", path: "/boundary/todos" })],
     });
     return (request) => handler(opsRequest(request));
   }));
@@ -69,9 +69,9 @@ export async function createHonoNativeApp() {
     const identity = context.var.identity;
     const host = await hostFor(identity?.tenant ?? "acme");
     const handler = createHttpHandler({
-      binding: host.screenBinding,
+      caller: host.screenCaller,
       context: () => contextFor(identity, context.req.param("tenant")),
-      routes: [route(host.screen.handles.create, { method: "POST", path: "/boundary/todos" })],
+      routes: [route(host.screenCaller, "create", { method: "POST", path: "/boundary/todos" })],
     });
     return (request) => handler(opsRequest(request));
   }));
@@ -79,9 +79,9 @@ export async function createHonoNativeApp() {
     const identity = context.var.identity;
     const host = await hostFor(identity?.tenant ?? "acme");
     const handler = createHttpHandler({
-      binding: host.screenBinding,
+      caller: host.screenCaller,
       context: () => contextFor(identity, context.req.param("tenant")),
-      routes: [route(host.screen.handles.complete, {
+      routes: [route(host.screenCaller, "complete", {
         method: "POST",
         path: "/boundary/todos/{id}/complete",
         input: () => ({ id: Number(context.req.param("id")) }),

@@ -1,12 +1,5 @@
 import { portableSchema } from "@foxworth/boundary/program";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { admitWhen, defineInteraction, install, surface } from "@foxworth/boundary";
 import { createHttpHandler, route } from "@foxworth/boundary/http";
 
 type Actor = Readonly<{ id: string; role: "owner" | "viewer" }>;
@@ -45,42 +38,26 @@ const interactions = {
 
 export async function createTodoHttpExample() {
   const rows: Todo[] = [];
-  const compiled = await compileInteractions(interactions);
-  const implementations = implementInteractions<typeof interactions, Actor>(interactions, {
-    list: () => [...rows],
-    create(input) {
-      const todo = { id: rows.length + 1, title: input.title };
-      rows.push(todo);
-      return todo;
+  const app = await install(interactions, {
+    id: "todos:http:1",
+    version: "http-1",
+    handlers: {
+      list: (_actor: Actor) => [...rows],
+      create(input, _actor: Actor) {
+        const todo = { id: rows.length + 1, title: input.title };
+        rows.push(todo);
+        return todo;
+      },
     },
   });
-  const { installation } = await installInteractions<typeof interactions, Actor>(compiled, {
-    installationId: "todos:http:1",
-    implementations,
-    realizationIds: {
-      list: { direct: "todos:list:http:1" },
-      create: { direct: "todos:create:http:1" },
-    },
+  const todos = await app.connect(surface.all(interactions), {
+    admit: admitWhen((actor: Actor) => actor.role === "owner", "owner role required"),
   });
-  const projection = await projectInteractions(compiled, {
-    list: { interaction: compiled.handles.list, modes: ["direct"] },
-    create: { interaction: compiled.handles.create, modes: ["direct"] },
-  });
-  const result = await bindProjection(projection, installation, {
-    admit({ context, handle }) {
-      return context.role === "owner" || handle.changes.length === 0
-        ? { decision: "allow" }
-        : { decision: "deny", reason: "owner role required" };
-    },
-  });
-  if (result.status !== "bound") {
-    throw new Error("the HTTP Projection is unrealized");
-  }
 
   // #region explicit-http
   const routes = [
-    route(projection.handles.list, { method: "GET", path: "/todos" }),
-    route(projection.handles.create, {
+    route(todos, "list", { method: "GET", path: "/todos" }),
+    route(todos, "create", {
       method: "POST",
       path: "/todos",
       successStatus: 201,
@@ -88,7 +65,7 @@ export async function createTodoHttpExample() {
   ];
 
   const handler = createHttpHandler<Actor>({
-    binding: result.binding,
+    caller: todos,
     context: request => ({
       id: request.headers.get("x-user") ?? "anonymous",
       role: request.headers.get("x-role") === "owner" ? "owner" : "viewer",
@@ -98,10 +75,10 @@ export async function createTodoHttpExample() {
   // #endregion explicit-http
 
   return {
-    program: compiled.program,
-    installation,
-    projection,
-    binding: result.binding,
+    program: app.program,
+    installation: app.installation,
+    caller: todos,
+    binding: app.binding(todos),
     handler,
     rows,
     routes,

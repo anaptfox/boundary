@@ -6,7 +6,6 @@ import {
 } from "@foxworth/boundary/webmcp";
 import {
   createProjectionClient,
-  handlesFromBinding,
   pinProjectionReferences,
 } from "@foxworth/boundary/client";
 import { fetchTransport } from "@foxworth/boundary/http/protocol";
@@ -23,13 +22,10 @@ export async function bootTodoUi() {
   const handles = await pinProjectionReferences(screenClient, screenReferences);
   let webmcp: WebMcpRegistration | undefined;
   if (isWebMcpAvailable()) {
-    const agentHandles = await handlesFromBinding(agentClient);
+    const agentManifest = await agentClient.inspect();
     webmcp = await registerWebMcpTransport({
       transport: agentTransport,
-      tools: webMcpTools(
-        { handles: agentHandles },
-        { list: { untrustedContentHint: true } },
-      ),
+      tools: webMcpTools(agentManifest, { list: { untrustedContentHint: true } }),
     });
   }
   return {

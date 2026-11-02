@@ -1,7 +1,4 @@
-import type {
-  InteractionMode,
-  ProjectionBinding,
-} from "@foxworth/boundary";
+import type { AnyCaller, InteractionMode } from "@foxworth/boundary";
 import type { ClientInvokeFraming, ClientTransport } from "@foxworth/boundary/client";
 import type { AnyProjectedInteractionHandle } from "@foxworth/boundary/remote";
 
@@ -115,7 +112,7 @@ export type ModelContextPort = {
 };
 
 export type RegisterWebMcpBindingOptions<Context> = Readonly<{
-  binding: ProjectionBinding<any, Context>;
+  caller: AnyCaller<Context>;
   context(
     request: WebMcpContextRequest,
   ): Context | Promise<Context>;
@@ -133,7 +130,7 @@ export type RegisterWebMcpTransportOptions = Readonly<{
 }>;
 
 export type WebMcpBindingSyncOptions<Context> = Readonly<{
-  binding: ProjectionBinding<any, Context>;
+  caller: AnyCaller<Context>;
   tools: readonly WebMcpTool[];
 }>;
 
@@ -149,9 +146,9 @@ export type WebMcpSyncOptions<Context = unknown> =
 export type WebMcpRegistration<Context = unknown> = Readonly<{
   readonly tools: readonly WebMcpToolSummary[];
   /**
-   * Explicitly replace the live Binding/tool declaration set. There is no
-   * way to show a subset of a registered Binding: narrow the Projection and
-   * sync a Binding of that instead.
+   * Explicitly replace the live caller/tool declaration set. There is no
+   * way to show a subset of a registered Binding: narrow the Surface and
+   * sync a caller of that instead.
    */
   sync(options: WebMcpSyncOptions<Context>): Promise<void>;
   dispose(): void;

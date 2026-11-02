@@ -9,6 +9,7 @@ import {
   pickProjection,
   projectAllDirect,
 } from "@foxworth/boundary";
+import { createCaller } from "@foxworth/boundary/pipeline";
 import { interactions } from "./interactions";
 import { createTodoStore, type TodoStore } from "./store";
 import { observedRead } from "@foxworth/boundary/observations";
@@ -99,8 +100,8 @@ export async function createTodoHost(store: TodoStore = createTodoStore()) {
     installation,
     screenBinding: screenResult.binding,
     agentBinding: agentResult.binding,
-    screenCaller: screenResult.binding.connect(),
-    agentCaller: agentResult.binding.connect(),
+    screenCaller: createCaller(screenResult.binding),
+    agentCaller: createCaller(agentResult.binding),
     screenContext,
     agentContext,
   };

@@ -2,12 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  delegateInvestigation,
-  triageCaller,
-  type TriageContext,
-  triageProjection,
-} from "../../lib/triage-boundary";
+import { delegateInvestigation, triageCaller, type TriageContext } from "../../lib/triage-boundary";
 
 function field(form: FormData, name: string) {
   const value = form.get(name);
@@ -29,9 +24,7 @@ function finish(notice: string): never {
 }
 export async function createTicket(form: FormData) {
   try {
-    await triageCaller(() => context("human")).action.call(
-      triageProjection.handles.create,
-      { title: field(form, "title"), customer: field(form, "customer") },
+    await triageCaller(() => context("human")).action.create({ title: field(form, "title"), customer: field(form, "customer") },
     );
   } catch {
     finish("uncertain");
@@ -58,9 +51,7 @@ export async function delegateTicket(form: FormData) {
 }
 export async function recordReview(form: FormData) {
   try {
-    await triageCaller(() => context("reviewer")).action.call(
-      triageProjection.handles.review,
-      {
+    await triageCaller(() => context("reviewer")).action.review({
         id: field(form, "id"),
         expectedRevision: Number(field(form, "revision")),
         resolution: field(form, "resolution"),
@@ -73,9 +64,7 @@ export async function recordReview(form: FormData) {
 }
 export async function resolveTicket(form: FormData) {
   try {
-    await triageCaller(() => context("reviewer")).action.call(
-      triageProjection.handles.resolve,
-      { id: field(form, "id"), reviewId: field(form, "reviewId") },
+    await triageCaller(() => context("reviewer")).action.resolve({ id: field(form, "id"), reviewId: field(form, "reviewId") },
     );
   } catch {
     finish("uncertain");

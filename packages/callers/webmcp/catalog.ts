@@ -3,7 +3,7 @@ import { createCheckedHandoff, validateProjectionBindingManifest, validateHandof
 import type { ClientInvokeFraming, ClientTransport } from "@foxworth/boundary/client";
 import { RemoteInvocationError } from "@foxworth/boundary/remote";
 import type { JsonValue } from "@foxworth/boundary/program";
-import { compileBindingResolution, interactionKey, type ResolvedBindingInteraction } from "@foxworth/boundary/remote";
+import { compileBindingResolution, interactionKey, seamOf, type ResolvedBindingInteraction } from "@foxworth/boundary/remote";
 import { isObjectInputSchema, overlayInputSchema, stableJson } from "./schema";
 import type { WebMcpBindingSyncOptions, WebMcpSyncOptions, WebMcpToolSummary } from "./types";
 import { TOOL_NAME, fail, inputAnnotations, toolDeclarations } from "./tools";
@@ -31,7 +31,7 @@ export type PreparedTool<Context> = Readonly<{
 function isBindingSync<Context>(
   options: WebMcpSyncOptions<Context>,
 ): options is WebMcpBindingSyncOptions<Context> {
-  return "binding" in options;
+  return "caller" in options;
 }
 
 async function handoffFromTransport(
@@ -86,7 +86,7 @@ export async function prepareCatalog<Context>(
     }
   }
   const handoff = isBindingSync(syncOptions)
-    ? await createCheckedHandoff(syncOptions.binding)
+    ? await createCheckedHandoff(seamOf(syncOptions.caller, "sync.caller"))
     : await handoffFromTransport(syncOptions.transport);
   const compiled = await compileBindingResolution(
     handoff,

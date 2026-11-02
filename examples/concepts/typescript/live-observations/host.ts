@@ -5,6 +5,7 @@ import { bindProjection, compileInteractions, defineInteraction, directRealizati
   implementInteractions, installInteractions, projectAllDirect } from "@foxworth/boundary";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import { createObservationHttpHandler } from "@foxworth/boundary/http/observations";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 type Tenant = "a" | "b";
 type Context = { tenant: Tenant };
@@ -56,7 +57,7 @@ async function protocol(path: string, installationId: string) {
     admit: () => ({ decision: "allow" }), observation,
   });
   if (result.status !== "bound") throw new Error("example could not bind");
-  return createProtocolHandler({ binding: result.binding, path, context: (request) => ({ tenant: authenticate(request)! }) });
+  return createProtocolHandler({ caller: createCaller(result.binding), path, context: (request) => ({ tenant: authenticate(request)! }) });
 }
 function authenticate(request: Request): Tenant | undefined {
   return tokens.get(request.headers.get("authorization") ?? "");

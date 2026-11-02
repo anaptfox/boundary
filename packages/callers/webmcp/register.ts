@@ -234,7 +234,7 @@ export async function registerWebMcpBinding<Context>(
   }
   return openWebMcpRegistration(
     requireModelContext(options.modelContext),
-    { binding: options.binding, tools: options.tools },
+    { caller: options.caller, tools: options.tools },
     options.context,
     undefined,
     options.onActivity,

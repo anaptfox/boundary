@@ -1,40 +1,26 @@
 import type {
-  AnyInteractionDefinition,
+  AnyCaller,
+  CallerCallAliases,
+  CallerDefinitions,
+  CallerProposeAliases,
   DefinitionArity,
   DefinitionInput,
   DefinitionOutput,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-  ProjectionBinding,
 } from "@foxworth/boundary";
+import type { JsonValue } from "@foxworth/boundary/program";
 import { AdapterError } from "@foxworth/boundary/remote";
 import { indexInteractionFootprints, isReadInteraction } from "@foxworth/boundary/client/cache";
 import type { HttpHandler } from "@foxworth/boundary/http";
 
-type AnyProjectedInteractionHandle = ProjectedInteractionHandle<any, any, any>;
-type DefinitionOf<Handle> = Handle extends ProjectedInteractionHandle<
-  InteractionHandle<infer Definition>,
-  any
->
-  ? Definition
-  : AnyInteractionDefinition;
-type HandleInput<Handle extends AnyProjectedInteractionHandle> = DefinitionInput<
-  DefinitionOf<Handle>
->;
-type HandleOutput<Handle extends AnyProjectedInteractionHandle> = DefinitionOutput<
-  DefinitionOf<Handle>
->;
-type HandleArity<Handle extends AnyProjectedInteractionHandle> = DefinitionArity<
-  DefinitionOf<Handle>
->;
-type HandleArguments<Handle extends AnyProjectedInteractionHandle> =
-  HandleArity<Handle> extends 0 ? readonly [] : readonly [input: HandleInput<Handle>];
-type DirectHandle<Handle extends AnyProjectedInteractionHandle> = Handle &
-  ("direct" extends Handle["modes"][number] ? unknown : never);
-type RequestHandle<Handle extends AnyProjectedInteractionHandle> = Handle &
-  ("request" extends Handle["modes"][number] ? unknown : never);
-type RequestOutput<Handle extends AnyProjectedInteractionHandle> =
-  Handle extends ProjectedInteractionHandle<any, any, infer Output> ? Output : never;
+type ServerArguments<Definition> = DefinitionArity<Definition> extends 0
+  ? readonly []
+  : readonly [input: DefinitionInput<Definition>];
+
+type ServerMethods<Definitions, Aliases extends string, Output> = Readonly<{
+  [Alias in Aliases]: (
+    ...args: ServerArguments<Alias extends keyof Definitions ? Definitions[Alias] : never>
+  ) => Promise<Output extends "declared" ? DefinitionOutput<Alias extends keyof Definitions ? Definitions[Alias] : never> : JsonValue>;
+}>;
 
 /**
  * The exact completed direct invocation that a host may use to refresh its own
@@ -48,12 +34,9 @@ export type NextActionCompletion<Context> = Readonly<{
   installationId: string;
 }>;
 
-export type NextServerCallerOptions<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle<any, any, any>>>,
-  Context,
-> = Readonly<{
-  /** A single already-bound, pinned host Binding; this helper never installs one. */
-  binding: ProjectionBinding<Handles, Context>;
+export type NextServerCallerOptions<C extends AnyCaller<any>, Context> = Readonly<{
+  /** A connected caller; this helper never installs or widens one. */
+  caller: C;
   /** Derive authenticated request/action context for every invocation. */
   context: () => Context | Promise<Context>;
   /**
@@ -65,40 +48,27 @@ export type NextServerCallerOptions<
   onCacheError?: (error: unknown, completion: NextActionCompletion<Context>) => void;
 }>;
 
-export type NextServerCaller<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle<any, any, any>>>,
-> = Readonly<{
-  /** Direct server read; it invokes the pinned Binding without a self-HTTP call. */
-  read: Readonly<{
-    call<Handle extends Handles[keyof Handles]>(
-      handle: DirectHandle<Handle>,
-      ...args: HandleArguments<Handle>
-    ): Promise<HandleOutput<Handle>>;
-  }>;
+export type NextServerCaller<C> = Readonly<{
+  /** Direct server reads, one per call alias with no declared changes; they invoke the caller without a self-HTTP call. */
+  read: ServerMethods<CallerDefinitions<C>, CallerCallAliases<C>, "declared">;
   /**
    * Direct mutation and proposal entry points for a Server Action or form.
    * Neither path retries an invocation. Only a completed direct call triggers
    * the optional host cache callback.
    */
-  action: Readonly<{
-    call<Handle extends Handles[keyof Handles]>(
-      handle: DirectHandle<Handle>,
-      ...args: HandleArguments<Handle>
-    ): Promise<HandleOutput<Handle>>;
-    request<Handle extends Handles[keyof Handles]>(
-      handle: RequestHandle<Handle>,
-      ...args: HandleArguments<Handle>
-    ): Promise<RequestOutput<Handle>>;
+  action: ServerMethods<CallerDefinitions<C>, CallerCallAliases<C>, "declared"> & Readonly<{
+    propose: ServerMethods<CallerDefinitions<C>, CallerProposeAliases<C>, "proposal">;
   }>;
 }>;
 
-function assertOptions(value: unknown): asserts value is NextServerCallerOptions<any, any> {
+function assertOptions(value: unknown): asserts value is NextServerCallerOptions<AnyCaller, unknown> {
   if (!value || typeof value !== "object") {
     throw new TypeError("createNextServerCaller requires options");
   }
   const options = value as Record<string, unknown>;
-  if (!options.binding || typeof options.context !== "function") {
-    throw new TypeError("createNextServerCaller requires a Binding and per-invocation context function");
+  const caller = options.caller as Record<string, unknown> | undefined;
+  if (!caller || typeof caller !== "object" || !("handoff" in caller) || !("manifest" in caller) || typeof options.context !== "function") {
+    throw new TypeError("createNextServerCaller requires a connected caller and a per-invocation context function");
   }
   if (options.afterAction !== undefined && typeof options.afterAction !== "function") {
     throw new TypeError("createNextServerCaller.afterAction must be a function");
@@ -108,111 +78,86 @@ function assertOptions(value: unknown): asserts value is NextServerCallerOptions
   }
 }
 
+function define(record: object, key: string, value: unknown): void {
+  Object.defineProperty(record, key, { value, enumerable: true, configurable: false, writable: false });
+}
+
 /**
- * Adapt one existing Binding to Next server reads and Server Actions.
+ * Adapt one connected caller to Next server reads and Server Actions.
  *
  * The application owns installation lifetime and authentication. `context()`
  * deliberately runs for each call, so this helper cannot turn a selected
- * projection, module singleton, or prior request into authority.
+ * surface, module singleton, or prior request into authority.
  */
-export function createNextServerCaller<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle<any, any, any>>>,
-  Context,
->(options: NextServerCallerOptions<Handles, Context>): NextServerCaller<Handles> {
+export function createNextServerCaller<C extends AnyCaller<any>, Context>(
+  options: NextServerCallerOptions<C, Context>,
+): NextServerCaller<C> {
   assertOptions(options);
-  const caller = options.binding.connect();
-  const footprints = indexInteractionFootprints(options.binding.manifest);
-
-  function assertDeclaredRead(handle: AnyProjectedInteractionHandle): void {
-    if (!isReadInteraction(footprints, handle.interactionId)) {
-      throw new AdapterError(
-        "INVALID_DECLARATION",
-        `${handle.interactionId}.reads`,
-        "Next server reads require a selected interaction with no declared changes; use action.call instead",
-      );
-    }
+  const caller = options.caller as unknown as Record<string, (...args: unknown[]) => Promise<unknown>>;
+  const propose = options.caller.propose as Record<string, (...args: unknown[]) => Promise<unknown>>;
+  const manifest = options.caller.manifest;
+  const footprints = indexInteractionFootprints(manifest);
+  const interactionIds = new Map<string, string>();
+  const arities = new Map<string, 0 | 1>();
+  for (const entry of manifest.interactions) {
+    interactionIds.set(entry.alias, entry.interactionId);
+    arities.set(entry.alias, entry.inputArity);
   }
 
-  async function direct<Handle extends Handles[keyof Handles]>(
-    handle: DirectHandle<Handle>,
-    args: HandleArguments<Handle>,
-  ): Promise<HandleOutput<Handle>> {
-    assertDeclaredRead(handle);
-    const context = await options.context();
-    const call = caller.call as (
-      handle: AnyProjectedInteractionHandle,
-      ...arguments_: readonly unknown[]
-    ) => Promise<unknown>;
-    return (handle.inputArity === 0
-      ? await call(handle, context)
-      : await call(handle, args[0], context)) as HandleOutput<Handle>;
+  async function invoke(
+    method: (...args: unknown[]) => Promise<unknown>,
+    alias: string,
+    args: readonly unknown[],
+    context: Context,
+  ): Promise<unknown> {
+    return arities.get(alias) === 0 ? method(context) : method(args[0], context);
   }
 
-  async function afterCompletedAction<Handle extends Handles[keyof Handles]>(
-    handle: DirectHandle<Handle>,
-    args: HandleArguments<Handle>,
-  ): Promise<HandleOutput<Handle>> {
-    const context = await options.context();
-    const call = caller.call as (
-      handle: AnyProjectedInteractionHandle,
-      ...arguments_: readonly unknown[]
-    ) => Promise<unknown>;
-    const value = (handle.inputArity === 0
-      ? await call(handle, context)
-      : await call(handle, args[0], context)) as HandleOutput<Handle>;
-    const completion: NextActionCompletion<Context> = Object.freeze({
-      context,
-      interactionId: handle.interactionId,
-      bindingDigest: options.binding.manifest.bindingDigest,
-      installationId: options.binding.manifest.installationId,
+  const read: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+  const action: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+  const proposals: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+  for (const alias of Object.keys(caller)) {
+    const method = caller[alias]!;
+    const interactionId = interactionIds.get(alias)!;
+    define(read, alias, async (...args: readonly unknown[]) => {
+      if (!isReadInteraction(footprints, interactionId)) {
+        throw new AdapterError(
+          "INVALID_DECLARATION",
+          `${interactionId}.reads`,
+          "Next server reads require a selected interaction with no declared changes; use action instead",
+        );
+      }
+      return invoke(method, alias, args, await options.context());
     });
-    if (options.afterAction) {
-      try {
-        await options.afterAction(completion);
-      } catch (error) {
+    define(action, alias, async (...args: readonly unknown[]) => {
+      const context = await options.context();
+      const value = await invoke(method, alias, args, context);
+      const completion: NextActionCompletion<Context> = Object.freeze({
+        context,
+        interactionId,
+        bindingDigest: manifest.bindingDigest,
+        installationId: manifest.installationId,
+      });
+      if (options.afterAction) {
         try {
-          options.onCacheError?.(error, completion);
-        } catch {
-          // Cache-error reporting cannot turn a completed effect into a failed one.
+          await options.afterAction(completion);
+        } catch (error) {
+          try {
+            options.onCacheError?.(error, completion);
+          } catch {
+            // Cache-error reporting cannot turn a completed effect into a failed one.
+          }
         }
       }
-    }
-    return value;
+      return value;
+    });
   }
-
-  async function request<Handle extends Handles[keyof Handles]>(
-    handle: RequestHandle<Handle>,
-    args: HandleArguments<Handle>,
-  ): Promise<RequestOutput<Handle>> {
-    const context = await options.context();
-    const requestCaller = caller as typeof caller & Readonly<{
-      request: (
-        handle: AnyProjectedInteractionHandle,
-        ...arguments_: readonly unknown[]
-      ) => Promise<unknown>;
-    }>;
-    return (handle.inputArity === 0
-      ? await requestCaller.request(handle, context)
-      : await requestCaller.request(handle, args[0], context)) as RequestOutput<Handle>;
+  for (const alias of Object.keys(propose)) {
+    const method = propose[alias]!;
+    define(proposals, alias, async (...args: readonly unknown[]) => invoke(method, alias, args, await options.context()));
   }
-
-  const read: NextServerCaller<Handles>["read"] = Object.freeze({
-    call: async <Handle extends Handles[keyof Handles]>(
-      handle: DirectHandle<Handle>,
-      ...args: HandleArguments<Handle>
-    ) => direct(handle, args),
-  });
-  const action: NextServerCaller<Handles>["action"] = Object.freeze({
-    call: async <Handle extends Handles[keyof Handles]>(
-      handle: DirectHandle<Handle>,
-      ...args: HandleArguments<Handle>
-    ) => afterCompletedAction(handle, args),
-    request: async <Handle extends Handles[keyof Handles]>(
-      handle: RequestHandle<Handle>,
-      ...args: HandleArguments<Handle>
-    ) => request(handle, args),
-  });
-  return Object.freeze({ read, action });
+  define(action, "propose", Object.freeze(proposals));
+  return Object.freeze({ read: Object.freeze(read), action: Object.freeze(action) }) as unknown as NextServerCaller<C>;
 }
 
 export type ProjectionHandlers = Readonly<{
@@ -226,7 +171,7 @@ export type ProjectionHandlers = Readonly<{
 }>;
 
 /**
- * Bind one explicit HTTP projection to Next App Router method exports.
+ * Bind one explicit HTTP handler to Next App Router method exports.
  * Route placement and segment config stay in the caller's `route.ts` file.
  */
 export function createProjectionHandlers(

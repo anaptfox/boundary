@@ -1,4 +1,3 @@
-import { direct, projectInteractions } from "@foxworth/boundary";
 import { createHttpHandler, route } from "@foxworth/boundary/http";
 import { createProjectionHonoMiddleware } from "@foxworth/boundary/frameworks/hono";
 import { Hono } from "hono";
@@ -50,10 +49,7 @@ describe("@foxworth/boundary/frameworks/hono native context", () => {
 
   it("derives checked invocation context from overlapping middleware-scoped requests", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
-      list: direct(fixture.compiled.handles.list),
-    });
-    const binding = await fixture.bind(projection);
+    const { caller } = await fixture.connect({ call: ["list"] });
     const seen: Array<Readonly<{ tenant: string | undefined; deployment: string }>> = [];
     const app = new Hono<HonoEnvironment>();
 
@@ -71,9 +67,9 @@ describe("@foxworth/boundary/frameworks/hono native context", () => {
           deployment: context.env.deployment,
         });
         return createHttpHandler({
-          binding,
+          caller,
           context: () => ({ role: context.var.role, marker: context.var.marker }),
-          routes: [route(projection.handles.list, {
+          routes: [route(caller, "list", {
             method: "GET",
             path: "/boundary/todos",
             headers: { "x-boundary-projection": "selected" },

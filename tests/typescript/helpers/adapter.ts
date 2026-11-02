@@ -1,15 +1,16 @@
 import { z } from "zod";
 import { portableSchema } from "@foxworth/boundary/program";
+import { declaredInteractionError, defineInteraction, surface, type Caller, type Surface, type SurfaceAlias } from "@foxworth/boundary";
 import {
   bindProjection,
   compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
+  createCaller,
   implementInteractions,
   installInteractions,
+  projectInteractions,
   type Projection,
   type ProjectionSelections,
-} from "@foxworth/boundary";
+} from "@foxworth/boundary/pipeline";
 import { createControlRequestContributions } from "@foxworth/boundary/host/control";
 
 export type AdapterContext = Readonly<{
@@ -162,8 +163,36 @@ export async function createAdapterFixture() {
     return result.binding;
   }
 
+  const admit = {
+    admit: ({ context }: { context: AdapterContext }) =>
+      context.role === "owner"
+        ? ({ decision: "allow" } as const)
+        : ({ decision: "deny", reason: "owner only" } as const),
+  };
+
+  /** Connect a selection of the fixture's interactions and return the adapter-ready caller. */
+  async function connect<
+    const Call extends SurfaceAlias<typeof interactions> = never,
+    const Propose extends SurfaceAlias<typeof interactions> = never,
+  >(selection: Readonly<{ call?: readonly Call[]; propose?: readonly Propose[] }>) {
+    const selected: Surface<typeof interactions, Call, Propose> = surface(interactions, selection);
+    const modes: Record<string, ("direct" | "request")[]> = {};
+    for (const alias of selected.call) (modes[alias] ??= []).push("direct");
+    for (const alias of selected.propose) (modes[alias] ??= []).push("request");
+    const projection = await projectInteractions(compiled, Object.fromEntries(
+      Object.entries(modes).map(([alias, selectedModes]) => [alias, { interaction: compiled.handles[alias as keyof typeof interactions], modes: selectedModes }]),
+    ));
+    const result = await bindProjection(projection, installation, admit);
+    if (result.status !== "bound") {
+      throw new Error("adapter fixture Binding could not be realized");
+    }
+    const caller = createCaller(result.binding) as unknown as Caller<typeof interactions, Call, Propose, AdapterContext>;
+    return { caller, binding: result.binding, projection };
+  }
+
   return {
     bind,
+    connect,
     compiled,
     contexts,
     controlDigest,

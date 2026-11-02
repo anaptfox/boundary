@@ -1,8 +1,4 @@
-import type {
-  InteractionMode,
-  ProjectedInteractionHandle,
-  ProjectionBinding,
-} from "@foxworth/boundary";
+import type { AnyCaller, InteractionMode } from "@foxworth/boundary";
 import { createCheckedHandoff } from "@foxworth/boundary/handoff";
 import { AdapterError } from "@foxworth/boundary/remote";
 import {
@@ -12,15 +8,18 @@ import {
   faultResult,
   sanitizedInternalResult,
   statusForRemoteResult,
-  type InteractionHasInput,
-  type InteractionInput,
   type RemoteCallResult,
 } from "@foxworth/boundary/remote";
 import {
-  modeForHandle,
   interactionKey,
-  snapshotProjectedHandle,
+  resolveSelection,
+  seamOf,
   type AnyProjectedInteractionHandle,
+  type InteractionSource,
+  type SourceAliases,
+  type SourceHasInput,
+  type SourceInput,
+  type SourceVerbs,
 } from "@foxworth/boundary/remote";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -33,27 +32,27 @@ export type RouteInputContext = Readonly<{
   body(): Promise<unknown>;
 }>;
 
-type RouteBaseOptions = Readonly<{
+type RouteBaseOptions<Verb> = Readonly<{
   method: HttpMethod;
   path: string;
-  mode?: InteractionMode;
+  /** `call` or `propose`; required when the alias is selected for both. */
+  mode?: Verb;
   successStatus?: number;
   headers?: Readonly<Record<string, string>>;
 }>;
 
-export type RouteOptions<Handle extends AnyProjectedInteractionHandle> =
-  InteractionHasInput<Handle> extends false
-    ? RouteBaseOptions & Readonly<{ input?: never }>
-    : RouteBaseOptions & Readonly<{
+export type RouteOptions<S, Alias extends string> =
+  SourceHasInput<S, Alias> extends false
+    ? RouteBaseOptions<SourceVerbs<S, Alias>> & Readonly<{ input?: never }>
+    : RouteBaseOptions<SourceVerbs<S, Alias>> & Readonly<{
         input?: (context: RouteInputContext) =>
-          | InteractionInput<Handle>
-          | Promise<InteractionInput<Handle>>;
+          | SourceInput<S, Alias>
+          | Promise<SourceInput<S, Alias>>;
       }>;
 
-export type HttpRoute<
-  Handle extends AnyProjectedInteractionHandle = AnyProjectedInteractionHandle,
-> = Readonly<{
-  handle: Handle;
+export type HttpRoute = Readonly<{
+  alias: string;
+  handle: AnyProjectedInteractionHandle;
   mode: InteractionMode;
   method: HttpMethod;
   path: string;
@@ -119,12 +118,13 @@ function pathPattern(path: string): {
   };
 }
 
-export function route<Handle extends AnyProjectedInteractionHandle>(
-  handleValue: Handle,
-  options: RouteOptions<Handle>,
-): HttpRoute<Handle> {
-  const handle = snapshotProjectedHandle(handleValue, "route.handle");
-  const mode = modeForHandle(handle, options.mode, "route.mode");
+/** Declare one HTTP route over an alias the caller (or, offline, a Projection) selects. */
+export function route<S extends InteractionSource, const Alias extends SourceAliases<S>>(
+  source: S,
+  alias: Alias,
+  options: RouteOptions<S, Alias>,
+): HttpRoute {
+  const { handle, mode } = resolveSelection(source, alias, options.mode as never, "route");
   const method = options.method?.toUpperCase() as HttpMethod;
   if (!["GET", "POST", "PUT", "PATCH", "DELETE"].includes(method)) {
     fail("route.method", `unsupported HTTP method: ${String(options.method)}`);
@@ -150,15 +150,16 @@ export function route<Handle extends AnyProjectedInteractionHandle>(
     fail("route.input", "input must be a function");
   }
   const headers = Object.freeze({ ...options.headers });
-  const declaration = Object.freeze({
-    handle: handleValue,
+  const declaration: HttpRoute = Object.freeze({
+    alias,
+    handle,
     mode,
     method,
     path: options.path,
     inputMapping: options.input === undefined ? "default" : "custom",
     ...(options.successStatus === undefined ? {} : { successStatus: options.successStatus }),
     ...(Object.keys(headers).length === 0 ? {} : { headers }),
-  }) as HttpRoute<Handle>;
+  });
   routeRuntimes.set(declaration, Object.freeze({
     handle,
     mode,
@@ -264,12 +265,13 @@ function compileRoutes(routes: readonly HttpRoute[]): readonly RouteRuntime[] {
 }
 
 export type CreateHttpHandlerOptions<Context> = Readonly<{
-  binding: ProjectionBinding<any, Context>;
+  /** A connected caller; the handler invokes through its Handoff seam and nothing wider. */
+  caller: AnyCaller<Context>;
   context(request: Request): Context | Promise<Context>;
   routes: readonly HttpRoute[];
 }>;
 
-/** Build a Fetch-native adapter over one exact live Binding. */
+/** Build a Fetch-native adapter over one connected caller. */
 export function createHttpHandler<Context>(
   options: CreateHttpHandlerOptions<Context>,
 ): HttpHandler {
@@ -277,7 +279,7 @@ export function createHttpHandler<Context>(
     fail("createHttpHandler.context", "context must resolve one invocation-scoped host value");
   }
   const routes = compileRoutes(options.routes);
-  const exposure = createCheckedHandoff(options.binding).then((handoff) =>
+  const exposure = createCheckedHandoff(seamOf(options.caller, "createHttpHandler.caller")).then((handoff) =>
     compileExposure(handoff, routes.map((entry) => ({
       handle: entry.handle,
       mode: entry.mode,
@@ -364,4 +366,3 @@ export function createHttpHandler<Context>(
   };
 }
 
-export type { ProjectedInteractionHandle };

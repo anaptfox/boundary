@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { SaveForm } from "./save-form";
 import { demoContextFromCookie } from "../lib/context";
-import { documentCaller, projection } from "../lib/boundary";
+import { documentCaller } from "../lib/boundary";
 import { Brand } from "./workspace-parts";
 import { Icon } from "./icons";
 
@@ -26,7 +26,7 @@ async function DocumentWorkspace() {
   }
   const context = demoContextFromCookie(`boundary_demo_session=${cookie}`);
   const boundary = documentCaller(() => context);
-  const document = await boundary.read.call(projection.handles.get, { id: "doc-1" });
-  const publicationView = await boundary.read.call(projection.handles.publicationStatus, { id: "doc-1" });
+  const document = await boundary.read.get({ id: "doc-1" });
+  const publicationView = await boundary.read.publicationStatus({ id: "doc-1" });
   return <SaveForm document={document} canEdit={context.canEdit} session={context.session} publicationView={publicationView} />;
 }

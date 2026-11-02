@@ -30,7 +30,7 @@ export async function createRoomHost() {
       if (JSON.stringify(todos.store.get(proposal.todoId)) !== proposal.base) { proposal.state = "stale"; return { ...proposal }; }
       proposal.state = "executing";
       try {
-        await todos.screenCaller.call(todos.screen.handles.complete, { id: proposal.todoId }, todos.screenContext);
+        await todos.screenCaller.complete({ id: proposal.todoId }, todos.screenContext);
         proposal.state = "completed";
       } catch { proposal.state = "uncertain"; }
       return { ...proposal };

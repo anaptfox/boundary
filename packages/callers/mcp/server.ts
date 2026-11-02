@@ -1,6 +1,6 @@
 import type {
+  AnyCaller,
   InteractionMode,
-  ProjectionBinding,
   ProjectionBindingManifest,
 } from "@foxworth/boundary";
 import type { JsonValue } from "@foxworth/boundary/program";
@@ -23,18 +23,23 @@ import {
 } from "@modelcontextprotocol/server";
 import {
   compileBindingResolution,
-  modeForHandle,
   interactionKey,
-  snapshotProjectedHandle,
+  resolveSelection,
+  seamOf,
+  selectionsOf,
+  verbForMode,
   type AnyProjectedInteractionHandle,
+  type InteractionSource,
   type ResolvedBindingInteraction,
+  type SourceAliases,
+  type SourceVerbs,
 } from "@foxworth/boundary/remote";
 import { AdapterError } from "@foxworth/boundary/remote";
 
-export type McpTool<
-  Value extends AnyProjectedInteractionHandle = AnyProjectedInteractionHandle,
-> = Readonly<{
-  handle: Value;
+export type McpTool = Readonly<{
+  alias: string;
+  handle: AnyProjectedInteractionHandle;
+  /** Wire mode; `direct` is the caller's `call`, `request` its `propose`. */
   mode: InteractionMode;
   name: string;
   title?: string;
@@ -53,19 +58,21 @@ function detachedJsonSchema(schema: JsonSchemaType): JsonSchemaType {
   return structuredClone(schema) as JsonSchemaType;
 }
 
-export function tool<Value extends AnyProjectedInteractionHandle>(
-  handleValue: Value,
+/** Declare one MCP tool over an alias the caller (or, offline, a Projection) selects. */
+export function tool<S extends InteractionSource, const Alias extends SourceAliases<S>>(
+  source: S,
+  alias: Alias,
   options: Readonly<{
-    mode?: Value["modes"][number];
+    /** `call` or `propose`; required when the alias is selected for both. */
+    mode?: SourceVerbs<S, Alias>;
     name?: string;
     title?: string;
     description?: string;
     scopeChallenge?: ScopeChallengeHandler;
   }> = {},
-): McpTool<Value> {
-  const handle = snapshotProjectedHandle(handleValue, "tool.handle");
-  const mode = modeForHandle(handle, options.mode, "tool.mode");
-  const name = options.name ?? handle.interactionId;
+): McpTool {
+  const { handle, mode } = resolveSelection(source, alias, options.mode as never, "tool");
+  const name = options.name ?? (mode === "request" ? `${handle.interactionId}.propose` : handle.interactionId);
   if (!TOOL_NAME.test(name)) {
     throw new AdapterError(
       "INVALID_DECLARATION",
@@ -87,7 +94,8 @@ export function tool<Value extends AnyProjectedInteractionHandle>(
       "tool description must not be empty",
     );
   }
-  const declaration = Object.freeze({
+  const declaration: McpTool = Object.freeze({
+    alias,
     handle,
     mode,
     name,
@@ -108,12 +116,13 @@ export type McpContextRequest = Readonly<{
 }>;
 
 export type CreateMcpServerOptions<Context> = Readonly<{
-  binding: ProjectionBinding<any, Context>;
+  /** A connected caller; the server invokes through its Handoff seam and nothing wider. */
+  caller: AnyCaller<Context>;
   context(request: McpContextRequest): Context | Promise<Context>;
   /**
-   * How the Binding's interactions are presented: names and modes. This is a
-   * fixed list, never a per-request predicate. Omitting a projected interaction
-   * here hides nothing the Binding still carries; narrow the Projection when
+   * How the caller's interactions are presented: names and modes. This is a
+   * fixed list, never a per-request predicate. Omitting a selected interaction
+   * here hides nothing the Binding still carries; narrow the Surface when
    * a model must not see an interaction.
    */
   tools: readonly McpTool[];
@@ -207,7 +216,7 @@ export async function createMcpServer<Context>(
     }
   }
 
-  const handoff = await createCheckedHandoff(options.binding);
+  const handoff = await createCheckedHandoff(seamOf(options.caller, "createMcpServer.caller"));
   const resolution = await compileBindingResolution(
     handoff,
     options.tools.map((entry) => ({
@@ -320,13 +329,11 @@ export function createMcpHandler<Context>(
   return createMcpHttpHandler(() => createMcpServer(options), { ...handlerOptions, legacy: "reject" });
 }
 
-export type ToolSource = Readonly<{
-  readonly handles: Readonly<Record<string, AnyProjectedInteractionHandle>>;
-}>;
+export type ToolSource = InteractionSource;
 
-/** One MCP tool per projected handle, using each handle's default mode. */
-export function toolsFor(
-  projection: ToolSource,
-): McpTool[] {
-  return Object.values(projection.handles).map((handle) => tool(handle));
+/** One MCP tool per selected (alias, mode): `call` tools keep the interaction id as their name, `propose` tools add `.propose`. */
+export function toolsFor(source: ToolSource): McpTool[] {
+  return selectionsOf(source, "toolsFor").map((selection) =>
+    tool(source, selection.alias as never, { mode: verbForMode(selection.mode) as never }),
+  );
 }

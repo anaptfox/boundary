@@ -45,3 +45,20 @@ export {
 } from "./resolution";
 
 export { validatePortableValue } from "./schema";
+
+export {
+  modeForVerb,
+  resolveSelection,
+  seamOf,
+  selectionsOf,
+  verbForMode,
+  type InteractionSource,
+  type InteractionVerb,
+  type ResolvedSelection,
+  type SourceAliases,
+  type SourceDefinition,
+  type SourceHasInput,
+  type SourceInput,
+  type SourceOutput,
+  type SourceVerbs,
+} from "./source";

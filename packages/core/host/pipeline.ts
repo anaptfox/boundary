@@ -29,7 +29,7 @@ export {
   type ExecutionEvidencePublisher,
 } from "./evidence";
 
-export type { NativeDispatchers } from "./facade-types";
+export type { AnyCaller, Caller, CallerOfBinding, HandoffSeam, NativeDispatchers } from "./facade-types";
 export type { InstallInteractionsOptions } from "./install";
 export type { DirectRealizationIds } from "./direct";
 export type { AliasProjectionSelections, DirectProjectionSelections } from "./projection";
@@ -46,6 +46,7 @@ export type {
   CompileInteractionsOptions,
   CompiledInteractions,
   DirectInteractionCaller,
+  HandleDefinition,
   HandlesOf,
   ImplementationMap,
   InstallationController,

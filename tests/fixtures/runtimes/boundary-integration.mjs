@@ -8,6 +8,7 @@ import { portableSchema } from "@foxworth/boundary/program";
 import { createControlRequestContributions } from "@foxworth/boundary/host/control";
 import { createHandoffInvocation, executeHandoff } from "@foxworth/boundary/handoff";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createCaller } from "@foxworth/boundary/pipeline";
 
 // Host-owned single-writer durable fixture. It is not a production journal or crash-safe transaction.
 const [phase, journalPath] = process.argv.slice(2);
@@ -63,7 +64,7 @@ const bound = await bindProjection(projection, installed.installation, {
 assert.equal(bound.status, "bound");
 const caller = bound.binding.connect();
 const context = requestId => ({ requestId, authorized: true });
-const protocol = createProtocolHandler({ binding: bound.binding, path: "/boundary", context: request => ({ requestId: request.headers.get("request-id"), authorized: request.headers.get("principal") === "owner" }) });
+const protocol = createProtocolHandler({ caller: createCaller(bound.binding), path: "/boundary", context: request => ({ requestId: request.headers.get("request-id"), authorized: request.headers.get("principal") === "owner" }) });
 async function httpCall(mode, input, requestId, principal = "owner") {
   const invocation = await createHandoffInvocation(bound.binding.manifest, "boundary.change", mode, input);
   const response = await protocol(new Request("https://fixture.invalid/boundary/invoke", {

@@ -1,6 +1,6 @@
 import type {
+  AnyCaller,
   Projection,
-  ProjectionBinding,
   ProjectionBindingInteraction,
 } from "@foxworth/boundary";
 import {
@@ -10,7 +10,7 @@ import {
 import type { InvocationCertainty, JsonObject, JsonSchema, InteractionDescriptor } from "@foxworth/boundary/program";
 import { AdapterError } from "@foxworth/boundary/remote";
 import type { HttpRoute } from "./handler";
-import { compileBindingResolution, compileProjectionResolution, interactionKey } from "@foxworth/boundary/remote";
+import { compileBindingResolution, compileProjectionResolution, interactionKey, seamOf } from "@foxworth/boundary/remote";
 
 type OpenApiCommon = Readonly<{
   routes: readonly HttpRoute[];
@@ -19,8 +19,8 @@ type OpenApiCommon = Readonly<{
 }>;
 
 export type OpenApiOptions<Context = unknown> = OpenApiCommon & (
-  | Readonly<{ projection: Projection<any>; binding?: never }>
-  | Readonly<{ binding: ProjectionBinding<any, Context>; projection?: never }>
+  | Readonly<{ projection: Projection<any>; caller?: never }>
+  | Readonly<{ caller: AnyCaller<Context>; projection?: never }>
 );
 
 function object(value: unknown, path: string): JsonObject {
@@ -407,8 +407,8 @@ export async function openapi<Context>(options: OpenApiOptions<Context>): Promis
   let installationId: string | undefined;
   let programDigest: string;
   let sourceDigest: string;
-  if (options.binding !== undefined) {
-    const handoff = await createCheckedHandoff(options.binding);
+  if (options.caller !== undefined) {
+    const handoff = await createCheckedHandoff(seamOf(options.caller, "openapi.caller"));
     const binding = await compileBindingResolution(handoff, declarations);
     bindingDigest = binding.manifest.bindingDigest;
     installationId = binding.manifest.installationId;
