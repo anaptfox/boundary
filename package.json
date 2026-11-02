@@ -1,0 +1,53 @@
+{
+  "name": "boundary-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Taron Foxworth",
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=24.21"
+  },
+  "scripts": {
+    "docs:check": "node ./scripts/check/docs.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --config config/vitest.config.ts",
+    "test:transports": "vitest run --config config/vitest.live.config.ts",
+    "quick": "just quick",
+    "check": "just check",
+    "gate": "just gate",
+    "ci": "just ci",
+    "e2e": "just e2e"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/core": "0.18.5",
+    "@automerge/automerge": "3.5.0",
+    "@foxworth/boundary": "workspace:*",
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@modelcontextprotocol/server": "^2.4.0",
+    "@testing-library/react": "^16.3.3",
+    "@trpc/server": "^11.22.1",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "happy-dom": "^21.0.4",
+    "hono": "^4.13.14",
+    "miniflare": "4.20260730.0",
+    "next": "^16.4.3",
+    "oxc-parser": "0.156.0",
+    "oxc-resolver": "11.24.2",
+    "oxlint": "1.90.0",
+    "playwright": "1.64.1",
+    "publint": "0.3.25",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tsdown": "0.23.4",
+    "tsx": "^4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.5",
+    "vitest": "5.0.5",
+    "webmcp-types": "0.1.10",
+    "yjs": "13.6.33",
+    "zod": "4.6.7"
+  }
+}

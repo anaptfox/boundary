@@ -1,0 +1,262 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&display=swap");
+
+:root {
+  --board: #12171c;
+  --paper: #e8e2d2;
+  --ink: #16130f;
+  --mute: #5b5348;
+  --rule: #c9c0ae;
+  --screen: #2f6b63;
+  --agent: #9a4a24;
+  --fault: #7a2e22;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(47, 107, 99, 0.18), transparent 36rem),
+    var(--board);
+  color: var(--paper);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+body {
+  padding: 32px 20px 64px;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+#root {
+  width: min(560px, 100%);
+  margin: 0 auto;
+}
+
+.board {
+  display: grid;
+  gap: 22px;
+}
+
+.mast h1 {
+  margin: 6px 0 10px;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: clamp(42px, 8vw, 64px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+}
+
+.eyebrow,
+.stamp-note,
+.desk-foot,
+.lede {
+  color: #b7b0a3;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.lede {
+  margin: 0 0 18px;
+  max-width: 36rem;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.lede code {
+  color: var(--paper);
+}
+
+.switch {
+  display: flex;
+  width: fit-content;
+  padding: 3px;
+  border: 1px solid #3a4248;
+  background: #0c1014;
+}
+
+.switch button {
+  padding: 8px 14px;
+  border: 0;
+  color: #c4beb2;
+  background: transparent;
+  cursor: pointer;
+}
+
+.switch button.on {
+  color: var(--board);
+  background: var(--paper);
+}
+
+.desk {
+  overflow: hidden;
+  border: 1px solid #2a3238;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.desk[data-desk="screen"] .stamp {
+  color: var(--screen);
+}
+
+.desk[data-desk="agent"] .stamp {
+  color: var(--agent);
+}
+
+.desk-head,
+.desk-foot,
+.composer,
+.row,
+.fault {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.desk-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding-top: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--rule);
+}
+
+.stamp {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.stamp-note {
+  margin: 0;
+  font-size: 11px;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding-top: 16px;
+  padding-bottom: 8px;
+}
+
+.composer input {
+  min-width: 0;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+  background: transparent;
+  outline: none;
+}
+
+.composer input:focus {
+  border-bottom-color: var(--screen);
+}
+
+.composer button,
+.ghost {
+  padding: 8px 12px;
+  border: 1px solid var(--ink);
+  color: var(--paper);
+  background: var(--ink);
+  cursor: pointer;
+}
+
+.composer button:disabled,
+.ghost:disabled,
+.check:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ghost {
+  color: var(--ink);
+  background: transparent;
+}
+
+.fault {
+  margin: 0 0 8px;
+  color: var(--fault);
+  font-size: 12px;
+}
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  border-bottom: 1px solid #ddd6c6;
+}
+
+.title {
+  margin: 0;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.done .title {
+  color: var(--mute);
+  text-decoration: line-through;
+}
+
+.check {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1.5px solid #6f675b;
+  border-radius: 2px;
+  color: transparent;
+  background: transparent;
+  cursor: pointer;
+}
+
+.done .check {
+  color: var(--paper);
+  background: var(--screen);
+  border-color: var(--screen);
+}
+
+.desk-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  padding-bottom: 16px;
+}
+
+.desk-foot p {
+  margin: 0;
+  font-size: 11px;
+}
+
+@media (max-width: 520px) {
+  .desk-head {
+    flex-direction: column;
+  }
+}

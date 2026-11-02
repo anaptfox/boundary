@@ -1,0 +1,127 @@
+name: Release
+
+# Stages @foxworth/boundary on npm through trusted publishing. Nothing here can
+# make a version installable: a maintainer releases it with `npm stage approve`
+# and 2FA. No npm token exists anywhere; the stage job's OIDC identity is the
+# only credential, and npm's trust config allows it to stage and nothing else.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to stage; must equal packages/package.json
+        required: true
+        type: string
+      dist-tag:
+        description: Install tag for the version; prereleases must use next
+        required: true
+        type: choice
+        options: [latest, next]
+      dry-run:
+        description: Rehearse with npm publish --dry-run instead of staging
+        required: true
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Require version input to match the manifest
+        env:
+          VERSION: ${{ inputs.version }}
+          DIST_TAG: ${{ inputs.dist-tag }}
+        run: |
+          actual=$(node -p 'require("./packages/package.json").version')
+          [ "$actual" = "$VERSION" ] || { echo "::error::input $VERSION does not match packages/package.json $actual"; exit 1; }
+          case "$VERSION" in *-*) [ "$DIST_TAG" = next ] || { echo "::error::prerelease $VERSION must use dist-tag next"; exit 1; } ;; esac
+
+      - name: Require successful CI for this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&event=push&status=success" --jq '.total_count')
+          [ "$count" -gt 0 ] || { echo "::error::no successful CI push run for $GITHUB_SHA"; exit 1; }
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      # No dependency cache: a release must not restore state another workflow wrote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+
+      - name: Install frozen dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - name: Build candidate twice and require identical bytes
+        run: |
+          node scripts/release/create-candidate.mjs --output "$RUNNER_TEMP/candidate-a"
+          node scripts/release/create-candidate.mjs --output release-candidate
+          node scripts/release/compare-candidates.mjs "$RUNNER_TEMP/candidate-a" release-candidate
+
+      - name: Verify minimum and current Zod peers
+        run: |
+          node scripts/build/zod-peer-smoke.mjs --candidate release-candidate --zod 4.6.5
+          node scripts/build/zod-peer-smoke.mjs --candidate release-candidate --zod '^4.6.5'
+
+      - name: Record candidate integrity
+        run: |
+          node --input-type=module -e '
+            import { verifyCandidate } from "./scripts/release/candidate.ts";
+            const c = await verifyCandidate("release-candidate");
+            console.log(`## ${c.name}@${c.version}\n\n| | |\n| --- | --- |\n| commit | \`${process.env.GITHUB_SHA}\` |\n| tarball | \`${c.tarball}\` (${c.bytes} bytes) |\n| integrity | \`${c.integrity}\` |\n| content digest | \`${c.contentDigest}\` |`);
+          ' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: candidate
+          path: release-candidate/*
+          if-no-files-found: error
+          retention-days: 30
+
+  stage:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: candidate
+          path: candidate
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26.13.0
+          registry-url: https://registry.npmjs.org
+
+      - name: Install npm with staged publishing
+        run: npm install --global npm@12.2.1
+
+      - name: Rehearse publication
+        if: inputs.dry-run
+        env:
+          DIST_TAG: ${{ inputs.dist-tag }}
+        run: npm publish ./candidate/*.tgz --dry-run --access public --tag "$DIST_TAG"
+
+      - name: Stage for maintainer approval
+        if: ${{ !inputs.dry-run }}
+        env:
+          DIST_TAG: ${{ inputs.dist-tag }}
+        run: |
+          npm stage publish ./candidate/*.tgz --access public --tag "$DIST_TAG" --provenance
+          echo "Staged. Review with: just release-review <stage-id> $GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"

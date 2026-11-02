@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "types": [
+      "vitest/globals"
+    ]
+  },
+  "include": [
+    "tests/typescript",
+    "config/**/*.ts",
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    "scripts/**/*.ts",
+    "examples/apps/typescript",
+    "examples/concepts/typescript",
+    "examples/snippets/typescript",
+    "tests/fixtures/runtimes/**/*.ts",
+    "tests/fixtures/runtimes/**/*.tsx"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "packages/dist",
+    "packages/tsdown.config.ts"
+  ]
+}

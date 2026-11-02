@@ -1,0 +1,39 @@
+{
+  "$comment": "Pinned stable WebAssembly component toolchain, refreshed 2026-10-31. Generated bindings and component bytes require independent qualification.",
+  "version": 1,
+  "resolvedOn": "2026-10-31",
+  "rust": {
+    "wasmtime": "49.0.2",
+    "$wasmtimeNote": "Requires Rust 1.96.0. The composition and binary tiers follow this runtime minimum; the pure tier remains at Rust 1.88.",
+    "witBindgen": "0.62.0",
+    "targets": [
+      "wasm32-unknown-unknown",
+      "wasm32-wasip1"
+    ]
+  },
+  "cli": {
+    "wasmTools": "1.261.0",
+    "witBindgenCli": "0.62.0",
+    "jco": "1.40.0",
+    "componentizePy": "0.25.1",
+    "cargoComponent": "0.21.1"
+  },
+  "go": {
+    "tinygo": "0.44.0",
+    "toolchain": "go1.27.3",
+    "$note": "TinyGo 0.44 supports Go 1.27. GOTOOLCHAIN pins the supported Go; wasm-unknown and hand-written Canonical ABI keep this guest free of WASI imports."
+  },
+  "python": {
+    "componentizePy": "0.25.1",
+    "$note": "componentize-py --stub-wasi traps WASI inside the component. Bind reads the composed import list, which must still be only boundary:guest/footprints."
+  },
+  "zig": {
+    "version": "0.17.0",
+    "$note": "Stable release. The guest template targets wasm32-freestanding and writes Canonical ABI glue by hand: there is no maintained WIT generator for Zig, and the freestanding path is the only one that yields a zero-WASI component.",
+    "target": "wasm32-freestanding"
+  },
+  "policy": {
+    "componentModel": "Preview 2 canonical ABI, single-return lowering",
+    "$policyNote": "Component Model 1.0 changes the ABI to lazy/multivalue. Zig cannot return multivalue across the C ABI (ziglang#16639), so the guest template is pinned to the current ABI and the JSON-string world limits the blast radius when that lands."
+  }
+}

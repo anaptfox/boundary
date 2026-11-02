@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "points": [
+    { "name": "unchanged point", "key": "a", "source": { "a": 1 }, "target": { "a": 1 }, "expected": "matching" },
+    { "name": "unrelated point change", "key": "a", "source": { "a": 1, "b": 0 }, "target": { "a": 1, "b": 2 }, "expected": "matching" },
+    { "name": "changed point", "key": "a", "source": { "a": 1 }, "target": { "a": 2 }, "expected": "changed" },
+    { "name": "absence remains absence", "key": "a", "source": {}, "target": { "b": null }, "expected": "matching" },
+    { "name": "absence becomes null", "key": "a", "source": {}, "target": { "a": null }, "expected": "changed" },
+    { "name": "null becomes absence", "key": "a", "source": { "a": null }, "target": {}, "expected": "changed" },
+    { "name": "null remains present null", "key": "a", "source": { "a": null }, "target": { "a": null }, "expected": "matching" }
+  ],
+  "queries": [
+    { "name": "unchanged empty query", "query": { "completed": false, "order": "stored", "offset": 0, "limit": null }, "source": [], "target": [], "expected": "matching" },
+    { "name": "phantom insertion", "query": { "completed": false, "order": "stored", "offset": 0, "limit": null }, "source": [], "target": [{ "id": 1, "title": "one", "completed": false }], "expected": "changed" },
+    { "name": "unrelated excluded insertion", "query": { "completed": false, "order": "stored", "offset": 0, "limit": null }, "source": [], "target": [{ "id": 1, "title": "one", "completed": true }], "expected": "matching" },
+    { "name": "matching row deleted", "query": { "completed": false, "order": "stored", "offset": 0, "limit": null }, "source": [{ "id": 1, "title": "one", "completed": false }], "target": [], "expected": "changed" },
+    { "name": "row enters predicate", "query": { "completed": false, "order": "stored", "offset": 0, "limit": null }, "source": [{ "id": 1, "title": "one", "completed": true }], "target": [{ "id": 1, "title": "one", "completed": false }], "expected": "changed" },
+    { "name": "row leaves predicate", "query": { "completed": false, "order": "stored", "offset": 0, "limit": null }, "source": [{ "id": 1, "title": "one", "completed": false }], "target": [{ "id": 1, "title": "one", "completed": true }], "expected": "changed" },
+    { "name": "returned content changed", "query": { "completed": false, "order": "stored", "offset": 0, "limit": null }, "source": [{ "id": 1, "title": "one", "completed": false }], "target": [{ "id": 1, "title": "edited", "completed": false }], "expected": "changed" },
+    { "name": "stored order changed", "query": { "completed": null, "order": "stored", "offset": 0, "limit": null }, "source": [{ "id": 1, "title": "one", "completed": false }, { "id": 2, "title": "two", "completed": false }], "target": [{ "id": 2, "title": "two", "completed": false }, { "id": 1, "title": "one", "completed": false }], "expected": "changed" },
+    { "name": "sorted query ignores storage reorder", "query": { "completed": null, "order": "id-asc", "offset": 0, "limit": null }, "source": [{ "id": 1, "title": "one", "completed": false }, { "id": 2, "title": "two", "completed": false }], "target": [{ "id": 2, "title": "two", "completed": false }, { "id": 1, "title": "one", "completed": false }], "expected": "matching" },
+    { "name": "insertion crosses page boundary", "query": { "completed": null, "order": "id-asc", "offset": 0, "limit": 1 }, "source": [{ "id": 2, "title": "two", "completed": false }], "target": [{ "id": 1, "title": "one", "completed": false }, { "id": 2, "title": "two", "completed": false }], "expected": "changed" },
+    { "name": "change outside page result", "query": { "completed": null, "order": "id-asc", "offset": 0, "limit": 1 }, "source": [{ "id": 1, "title": "one", "completed": false }, { "id": 2, "title": "two", "completed": false }], "target": [{ "id": 1, "title": "one", "completed": false }, { "id": 2, "title": "edited", "completed": true }], "expected": "matching" },
+    { "name": "deletion shifts offset page", "query": { "completed": null, "order": "id-asc", "offset": 1, "limit": 1 }, "source": [{ "id": 1, "title": "one", "completed": false }, { "id": 2, "title": "two", "completed": false }], "target": [{ "id": 2, "title": "two", "completed": false }], "expected": "changed" }
+  ]
+}

@@ -1,0 +1,96 @@
+.shell {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 64px 28px 100px;
+  color: #202027;
+}
+.shell header {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid #dddbe5;
+  padding-bottom: 30px;
+}
+.shell header p,
+.shell header span {
+  font: 600 10px ui-monospace,monospace;
+  letter-spacing: 1.2px;
+  color: #777184;
+}
+.shell h1,
+.shell h2 {
+  font-family: Georgia,serif;
+}
+.shell h1 {
+  margin: 0;
+  font-size: 48px;
+}
+.new {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 34px;
+  padding: 31px 0;
+}
+.shell :is(form,article,aside) {
+  background: #fff;
+  border: 1px solid #dfdce7;
+  border-radius: 12px;
+}
+.new form,
+.shell article,
+.shell aside {
+  padding: 22px;
+}
+.shell label {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+  font-size: 12px;
+}
+.shell :is(input,textarea) {
+  border: 1px solid #cfccd7;
+  border-radius: 7px;
+  padding: 9px;
+}
+.shell textarea {
+  min-height: 73px;
+}
+.shell button {
+  background: #3d3560;
+  color: #fff;
+  border: 0;
+  border-radius: 7px;
+  padding: 10px 13px;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 18px;
+}
+.selected {
+  border-color: #8172c0 !important;
+}
+.direction {
+  min-height: 68px;
+  line-height: 1.55;
+}
+.shell article form {
+  border: 0;
+  border-top: 1px solid #ebe9ef;
+  border-radius: 0;
+  padding-top: 4px;
+}
+.choose {
+  margin-top: 12px;
+}
+.notice {
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: #7b551c;
+  background: #fff0d7;
+}
+@media (max-width:720px) {
+  .new,
+  .board {
+    grid-template-columns: 1fr;
+  }
+}

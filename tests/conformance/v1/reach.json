@@ -1,0 +1,348 @@
+{
+  "version": 1,
+  "$comment": "Reviewed evidence for the Reach record. A Reach record says where a Binding can be reached; it references a binding digest and never enters Binding identity, so moving a deployment reissues the record and changes nothing that was pinned. Holding a record is not authority: the caller still binds atomically against the manifest it fetches and the host still admits every call. Digests are computed over boundary.reach/v1 with canonical JSON, excluding the reserved signature field. A gate may verify these vectors but must never rewrite them.",
+  "domain": "boundary.reach/v1",
+  "signatureReserved": true,
+  "$signatureNote": "Version 1 records are unsigned. The field is reserved so adding a signature later does not change the record shape, and it is excluded from the digest because a signature signs a digest and cannot be part of what it signs.",
+  "cases": [
+    {
+      "expected": {
+        "reachDigest": "sha256:5ae15a88909f14f5664f4929a370243323cbb461039a6b91aeca8b8e88124675",
+        "transports": [
+          {
+            "base": "/boundary/v1",
+            "kind": "unix",
+            "path": "/tmp/boundary.sock"
+          }
+        ]
+      },
+      "input": {
+        "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "installationId": "deploy:example:1",
+        "transports": [
+          {
+            "base": "/boundary/v1",
+            "kind": "unix",
+            "path": "/tmp/boundary.sock"
+          }
+        ]
+      },
+      "name": "unix-only"
+    },
+    {
+      "expected": {
+        "reachDigest": "sha256:5264d9c5280c157409841f57a43eba60a48aa8135ec0881200b5721cbe72cfcf",
+        "transports": [
+          {
+            "kind": "http",
+            "url": "https://host.invalid/boundary/v1"
+          }
+        ]
+      },
+      "input": {
+        "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "installationId": "deploy:example:1",
+        "transports": [
+          {
+            "kind": "http",
+            "url": "https://host.invalid/boundary/v1"
+          }
+        ]
+      },
+      "name": "http-only"
+    },
+    {
+      "expected": {
+        "reachDigest": "sha256:8230da6c785b94bcc696c9b98c32f9d77b50cc755feece78bf28246b27e1ccad",
+        "transports": [
+          {
+            "base": "/boundary/v1",
+            "kind": "unix",
+            "path": "/tmp/boundary.sock"
+          },
+          {
+            "kind": "http",
+            "url": "https://host.invalid/boundary/v1"
+          }
+        ]
+      },
+      "input": {
+        "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "installationId": "deploy:example:1",
+        "transports": [
+          {
+            "kind": "http",
+            "url": "https://host.invalid/boundary/v1"
+          },
+          {
+            "base": "/boundary/v1",
+            "kind": "unix",
+            "path": "/tmp/boundary.sock"
+          }
+        ]
+      },
+      "name": "both-listed-http-first"
+    },
+    {
+      "expected": {
+        "reachDigest": "sha256:8230da6c785b94bcc696c9b98c32f9d77b50cc755feece78bf28246b27e1ccad",
+        "transports": [
+          {
+            "base": "/boundary/v1",
+            "kind": "unix",
+            "path": "/tmp/boundary.sock"
+          },
+          {
+            "kind": "http",
+            "url": "https://host.invalid/boundary/v1"
+          }
+        ]
+      },
+      "input": {
+        "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "installationId": "deploy:example:1",
+        "transports": [
+          {
+            "base": "/boundary/v1",
+            "kind": "unix",
+            "path": "/tmp/boundary.sock"
+          },
+          {
+            "kind": "http",
+            "url": "https://host.invalid/boundary/v1"
+          }
+        ]
+      },
+      "name": "both-listed-unix-first"
+    }
+  ],
+  "refusals": [
+    {
+      "name": "empty-binding-digest",
+      "bindingDigest": "",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "unix",
+          "path": "/tmp/boundary.sock",
+          "base": "/boundary/v1"
+        }
+      ],
+      "expected": {
+        "status": "empty",
+        "field": "bindingDigest"
+      }
+    },
+    {
+      "name": "empty-installation-id",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "",
+      "transports": [
+        {
+          "kind": "unix",
+          "path": "/tmp/boundary.sock",
+          "base": "/boundary/v1"
+        }
+      ],
+      "expected": {
+        "status": "empty",
+        "field": "installationId"
+      }
+    },
+    {
+      "name": "no-transports",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [],
+      "expected": {
+        "status": "no-transports"
+      }
+    },
+    {
+      "name": "relative-unix-path",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "unix",
+          "path": "boundary.sock",
+          "base": "/boundary/v1"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "unix-base-is-root",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "unix",
+          "path": "/tmp/boundary.sock",
+          "base": "/"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "http-without-scheme",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "http",
+          "url": "host.invalid/boundary"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "http-with-trailing-slash",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "http",
+          "url": "https://host.invalid/boundary/"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "http-url-splits-the-request-line",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "http",
+          "url": "http://127.0.0.1:9000/boundary HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\nPOST /admin/purge HTTP/1.1\r\nHost: 127.0.0.1:9000\r\nX: /pad"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "https-url-splits-the-request-line",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "http",
+          "url": "https://127.0.0.1:9000/boundary HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\nPOST /admin/purge HTTP/1.1\r\nHost: 127.0.0.1:9000\r\nX: /pad"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "http-url-carries-a-newline",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "http",
+          "url": "http://127.0.0.1:9000/boundary\nX: y"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "http-url-carries-a-space",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "http",
+          "url": "http://127.0.0.1:9000/boundary v1"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "http-url-carries-userinfo",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "http",
+          "url": "http://user@127.0.0.1:9000/boundary"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "http-url-carries-a-query",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "http",
+          "url": "http://127.0.0.1:9000/boundary?x=1"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "http-url-carries-a-fragment",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "http",
+          "url": "http://127.0.0.1:9000/boundary#frag"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "unix-base-carries-a-newline",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "unix",
+          "path": "/tmp/boundary.sock",
+          "base": "/boundary\r\nX: y"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    },
+    {
+      "name": "unix-path-carries-a-newline",
+      "bindingDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "installationId": "deploy:example:1",
+      "transports": [
+        {
+          "kind": "unix",
+          "path": "/tmp/boundary\r\n.sock",
+          "base": "/boundary/v1"
+        }
+      ],
+      "expected": {
+        "status": "transport"
+      }
+    }
+  ]
+}

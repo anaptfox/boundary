@@ -1,0 +1,6 @@
+/gen
+/wit_bindings.go
+/boundary_guest_footprints/
+/wit_runtime/
+/wit_types/
+*.wasm

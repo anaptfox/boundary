@@ -1,0 +1,38 @@
+[package]
+name = "boundary-reach"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.96.0"
+license.workspace = true
+authors.workspace = true
+publish = false
+description = "Reach records and the HTTP framing and client used to reach a Binding"
+
+[features]
+# Blocking HTTP/TLS and Unix-socket clients stay out of the pure core.
+client = ["dep:socket2", "dep:ureq"]
+
+[dependencies]
+boundary-core = { workspace = true, features = ["schemars"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+# Safe timed nonblocking Unix connect; qualified against the exact release.
+socket2 = { version = "=0.6.5", optional = true }
+# Exact pin: the Unix connector uses ureq's explicitly unversioned transport seam.
+# Cookies and decompression are absent; Boundary owns the response byte limit.
+ureq = { version = "=3.4.2", optional = true, default-features = false, features = ["rustls"] }
+
+[dev-dependencies]
+rcgen = "0.14"
+rustls = { version = "0.23.46", default-features = false, features = ["std", "tls12", "ring"] }
+socket2 = { version = "=0.6.5", features = ["all"] }
+
+[[test]]
+name = "http_client_conformance"
+path = "tests/http_client_conformance.rs"
+required-features = ["client"]
+
+[lints]
+workspace = true

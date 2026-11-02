@@ -1,0 +1,648 @@
+{
+  "version": 1,
+  "defaults": {
+    "version": 1,
+    "id": "items.read",
+    "inputSchema": { "type": "object", "additionalProperties": false },
+    "outputSchema": { "type": "object", "additionalProperties": false },
+    "reads": [],
+    "changes": []
+  },
+  "cases": [
+    {
+      "name": "identical-defaults",
+      "compatible": true,
+      "expected": {},
+      "offered": {}
+    },
+    {
+      "name": "ids-differ",
+      "compatible": false,
+      "expected": {},
+      "offered": { "id": "items.write" }
+    },
+    {
+      "name": "offered-reads-may-narrow",
+      "compatible": true,
+      "expected": { "reads": ["items", "clock"] },
+      "offered": { "reads": ["items"] }
+    },
+    {
+      "name": "offered-reads-must-not-widen",
+      "compatible": false,
+      "expected": { "reads": ["items"] },
+      "offered": { "reads": ["items", "clock"] }
+    },
+    {
+      "name": "offered-changes-may-narrow",
+      "compatible": true,
+      "expected": { "changes": ["items", "audit"] },
+      "offered": { "changes": ["items"] }
+    },
+    {
+      "name": "offered-changes-must-not-widen",
+      "compatible": false,
+      "expected": { "changes": ["items"] },
+      "offered": { "changes": ["audit"] }
+    },
+    {
+      "name": "integer-output-serves-number-caller",
+      "compatible": true,
+      "expected": { "outputSchema": { "type": "number" } },
+      "offered": { "outputSchema": { "type": "integer" } }
+    },
+    {
+      "name": "number-output-does-not-serve-integer-caller",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "integer" } },
+      "offered": { "outputSchema": { "type": "number" } }
+    },
+    {
+      "name": "untyped-output-does-not-serve-typed-caller",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "string" } },
+      "offered": { "outputSchema": {} }
+    },
+    {
+      "name": "open-expected-output-accepts-constrained-offered",
+      "compatible": true,
+      "expected": { "outputSchema": {} },
+      "offered": { "outputSchema": { "type": "string" } }
+    },
+    {
+      "name": "const-values-must-match",
+      "compatible": false,
+      "expected": { "outputSchema": { "const": "open" } },
+      "offered": { "outputSchema": { "const": "closed" } }
+    },
+    {
+      "name": "enum-output-may-narrow",
+      "compatible": true,
+      "expected": { "outputSchema": { "type": "string", "enum": ["a", "b"] } },
+      "offered": { "outputSchema": { "type": "string", "enum": ["a"] } }
+    },
+    {
+      "name": "enum-output-must-not-widen",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "string", "enum": ["a", "b"] } },
+      "offered": { "outputSchema": { "type": "string", "enum": ["a", "b", "c"] } }
+    },
+    {
+      "name": "const-inside-expected-enum",
+      "compatible": true,
+      "expected": { "outputSchema": { "enum": ["a", "b"] } },
+      "offered": { "outputSchema": { "const": "a" } }
+    },
+    {
+      "name": "const-outside-expected-enum",
+      "compatible": false,
+      "expected": { "outputSchema": { "enum": ["a", "b"] } },
+      "offered": { "outputSchema": { "const": "c" } }
+    },
+    {
+      "name": "enum-not-covered-by-expected-const",
+      "compatible": false,
+      "expected": { "outputSchema": { "const": "a" } },
+      "offered": { "outputSchema": { "enum": ["a", "b"] } }
+    },
+    {
+      "name": "enum-all-equal-to-expected-const",
+      "compatible": true,
+      "expected": { "outputSchema": { "const": "a" } },
+      "offered": { "outputSchema": { "enum": ["a"] } }
+    },
+    {
+      "name": "minimum-dropped-on-output",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "number", "minimum": 0 } },
+      "offered": { "outputSchema": { "type": "number" } }
+    },
+    {
+      "name": "minimum-raised-on-output",
+      "compatible": true,
+      "expected": { "outputSchema": { "type": "number", "minimum": 0 } },
+      "offered": { "outputSchema": { "type": "number", "minimum": 1 } }
+    },
+    {
+      "name": "minimum-lowered-on-output",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "number", "minimum": 1 } },
+      "offered": { "outputSchema": { "type": "number", "minimum": 0 } }
+    },
+    {
+      "name": "maximum-raised-on-output",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "number", "maximum": 10 } },
+      "offered": { "outputSchema": { "type": "number", "maximum": 20 } }
+    },
+    {
+      "name": "exclusive-minimum-dropped-on-output",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "number", "exclusiveMinimum": 0 } },
+      "offered": { "outputSchema": { "type": "number" } }
+    },
+    {
+      "name": "min-length-dropped-on-output",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "string", "minLength": 1 } },
+      "offered": { "outputSchema": { "type": "string" } }
+    },
+    {
+      "name": "max-length-raised-on-output",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "string", "maxLength": 3 } },
+      "offered": { "outputSchema": { "type": "string", "maxLength": 10 } }
+    },
+    {
+      "name": "pattern-must-be-identical",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "string", "pattern": "^a+$" } },
+      "offered": { "outputSchema": { "type": "string", "pattern": "^b+$" } }
+    },
+    {
+      "name": "pattern-same",
+      "compatible": true,
+      "expected": { "outputSchema": { "type": "string", "pattern": "^a+$" } },
+      "offered": { "outputSchema": { "type": "string", "pattern": "^a+$" } }
+    },
+    {
+      "name": "unique-items-dropped-on-output",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "array", "uniqueItems": true } },
+      "offered": { "outputSchema": { "type": "array" } }
+    },
+    {
+      "name": "unique-items-kept",
+      "compatible": true,
+      "expected": { "outputSchema": { "type": "array", "uniqueItems": true } },
+      "offered": { "outputSchema": { "type": "array", "uniqueItems": true } }
+    },
+    {
+      "name": "array-items-dropped-on-output",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "array", "items": { "type": "string" } } },
+      "offered": { "outputSchema": { "type": "array" } }
+    },
+    {
+      "name": "array-items-may-narrow",
+      "compatible": true,
+      "expected": { "outputSchema": { "type": "array", "items": { "type": "number" } } },
+      "offered": { "outputSchema": { "type": "array", "items": { "type": "integer" } } }
+    },
+    {
+      "name": "expected-input-extra-property-rejected",
+      "compatible": false,
+      "expected": {
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "label": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "offered": {
+        "inputSchema": {
+          "type": "object",
+          "properties": { "title": { "type": "string" } },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "offered-output-extra-property-ignored",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "note": { "type": "string" }
+          },
+          "required": ["id"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "required-output-property-must-remain-required",
+      "compatible": false,
+      "expected": {
+        "outputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "declared-error-schema-may-drop",
+      "compatible": true,
+      "expected": {
+        "errorSchema": {
+          "type": "object",
+          "properties": { "code": { "type": "string" } },
+          "required": ["code"],
+          "additionalProperties": false
+        }
+      },
+      "offered": {}
+    },
+    {
+      "name": "declared-error-schema-may-narrow",
+      "compatible": true,
+      "expected": {
+        "errorSchema": {
+          "type": "object",
+          "properties": {
+            "code": { "type": "string" },
+            "detail": { "type": "string" }
+          },
+          "required": ["code"],
+          "additionalProperties": false
+        }
+      },
+      "offered": {
+        "errorSchema": {
+          "type": "object",
+          "properties": { "code": { "type": "string" } },
+          "required": ["code"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "declared-error-type-must-not-drift",
+      "compatible": false,
+      "expected": {
+        "errorSchema": {
+          "type": "object",
+          "properties": { "code": { "type": "string" } },
+          "required": ["code"],
+          "additionalProperties": false
+        }
+      },
+      "offered": {
+        "errorSchema": {
+          "type": "object",
+          "properties": { "code": { "type": "number" } },
+          "required": ["code"],
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "name": "anyOf-covers-offered-output",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "anyOf": [{ "type": "string" }, { "type": "number" }]
+        }
+      },
+      "offered": { "outputSchema": { "type": "string" } }
+    },
+    {
+      "name": "anyOf-does-not-cover-offered-output",
+      "compatible": false,
+      "expected": {
+        "outputSchema": {
+          "anyOf": [{ "type": "string" }, { "type": "number" }]
+        }
+      },
+      "offered": { "outputSchema": { "type": "boolean" } }
+    },
+    {
+      "name": "oneOf-exactly-one-branch",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "oneOf": [{ "type": "string" }, { "type": "number" }]
+        }
+      },
+      "offered": { "outputSchema": { "type": "string" } }
+    },
+    {
+      "name": "oneOf-two-matching-branches",
+      "compatible": false,
+      "expected": {
+        "outputSchema": {
+          "oneOf": [{ "type": "number" }, { "type": "integer" }]
+        }
+      },
+      "offered": { "outputSchema": { "type": "integer" } }
+    },
+    {
+      "name": "allOf-both-branches-accept",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "allOf": [{ "type": "string" }, { "minLength": 2 }]
+        }
+      },
+      "offered": { "outputSchema": { "type": "string", "minLength": 2 } }
+    },
+    {
+      "name": "allOf-one-branch-rejects",
+      "compatible": false,
+      "expected": {
+        "outputSchema": {
+          "allOf": [{ "type": "string" }, { "minLength": 4 }]
+        }
+      },
+      "offered": { "outputSchema": { "type": "string", "minLength": 2 } }
+    },
+    {
+      "name": "offered-anyOf-every-branch-must-serve",
+      "compatible": false,
+      "expected": { "outputSchema": { "type": "string" } },
+      "offered": {
+        "outputSchema": {
+          "anyOf": [{ "type": "string" }, { "type": "number" }]
+        }
+      }
+    },
+    {
+      "name": "integer-input-does-not-accept-number",
+      "compatible": false,
+      "expected": { "inputSchema": { "type": "number" } },
+      "offered": { "inputSchema": { "type": "integer" } }
+    },
+    {
+      "name": "unchanged-nullable-output-field-survives-an-added-field",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "ci": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+          },
+          "required": ["ci"]
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "ci": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+            "note": { "type": "string" }
+          },
+          "required": ["ci"]
+        }
+      }
+    },
+    {
+      "name": "nullable-output-does-not-serve-non-null-caller",
+      "compatible": false,
+      "expected": {
+        "outputSchema": {
+          "type": "object",
+          "properties": { "ci": { "type": "string" } },
+          "required": ["ci"]
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "ci": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+          },
+          "required": ["ci"]
+        }
+      }
+    },
+    {
+      "name": "narrower-union-output-serves-wider-union-caller",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "anyOf": [{ "type": "string" }, { "type": "integer" }, { "type": "null" }]
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }]
+        }
+      }
+    },
+    {
+      "name": "offered-oneOf-distributes-into-expected-anyOf",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }]
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "oneOf": [{ "type": "string" }, { "type": "null" }]
+        }
+      }
+    },
+    {
+      "name": "oneOf-partial-branch-overlap-must-reject-offered-numbers",
+      "compatible": false,
+      "expected": {
+        "outputSchema": {
+          "oneOf": [{ "type": "number" }, { "type": "integer" }]
+        }
+      },
+      "offered": { "outputSchema": { "type": "number" } }
+    },
+    {
+      "name": "oneOf-untyped-partial-overlap-must-reject-offered-numbers",
+      "compatible": false,
+      "expected": {
+        "outputSchema": {
+          "oneOf": [{ "type": "number" }, { "minimum": 0 }]
+        }
+      },
+      "offered": { "outputSchema": { "type": "number" } }
+    },
+    {
+      "name": "oneOf-irrelevant-branch-overlap-does-not-reject-offered-strings",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "oneOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }]
+        }
+      },
+      "offered": { "outputSchema": { "type": "string" } }
+    },
+    {
+      "name": "unchanged-overlapping-oneOf-contract-remains-compatible",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "oneOf": [{ "type": "number" }, { "type": "integer" }]
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "oneOf": [{ "type": "number" }, { "type": "integer" }]
+        }
+      }
+    },
+    {
+      "name": "offered-union-must-not-bypass-expected-oneOf-exclusivity",
+      "compatible": false,
+      "expected": {
+        "outputSchema": {
+          "oneOf": [{ "type": "number" }, { "type": "integer" }]
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "anyOf": [{ "type": "number" }, { "type": "number", "minimum": 0 }]
+        }
+      }
+    },
+    {
+      "name": "unchanged-bounded-nullable-integer-survives-an-added-field",
+      "compatible": true,
+      "expected": {
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "hours": {
+              "allOf": [{ "anyOf": [{ "type": "integer" }, { "type": "null" }] }],
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "hours": {
+              "allOf": [{ "anyOf": [{ "type": "integer" }, { "type": "null" }] }],
+              "minimum": 0,
+              "maximum": 100
+            },
+            "note": { "type": "string" }
+          }
+        }
+      }
+    },
+    {
+      "name": "bounded-nullable-integer-must-not-widen-its-bounds",
+      "compatible": false,
+      "expected": {
+        "outputSchema": {
+          "allOf": [{ "anyOf": [{ "type": "integer" }, { "type": "null" }] }],
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "offered": {
+        "outputSchema": {
+          "allOf": [{ "anyOf": [{ "type": "integer" }, { "type": "null" }] }],
+          "minimum": 0,
+          "maximum": 1000
+        }
+      }
+    },
+    {
+      "name": "tuple-output-position-may-narrow",
+      "compatible": true,
+      "expected": { "outputSchema": {"type": "array", "prefixItems": [{"type": "number"}, {"type": "string"}], "items": false, "minItems": 2, "maxItems": 2} },
+      "offered": { "outputSchema": {"type": "array", "prefixItems": [{"type": "integer"}, {"type": "string"}], "items": false, "minItems": 2, "maxItems": 2} }
+    },
+    {
+      "name": "tuple-output-position-must-not-widen",
+      "compatible": false,
+      "expected": { "outputSchema": {"type": "array", "prefixItems": [{"type": "integer"}, {"type": "string"}], "items": false, "minItems": 2, "maxItems": 2} },
+      "offered": { "outputSchema": {"type": "array", "prefixItems": [{"type": "number"}, {"type": "string"}], "items": false, "minItems": 2, "maxItems": 2} }
+    },
+    {
+      "name": "closed-tuple-output-serves-rest-tuple-caller",
+      "compatible": true,
+      "expected": { "outputSchema": {"type": "array", "prefixItems": [{"type": "string"}], "items": {"type": "number"}, "minItems": 1} },
+      "offered": { "outputSchema": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "integer"}], "items": false, "minItems": 2, "maxItems": 2} }
+    },
+    {
+      "name": "rest-tuple-output-does-not-serve-closed-tuple-caller",
+      "compatible": false,
+      "expected": { "outputSchema": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "number"}], "items": false, "minItems": 2, "maxItems": 2} },
+      "offered": { "outputSchema": {"type": "array", "prefixItems": [{"type": "string"}], "items": {"type": "number"}, "minItems": 1} }
+    },
+    {
+      "name": "closed-tuple-input-must-accept-the-expected-arity",
+      "compatible": false,
+      "expected": { "inputSchema": {"type": "array", "prefixItems": [{"type": "string"}, {"type": "string"}], "items": false, "minItems": 2, "maxItems": 2} },
+      "offered": { "inputSchema": {"type": "array", "prefixItems": [{"type": "string"}], "items": false, "minItems": 1, "maxItems": 1} }
+    },
+    {
+      "name": "items-false-output-serves-array-caller",
+      "compatible": true,
+      "expected": { "outputSchema": {"type": "array", "items": {"type": "string"}} },
+      "offered": { "outputSchema": {"type": "array", "items": false} }
+    },
+    {
+      "name": "array-output-does-not-serve-items-false-caller",
+      "compatible": false,
+      "expected": { "outputSchema": {"type": "array", "items": false} },
+      "offered": { "outputSchema": {"type": "array", "items": {"type": "string"}} }
+    },
+    {
+      "name": "record-output-values-may-narrow",
+      "compatible": true,
+      "expected": { "outputSchema": {"type": "object", "propertyNames": {"type": "string", "minLength": 1}, "additionalProperties": {"type": "string", "maxLength": 40}} },
+      "offered": { "outputSchema": {"type": "object", "propertyNames": {"type": "string", "minLength": 1}, "additionalProperties": {"type": "string", "maxLength": 20}} }
+    },
+    {
+      "name": "record-output-values-must-not-widen",
+      "compatible": false,
+      "expected": { "outputSchema": {"type": "object", "propertyNames": {"type": "string", "minLength": 1}, "additionalProperties": {"type": "string", "maxLength": 40}} },
+      "offered": { "outputSchema": {"type": "object", "propertyNames": {"type": "string", "minLength": 1}, "additionalProperties": {"type": "string"}} }
+    },
+    {
+      "name": "record-output-key-names-may-narrow",
+      "compatible": true,
+      "expected": { "outputSchema": {"type": "object", "propertyNames": {"type": "string", "minLength": 1}, "additionalProperties": {"type": "string"}} },
+      "offered": { "outputSchema": {"type": "object", "propertyNames": {"type": "string", "minLength": 2}, "additionalProperties": {"type": "string"}} }
+    },
+    {
+      "name": "record-output-key-names-must-not-widen",
+      "compatible": false,
+      "expected": { "outputSchema": {"type": "object", "propertyNames": {"type": "string", "minLength": 1}, "additionalProperties": {"type": "string"}} },
+      "offered": { "outputSchema": {"type": "object", "additionalProperties": {"type": "string"}} }
+    },
+    {
+      "name": "record-input-key-names-must-not-narrow",
+      "compatible": false,
+      "expected": { "inputSchema": {"type": "object", "propertyNames": {"type": "string", "minLength": 1}, "additionalProperties": {"type": "string"}} },
+      "offered": { "inputSchema": {"type": "object", "propertyNames": {"type": "string", "minLength": 2}, "additionalProperties": {"type": "string"}} }
+    },
+    {
+      "name": "closed-object-output-serves-record-caller",
+      "compatible": true,
+      "expected": { "outputSchema": {"type": "object", "propertyNames": {"type": "string", "pattern": "^[a-z]+$"}, "additionalProperties": {"type": "string"}} },
+      "offered": { "outputSchema": {"type": "object", "properties": {"id": {"type": "string"}}, "required": ["id"], "additionalProperties": false} }
+    },
+    {
+      "name": "closed-object-output-key-must-satisfy-record-names",
+      "compatible": false,
+      "expected": { "outputSchema": {"type": "object", "propertyNames": {"type": "string", "pattern": "^[a-z]+$"}, "additionalProperties": {"type": "string"}} },
+      "offered": { "outputSchema": {"type": "object", "properties": {"ID": {"type": "string"}}, "required": ["ID"], "additionalProperties": false} }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "base": {
+    "version": 1,
+    "reference": { "kind": "evidence", "namespace": "owner-1", "id": "event-1" },
+    "invocation": {
+      "reference": { "kind": "invocation", "namespace": "owner-1", "id": "read-1" },
+      "observation": {
+        "version": 1,
+        "bindingDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "projectionDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "installationId": "owner-1",
+        "installationDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "interactionId": "runs.status",
+        "expectedContractDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "actualContractDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "mode": "direct",
+        "realizationId": "status-v1",
+        "certainty": "completed",
+        "resultKind": "returned",
+        "reads": ["runs"],
+        "changes": []
+      }
+    }
+  },
+  "cases": [
+    { "name": "missing subject remains missing", "patches": [], "valid": true },
+    { "name": "completed read can describe uncertain subject", "patches": [{ "path": ["subject"], "value": { "reference": { "kind": "subject", "namespace": "owner-1", "id": "run-1" }, "state": "uncertain" } }], "valid": true },
+    { "name": "explicit links carry no inferred order", "patches": [{ "path": ["parents"], "value": [{ "kind": "invocation", "namespace": "owner-1", "id": "submit-1" }] }, { "path": ["children"], "value": [{ "kind": "evidence", "namespace": "owner-1", "id": "event-2" }] }, { "path": ["attempt"], "value": { "kind": "attempt", "namespace": "owner-1", "id": "attempt-1" } }, { "path": ["receipt"], "value": { "kind": "receipt", "namespace": "owner-1", "id": "receipt-1" } }], "valid": true },
+    { "name": "new owner can reuse a local ID", "patches": [{ "path": ["parents"], "value": [{ "kind": "evidence", "namespace": "owner-0", "id": "event-1" }] }], "valid": true },
+    { "name": "unsupported version", "patches": [{ "path": ["version"], "value": 2 }], "valid": false },
+    { "name": "wrong envelope reference kind", "patches": [{ "path": ["reference", "kind"], "value": "attempt" }], "valid": false },
+    { "name": "namespace is required", "patches": [{ "path": ["reference", "namespace"], "value": null }], "valid": false },
+    { "name": "IDs are bounded ASCII identities", "patches": [{ "path": ["reference", "id"], "value": "contains space" }], "valid": false },
+    { "name": "entity identity cannot change kind", "patches": [{ "path": ["attempt"], "value": { "kind": "attempt", "namespace": "owner-1", "id": "read-1" } }], "valid": false },
+    { "name": "evidence cannot parent itself", "patches": [{ "path": ["parents"], "value": [{ "kind": "evidence", "namespace": "owner-1", "id": "event-1" }] }], "valid": false },
+    { "name": "invocation cannot be its own child", "patches": [{ "path": ["children"], "value": [{ "kind": "invocation", "namespace": "owner-1", "id": "read-1" }] }], "valid": false },
+    { "name": "parent references must be unique", "patches": [{ "path": ["parents"], "value": [{ "kind": "evidence", "namespace": "owner-1", "id": "older-1" }, { "kind": "evidence", "namespace": "owner-1", "id": "older-1" }] }], "valid": false },
+    { "name": "same reference cannot be parent and child", "patches": [{ "path": ["parents"], "value": [{ "kind": "evidence", "namespace": "owner-1", "id": "other-1" }] }, { "path": ["children"], "value": [{ "kind": "evidence", "namespace": "owner-1", "id": "other-1" }] }], "valid": false },
+    { "name": "unknown reference fields fail", "patches": [{ "path": ["reference", "token"], "value": "private" }], "valid": false },
+    { "name": "private observed read scopes are not causal evidence", "patches": [{ "path": ["readScope"], "value": { "token": "private" } }], "valid": false },
+    { "name": "subject states are explicit", "patches": [{ "path": ["subject"], "value": { "reference": { "kind": "subject", "namespace": "owner-1", "id": "run-1" }, "state": "failed" } }], "valid": false },
+    { "name": "parent completion cannot excuse invalid invocation certainty", "patches": [{ "path": ["invocation", "observation", "certainty"], "value": "unknown" }, { "path": ["subject"], "value": { "reference": { "kind": "subject", "namespace": "owner-1", "id": "run-1" }, "state": "completed" } }], "valid": false }
+  ]
+}

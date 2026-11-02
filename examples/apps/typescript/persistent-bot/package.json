@@ -1,0 +1,15 @@
+{
+  "name": "@foxworth/boundary-example-persistent-bot",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@foxworth/boundary": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "scripts": {
+    "dev": "bun src/main.ts",
+    "smoke": "node ../../../../tests/process/persistent-bot.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

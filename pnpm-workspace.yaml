@@ -1,0 +1,13 @@
+packages:
+  - "packages"
+  - "examples/apps/typescript/todo-multisurface"
+  - "examples/apps/typescript/document-workspace"
+  - "examples/apps/typescript/persistent-bot"
+  - "examples/apps/typescript/websocket-room"
+overrides:
+  decompress: "npm:@xhmikosr/decompress@11.1.4"
+  undici: "8.12.3"
+allowBuilds:
+  electron: true
+  esbuild: true
+  workerd: true

@@ -1,0 +1,24 @@
+{
+  "name": "@foxworth/boundary-example-todo-multisurface",
+  "version": "0.0.0",
+  "private": true,
+  "description": "One Installation, many doors: screen, agent MCP, WebMCP, and Electron",
+  "type": "module",
+  "main": "./electron/main.mjs",
+  "scripts": {
+    "start": "vite --config ui/vite.config.ts --configLoader runner",
+    "desktop": "node electron/launch.ts"
+  },
+  "dependencies": {
+    "@foxworth/boundary": "workspace:*",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "electron": "^45.2.1",
+    "vite": "8.3.5"
+  }
+}

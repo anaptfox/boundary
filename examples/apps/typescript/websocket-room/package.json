@@ -1,0 +1,22 @@
+{
+  "name": "@foxworth/boundary-example-websocket-room",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build && tsx run.ts",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "3.0.82",
+    "@foxworth/boundary": "workspace:*",
+    "ai": "7.0.159",
+    "ws": "8.22.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/ws": "8.18.2",
+    "tsx": "^4.23.15",
+    "vite": "8.3.5"
+  }
+}

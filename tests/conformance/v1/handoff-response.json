@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "law": "A remote response must echo every identity field of the sent invocation. Mismatches prove no outcome and remain unknown; they never authorize retry. This correlation does not attest to computation from the input.",
+  "cases": [
+    {
+      "field": "bindingDigest",
+      "replacement": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "field": "installationId",
+      "replacement": "installation:other:1"
+    },
+    {
+      "field": "interactionId",
+      "replacement": "other.interaction"
+    },
+    {
+      "field": "expectedContractDigest",
+      "replacement": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "field": "actualContractDigest",
+      "replacement": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    {
+      "field": "mode",
+      "replacement": "request"
+    },
+    {
+      "field": "realizationId",
+      "replacement": "realization:other:1"
+    }
+  ]
+}

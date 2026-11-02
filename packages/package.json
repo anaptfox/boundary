@@ -1,0 +1,191 @@
+{
+  "name": "@foxworth/boundary",
+  "version": "0.2.0",
+  "description": "Typed, host-owned interfaces for narrow and accountable interaction",
+  "license": "MIT",
+  "author": "Taron Foxworth",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anaptfox/boundary.git",
+    "directory": "packages"
+  },
+  "bugs": {
+    "url": "https://github.com/anaptfox/boundary/issues"
+  },
+  "type": "module",
+  "files": [
+    "dist",
+    "boundary-artifact.json"
+  ],
+  "exports": {
+    ".": "./core/host/index.ts",
+    "./artifact": "./core/artifact/index.ts",
+    "./automerge": "./adapters/automerge/index.ts",
+    "./build": "./core/host/build/index.ts",
+    "./bus": "./discovery/bus/index.ts",
+    "./client": "./callers/client/index.ts",
+    "./client/cache": "./callers/client/cache.ts",
+    "./client/observations": "./callers/client/observations.ts",
+    "./cloudflare": "./adapters/cloudflare/index.ts",
+    "./control": "./core/control/index.ts",
+    "./control/host": "./core/control/host.ts",
+    "./control/testing": "./core/control/testing.ts",
+    "./drafts": "./core/drafts/index.ts",
+    "./electron": "./adapters/electron/index.ts",
+    "./electron/ipc": "./adapters/electron/ipc.ts",
+    "./frameworks/hono": "./adapters/frameworks/hono.ts",
+    "./frameworks/next": "./adapters/frameworks/next.ts",
+    "./frameworks/trpc": "./adapters/frameworks/trpc.ts",
+    "./frameworks/vite": "./adapters/frameworks/vite.ts",
+    "./handoff": "./core/handoff/index.ts",
+    "./host/control": "./core/host/control.ts",
+    "./http": "./adapters/http/index.ts",
+    "./http/compose": "./adapters/http/compose.ts",
+    "./http/node": "./adapters/http/node.ts",
+    "./http/observations": "./adapters/http/observations.ts",
+    "./http/openapi": "./adapters/http/openapi.ts",
+    "./http/protocol": "./adapters/http/protocol.ts",
+    "./inspector": "./callers/inspector/index.ts",
+    "./mcp": "./callers/mcp/index.ts",
+    "./observations": "./core/host/observations/index.ts",
+    "./plugin": "./guests/plugin/index.ts",
+    "./program": "./core/program/index.ts",
+    "./program/zod": "./core/program/zod.ts",
+    "./reach": "./discovery/reach/index.ts",
+    "./react": "./callers/react/index.ts",
+    "./remote": "./core/remote/index.ts",
+    "./webmcp": "./callers/webmcp/index.ts",
+    "./yjs": "./adapters/yjs/index.ts",
+    "./package.json": "./package.json",
+    "./react/styles.css": "./callers/react/styles.css"
+  },
+  "imports": {
+    "#program/internal": "./core/program/internal.ts"
+  },
+  "peerDependencies": {
+    "@automerge/automerge": "^3.5.0",
+    "@bytecodealliance/jco": "^1.37.0",
+    "@modelcontextprotocol/server": "^2.3.1",
+    "@trpc/server": "^11.18.0",
+    "electron": ">=33.0.0",
+    "hono": "^4.0.0",
+    "react": "^19.0.0",
+    "vite": "^8.0.0",
+    "yjs": "^13.6.33",
+    "zod": "^4.6.5"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    },
+    "@trpc/server": {
+      "optional": true
+    },
+    "hono": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    },
+    "@modelcontextprotocol/server": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "electron": {
+      "optional": true
+    },
+    "@bytecodealliance/jco": {
+      "optional": true
+    },
+    "yjs": {
+      "optional": true
+    },
+    "@automerge/automerge": {
+      "optional": true
+    }
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "devDependencies": {
+    "@bytecodealliance/jco": "1.40.0",
+    "@cloudflare/workers-types": "^5.20261031.1",
+    "electron": "^45.2.1",
+    "webmcp-types": "0.1.10"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": "./dist/index.js",
+      "./artifact": {
+        "types": "./dist/artifact.d.ts",
+        "node": "./dist/artifact.js"
+      },
+      "./automerge": "./dist/automerge.js",
+      "./build": {
+        "types": "./dist/build.d.ts",
+        "node": "./dist/build.js"
+      },
+      "./bus": {
+        "types": "./dist/bus.d.ts",
+        "node": "./dist/bus.js"
+      },
+      "./client": "./dist/client.js",
+      "./client/cache": "./dist/client/cache.js",
+      "./client/observations": "./dist/client/observations.js",
+      "./cloudflare": "./dist/cloudflare.js",
+      "./control": "./dist/control.js",
+      "./control/host": "./dist/control/host.js",
+      "./control/testing": "./dist/control/testing.js",
+      "./drafts": "./dist/drafts.js",
+      "./electron": {
+        "types": "./dist/electron.d.ts",
+        "node": "./dist/electron.js"
+      },
+      "./electron/ipc": "./dist/electron/ipc.js",
+      "./frameworks/hono": "./dist/frameworks/hono.js",
+      "./frameworks/next": "./dist/frameworks/next.js",
+      "./frameworks/trpc": "./dist/frameworks/trpc.js",
+      "./frameworks/vite": {
+        "types": "./dist/frameworks/vite.d.ts",
+        "node": "./dist/frameworks/vite.js"
+      },
+      "./handoff": "./dist/handoff.js",
+      "./host/control": "./dist/host/control.js",
+      "./http": "./dist/http.js",
+      "./http/compose": "./dist/http/compose.js",
+      "./http/node": {
+        "types": "./dist/http/node.d.ts",
+        "node": "./dist/http/node.js"
+      },
+      "./http/observations": "./dist/http/observations.js",
+      "./http/openapi": "./dist/http/openapi.js",
+      "./http/protocol": "./dist/http/protocol.js",
+      "./inspector": "./dist/inspector.js",
+      "./mcp": "./dist/mcp.js",
+      "./observations": "./dist/observations.js",
+      "./plugin": {
+        "types": "./dist/plugin.d.ts",
+        "node": "./dist/plugin.js"
+      },
+      "./program": "./dist/program.js",
+      "./program/zod": "./dist/program/zod.js",
+      "./reach": "./dist/reach.js",
+      "./react": "./dist/react.js",
+      "./remote": "./dist/remote.js",
+      "./webmcp": "./dist/webmcp.js",
+      "./yjs": "./dist/yjs.js",
+      "./package.json": "./package.json",
+      "./react/styles.css": "./dist/react/styles.css"
+    },
+    "imports": {}
+  },
+  "engines": {
+    "node": ">=24.21"
+  },
+  "scripts": {
+    "prepublishOnly": "node -e \"console.error('Boundary is staged by the release workflow (.github/workflows/release.yml), not published from packages/.');process.exit(1)\""
+  }
+}

@@ -1,0 +1,194 @@
+{
+  "version": 1,
+  "law": "errorSchema validates the complete code/details value; each code selects its declared details schema",
+  "schema": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "code": {
+            "const": "not_found"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "code",
+          "details"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "code": {
+            "const": "unavailable"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "code",
+          "details"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "found-code-with-id",
+      "value": {
+        "code": "not_found",
+        "details": {
+          "id": "item-7"
+        }
+      },
+      "accepted": true
+    },
+    {
+      "name": "unavailable-code-with-reason",
+      "value": {
+        "code": "unavailable",
+        "details": {
+          "reason": "offline"
+        }
+      },
+      "accepted": true
+    },
+    {
+      "name": "unknown-code",
+      "value": {
+        "code": "other",
+        "details": {
+          "id": "item-7"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "name": "wrong-code-for-details",
+      "value": {
+        "code": "unavailable",
+        "details": {
+          "id": "item-7"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "name": "wrong-details-for-code",
+      "value": {
+        "code": "not_found",
+        "details": {
+          "reason": "offline"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "name": "missing-code",
+      "value": {
+        "details": {
+          "id": "item-7"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "name": "missing-details",
+      "value": {
+        "code": "not_found"
+      },
+      "accepted": false
+    },
+    {
+      "name": "missing-detail-field",
+      "value": {
+        "code": "not_found",
+        "details": {}
+      },
+      "accepted": false
+    },
+    {
+      "name": "extra-error-field",
+      "value": {
+        "code": "not_found",
+        "details": {
+          "id": "item-7"
+        },
+        "private": "secret"
+      },
+      "accepted": false
+    },
+    {
+      "name": "extra-detail-field",
+      "value": {
+        "code": "not_found",
+        "details": {
+          "id": "item-7",
+          "private": "secret"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "name": "null-details",
+      "value": {
+        "code": "not_found",
+        "details": null
+      },
+      "accepted": false
+    },
+    {
+      "name": "numeric-detail",
+      "value": {
+        "code": "not_found",
+        "details": {
+          "id": 7
+        }
+      },
+      "accepted": false
+    },
+    {
+      "name": "numeric-code",
+      "value": {
+        "code": 7,
+        "details": {
+          "id": "item-7"
+        }
+      },
+      "accepted": false
+    },
+    {
+      "name": "empty-code",
+      "value": {
+        "code": "",
+        "details": {
+          "id": "item-7"
+        }
+      },
+      "accepted": false
+    }
+  ]
+}

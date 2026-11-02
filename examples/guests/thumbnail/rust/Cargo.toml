@@ -1,0 +1,30 @@
+[package]
+name = "boundary-thumbnail-guest"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+serde_json = { version = "1", default-features = false, features = ["std"] }
+wit-bindgen-rt = { version = "0.44.0", features = ["bitflags"] }
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+codegen-units = 1
+opt-level = "s"
+debug = false
+strip = true
+lto = true
+
+[package.metadata.component]
+package = "boundary:guest"
+
+[package.metadata.component.target]
+path = "wit"
+world = "guest"
+
+[package.metadata.component.dependencies]

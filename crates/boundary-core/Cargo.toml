@@ -1,0 +1,70 @@
+[package]
+name = "boundary-core"
+description = "Native Rust foundations for interaction-first programs, runtimes, handoffs, and controlled effects"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[features]
+default = ["schemars"]
+schemars = ["dep:schemars"]
+derive = ["schemars", "dep:boundary-macros"]
+test-util = []
+
+[[test]]
+name = "control_test_util"
+required-features = ["test-util"]
+
+[[test]]
+name = "binding_coordination"
+required-features = ["schemars"]
+
+[[test]]
+name = "binding_restriction"
+required-features = ["schemars"]
+
+[[test]]
+name = "handoff_v1"
+required-features = ["schemars"]
+
+[[test]]
+name = "lifecycle"
+required-features = ["schemars"]
+
+[[test]]
+name = "observed_binding_integration"
+required-features = ["schemars"]
+
+[[test]]
+name = "declared_error_conformance"
+required-features = ["schemars"]
+
+[dependencies]
+boundary-macros = { workspace = true, optional = true }
+regress.workspace = true
+ryu-js.workspace = true
+schemars = { workspace = true, optional = true }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+futures.workspace = true
+proptest.workspace = true
+trybuild.workspace = true
+
+[lints]
+workspace = true
+
+[[bench]]
+name = "baseline"
+harness = false
+required-features = ["schemars"]
+
+[[example]]
+name = "cross_language_todo"
+required-features = ["derive"]

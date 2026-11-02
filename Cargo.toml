@@ -1,0 +1,58 @@
+[workspace]
+members = [
+    "crates/boundary-cli",
+    "crates/boundary-core",
+    "crates/boundary-ffi",
+    "crates/boundary-macros",
+    "crates/boundary-bus",
+    "crates/boundary-mcp",
+    "crates/boundary-reach",
+    "crates/boundary-plugin",
+    "examples/concepts/rust/controlled-mutation",
+    "examples/concepts/rust/todo",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+authors = ["Taron Foxworth"]
+publish = false
+
+[workspace.dependencies]
+futures = "0.3"
+boundary-bus = { path = "crates/boundary-bus", version = "0.2.0" }
+boundary-core = { path = "crates/boundary-core", version = "0.2.0", default-features = false }
+boundary-macros = { path = "crates/boundary-macros", version = "0.2.0" }
+boundary-mcp = { path = "crates/boundary-mcp", version = "0.2.0" }
+boundary-reach = { path = "crates/boundary-reach", version = "0.2.0" }
+proc-macro2 = "1"
+proptest = "1"
+quote = "1"
+regress = "0.12"
+ryu-js = "1"
+schemars = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+sha2 = "0.11"
+syn = { version = "3", features = ["full", "extra-traits"] }
+thiserror = "2"
+trybuild = "1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+
+# Keep workspace code debuggable; optimize dependency-heavy runtime/compiler tests.
+[profile.test.package."*"]
+opt-level = 2

@@ -1,0 +1,29 @@
+[package]
+name = "boundary-ffi"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.96.0"
+license.workspace = true
+authors.workspace = true
+publish = false
+description = "C ABI for hosting Boundary interactions from C and C++"
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+boundary-core = { workspace = true, features = ["schemars"] }
+futures.workspace = true
+serde_json.workspace = true
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+unreachable_pub = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"

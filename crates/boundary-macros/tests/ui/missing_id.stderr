@@ -1,0 +1,5 @@
+error: BOUNDARY_INTERACTION_ID: missing `id = "..."`
+ --> tests/ui/missing_id.rs:5:8
+  |
+5 | struct MissingId {
+  |        ^^^^^^^^^

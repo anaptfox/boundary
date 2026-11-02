@@ -1,0 +1,25 @@
+[package]
+name = "boundary-cli"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.96.0"
+license.workspace = true
+authors.workspace = true
+publish = false
+description = "The boundary command: local bus and interaction discovery"
+
+[[bin]]
+name = "boundary"
+path = "src/main.rs"
+
+[dependencies]
+boundary-core = { workspace = true, features = ["schemars"] }
+boundary-bus.workspace = true
+boundary-mcp.workspace = true
+boundary-reach = { workspace = true, features = [
+    "client",
+] }
+serde_json.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,214 @@
+{
+  "version": 1,
+  "name": "application-owned-host-lifecycle",
+  "interaction": {
+    "alias": "create",
+    "id": "todos.create",
+    "inputArity": 1,
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1 }
+      },
+      "required": ["title"],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" }
+      },
+      "required": ["id", "title"],
+      "additionalProperties": false
+    },
+    "reads": ["todos"],
+    "changes": ["todos"],
+    "contractDigest": "sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b",
+    "programDigest": "sha256:af8a13a5d14c9ce46f716572f0d55c7fb2aae01048b14231366dac98589d8fa3"
+  },
+  "projection": {
+    "modes": ["direct", "request"],
+    "projectionDigest": "sha256:92a600b9966f72cb754c062eaac8de988ab65060943d8ec216bf72da72bce26f",
+    "renamedAlias": "createAgain",
+    "renamedProjectionDigest": "sha256:e07acd11cf59e5bae56c0fcaf094e9ce58281af734a7acfb38ea3ab704873d97",
+    "durableClaims": [
+      "alias",
+      "interaction-identity",
+      "input-arity",
+      "modes"
+    ]
+  },
+  "compatibleActual": {
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 255 }
+      },
+      "required": ["title"],
+      "additionalProperties": false
+    },
+    "contractDigest": "sha256:0c982e98632f5e9f192284bb461c925fea4ee8c63fd9d73458c4361a26429f21",
+    "programDigest": "sha256:d92e69207f16c60f946611205da374f7217c5259ce2afffcb4a9c2679e1faf40",
+    "expectedToActual": "compatible",
+    "actualToExpected": "incompatible"
+  },
+  "installation": {
+    "installationId": "installation:todos:v1",
+    "realizationIds": {
+      "direct": "realization:todos.create:direct:v1",
+      "request": "realization:todos.create:request:v1"
+    }
+  },
+  "atomicUnrealized": {
+    "availableModes": ["direct"],
+    "missingMode": "request",
+    "reason": "missing-request",
+    "status": "unrealized",
+    "exposesBinding": false
+  },
+  "outcomes": [
+    {
+      "name": "direct-returned",
+      "mode": "direct",
+      "behavior": "return",
+      "certainty": "completed",
+      "resultKind": "returned"
+    },
+    {
+      "name": "request-proposed",
+      "mode": "request",
+      "behavior": "return",
+      "certainty": "not-started",
+      "resultKind": "proposed"
+    },
+    {
+      "name": "admission-denied",
+      "mode": "direct",
+      "behavior": "deny",
+      "certainty": "not-started",
+      "resultKind": "denied"
+    },
+    {
+      "name": "direct-unexpected-failure",
+      "mode": "direct",
+      "behavior": "throw",
+      "certainty": "unknown",
+      "resultKind": "fault"
+    }
+  ],
+  "nativeDispatchOutcomes": [
+    {"name":"native-returned","certainty":"completed","resultKind":"returned"},
+    {"name":"native-declared-error","certainty":"completed","resultKind":"declared-error"},
+    {"name":"native-denied","certainty":"not-started","resultKind":"denied"},
+    {"name":"native-not-started","certainty":"not-started","resultKind":"fault"},
+    {"name":"native-not-completed","certainty":"not-completed","resultKind":"fault"},
+    {"name":"native-unknown","certainty":"unknown","resultKind":"fault"}
+  ],
+  "artifacts": {
+    "installation": {
+      "version": 1,
+      "installationId": "installation:todos:v1",
+      "program": {
+        "version": 1,
+        "interactions": [{
+          "version": 1,
+          "contract": {
+            "version": 1,
+            "id": "todos.create",
+            "inputSchema": {"type":"object","properties":{"title":{"type":"string","minLength":1.0}},"required":["title"],"additionalProperties":false},
+            "outputSchema": {"type":"object","properties":{"id":{"type":"string"},"title":{"type":"string"}},"required":["id","title"],"additionalProperties":false},
+            "reads": ["todos"],
+            "changes": ["todos"]
+          },
+          "contractDigest": "sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b",
+          "docs": {},
+          "annotations": {}
+        }],
+        "programDigest": "sha256:af8a13a5d14c9ce46f716572f0d55c7fb2aae01048b14231366dac98589d8fa3"
+      },
+      "catalog": {
+        "version": 1,
+        "programDigest": "sha256:af8a13a5d14c9ce46f716572f0d55c7fb2aae01048b14231366dac98589d8fa3",
+        "interactions": [{
+          "interactionId": "todos.create",
+          "direct": {"realizationId":"realization:todos.create:direct:v1"},
+          "request": {
+            "realizationId": "realization:todos.create:request:v1",
+            "controlDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "previewSchema": {"type":"object","properties":{"kind":{"const":"todo-create"},"title":{"type":"string"}},"required":["kind","title"],"additionalProperties":false}
+          }
+        }]
+      },
+      "installationDigest": "sha256:aa7110ec07a7fec6c9d7700e27b32ceec2ce51c4ffb37e33f672f65f68636a4c"
+    },
+    "binding": {
+      "version": 1,
+      "bindingDigest": "sha256:698b2df0b86f4b3cac75288cce494a8feed4a64a757102682b50939a967101d8",
+      "projectionDigest": "sha256:92a600b9966f72cb754c062eaac8de988ab65060943d8ec216bf72da72bce26f",
+      "installationId": "installation:todos:v1",
+      "installationDigest": "sha256:aa7110ec07a7fec6c9d7700e27b32ceec2ce51c4ffb37e33f672f65f68636a4c",
+      "expectedProgramDigest": "sha256:af8a13a5d14c9ce46f716572f0d55c7fb2aae01048b14231366dac98589d8fa3",
+      "actualProgramDigest": "sha256:af8a13a5d14c9ce46f716572f0d55c7fb2aae01048b14231366dac98589d8fa3",
+      "expectedProgram": {
+        "version": 1,
+        "interactions": [{"version":1,"contract":{"version":1,"id":"todos.create","inputSchema":{"type":"object","properties":{"title":{"type":"string","minLength":1.0}},"required":["title"],"additionalProperties":false},"outputSchema":{"type":"object","properties":{"id":{"type":"string"},"title":{"type":"string"}},"required":["id","title"],"additionalProperties":false},"reads":["todos"],"changes":["todos"]},"contractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","docs":{},"annotations":{}}],
+        "programDigest": "sha256:af8a13a5d14c9ce46f716572f0d55c7fb2aae01048b14231366dac98589d8fa3"
+      },
+      "actualProgram": {
+        "version": 1,
+        "interactions": [{"version":1,"contract":{"version":1,"id":"todos.create","inputSchema":{"type":"object","properties":{"title":{"type":"string","minLength":1.0}},"required":["title"],"additionalProperties":false},"outputSchema":{"type":"object","properties":{"id":{"type":"string"},"title":{"type":"string"}},"required":["id","title"],"additionalProperties":false},"reads":["todos"],"changes":["todos"]},"contractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","docs":{},"annotations":{}}],
+        "programDigest": "sha256:af8a13a5d14c9ce46f716572f0d55c7fb2aae01048b14231366dac98589d8fa3"
+      },
+      "actualCatalog": {
+        "version": 1,
+        "programDigest": "sha256:af8a13a5d14c9ce46f716572f0d55c7fb2aae01048b14231366dac98589d8fa3",
+        "interactions": [{"interactionId":"todos.create","direct":{"realizationId":"realization:todos.create:direct:v1"},"request":{"realizationId":"realization:todos.create:request:v1","controlDigest":"sha256:2222222222222222222222222222222222222222222222222222222222222222","previewSchema":{"type":"object","properties":{"kind":{"const":"todo-create"},"title":{"type":"string"}},"required":["kind","title"],"additionalProperties":false}}}]
+      },
+      "interactions": [
+        {"alias":"create","interactionId":"todos.create","expectedContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","actualContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","inputArity":1,"mode":"direct","realizationId":"realization:todos.create:direct:v1"},
+        {"alias":"create","interactionId":"todos.create","expectedContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","actualContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","inputArity":1,"mode":"request","realizationId":"realization:todos.create:request:v1","request":{"controlDigest":"sha256:2222222222222222222222222222222222222222222222222222222222222222","previewSchema":{"type":"object","properties":{"kind":{"const":"todo-create"},"title":{"type":"string"}},"required":["kind","title"],"additionalProperties":false}}}
+      ]
+    },
+    "handoffInvocation": {
+      "version": 1,
+      "bindingDigest": "sha256:698b2df0b86f4b3cac75288cce494a8feed4a64a757102682b50939a967101d8",
+      "installationId": "installation:todos:v1",
+      "interactionId": "todos.create",
+      "expectedContractDigest": "sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b",
+      "actualContractDigest": "sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b",
+      "mode": "direct",
+      "realizationId": "realization:todos.create:direct:v1",
+      "input": {"title":"Native parity"}
+    },
+    "handoffOutcomes": [
+      {"version":1,"bindingDigest":"sha256:698b2df0b86f4b3cac75288cce494a8feed4a64a757102682b50939a967101d8","installationId":"installation:todos:v1","interactionId":"todos.create","expectedContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","actualContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","mode":"direct","realizationId":"realization:todos.create:direct:v1","certainty":"completed","result":{"kind":"returned","value":{"id":"todo-1","title":"Native parity"}}},
+      {"version":1,"bindingDigest":"sha256:698b2df0b86f4b3cac75288cce494a8feed4a64a757102682b50939a967101d8","installationId":"installation:todos:v1","interactionId":"todos.create","expectedContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","actualContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","mode":"direct","realizationId":"realization:todos.create:direct:v1","certainty":"not-started","result":{"kind":"fault","cause":"admission-failed"}},
+      {"version":1,"bindingDigest":"sha256:698b2df0b86f4b3cac75288cce494a8feed4a64a757102682b50939a967101d8","installationId":"installation:todos:v1","interactionId":"todos.create","expectedContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","actualContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","mode":"direct","realizationId":"realization:todos.create:direct:v1","certainty":"not-completed","result":{"kind":"fault","cause":"realization-failed"}},
+      {"version":1,"bindingDigest":"sha256:698b2df0b86f4b3cac75288cce494a8feed4a64a757102682b50939a967101d8","installationId":"installation:todos:v1","interactionId":"todos.create","expectedContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","actualContractDigest":"sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b","mode":"direct","realizationId":"realization:todos.create:direct:v1","certainty":"unknown","result":{"kind":"fault","cause":"realization-failed"}}
+    ]
+  },
+  "certaintyClaims": [
+    {
+      "certainty": "not-started",
+      "meaning": "the interaction effect did not begin",
+      "legalResultKinds": ["proposed", "denied", "fault"]
+    },
+    {
+      "certainty": "not-completed",
+      "meaning": "execution began and the dispatcher proved the interaction did not complete",
+      "legalResultKinds": ["fault"]
+    },
+    {
+      "certainty": "completed",
+      "meaning": "the declared interaction effect completed",
+      "legalResultKinds": ["returned", "declared-error"]
+    },
+    {
+      "certainty": "unknown",
+      "meaning": "execution may have begun and completion cannot be proved",
+      "legalResultKinds": ["fault"]
+    }
+  ]
+}

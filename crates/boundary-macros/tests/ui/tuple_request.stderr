@@ -1,0 +1,5 @@
+error: BOUNDARY_INTERACTION_SHAPE: tuple request structs are not supported
+ --> tests/ui/tuple_request.rs:5:20
+  |
+5 | struct TupleRequest(String);
+  |                    ^^^^^^^^

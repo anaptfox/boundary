@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "$comment": "Reviewed evidence for the exact host-import signature law. Every host import a guest declares must match the provided import's signature exactly, and that is decided before any guest code runs, including core start functions. A mismatch refuses admission with certainty not-started and zero host entries. A guest that is admitted and then fails during startup reports unknown, because a permitted host import may already have performed an effect. Fixture components are real binaries built from checked-in WAT under tests/fixtures/plugin-import-abi/; just fixtures-verify reproduces them. Both languages consume this file independently; a gate may verify it but must never rewrite it. Regenerating binary encoding does not regenerate these expectations.",
+  "profile": "synchronous string -> result<string, string>",
+  "interface": "boundary:guest/footprints@1.0.0",
+  "provided": ["images"],
+  "fixtures": {
+    "extra-parameter": "tests/fixtures/plugin-import-abi/extra-parameter.component.wasm",
+    "wrong-parameter": "tests/fixtures/plugin-import-abi/wrong-parameter.component.wasm",
+    "absent-result": "tests/fixtures/plugin-import-abi/absent-result.component.wasm",
+    "wrong-result": "tests/fixtures/plugin-import-abi/wrong-result.component.wasm",
+    "startup-trap": "tests/fixtures/plugin-import-abi/startup-trap.component.wasm",
+    "import-call": "tests/fixtures/plugin-import-abi/import-call.component.wasm",
+    "invoke-trap": "tests/fixtures/plugin-import-abi/invoke-trap.component.wasm",
+    "async-profile": "tests/fixtures/plugin-import-abi/async-profile.component.wasm",
+    "alias-export-admitted": "tests/fixtures/plugin-import-abi/alias-export-admitted.component.wasm",
+    "alias-outer-admitted": "tests/fixtures/plugin-import-abi/alias-outer-admitted.component.wasm",
+    "alias-export-mismatch": "tests/fixtures/plugin-import-abi/alias-export-mismatch.component.wasm"
+  },
+  "cases": [
+    { "name": "an-extra-parameter-is-refused-before-startup", "fixture": "extra-parameter", "invoke": false, "certainty": "not-started", "hostCalls": 0 },
+    { "name": "a-wrong-parameter-type-is-refused-before-startup", "fixture": "wrong-parameter", "invoke": false, "certainty": "not-started", "hostCalls": 0 },
+    { "name": "an-absent-result-is-refused-before-startup", "fixture": "absent-result", "invoke": false, "certainty": "not-started", "hostCalls": 0 },
+    { "name": "a-wrong-result-type-is-refused-before-startup", "fixture": "wrong-result", "invoke": false, "certainty": "not-started", "hostCalls": 0 },
+    { "name": "a-matching-import-that-traps-in-startup-is-unknown", "fixture": "startup-trap", "invoke": false, "certainty": "unknown", "hostCalls": 1 },
+    { "name": "a-matching-import-is-called-and-returns", "fixture": "import-call", "invoke": true, "certainty": "completed", "hostCalls": 1 },
+    { "name": "a-matching-import-then-an-invocation-trap-is-unknown", "fixture": "invoke-trap", "invoke": true, "certainty": "unknown", "hostCalls": 1 },
+    { "name": "an-async-profile-component-is-refused-before-startup", "fixture": "async-profile", "invoke": false, "certainty": "not-started", "hostCalls": 0 },
+    { "name": "a-matching-import-through-an-exported-type-alias-is-admitted", "fixture": "alias-export-admitted", "invoke": true, "certainty": "completed", "hostCalls": 1 },
+    { "name": "a-matching-import-through-an-outer-type-alias-is-admitted", "fixture": "alias-outer-admitted", "invoke": true, "certainty": "completed", "hostCalls": 1 },
+    { "name": "a-mismatched-import-through-an-exported-type-alias-is-refused-before-startup", "fixture": "alias-export-mismatch", "invoke": false, "certainty": "not-started", "hostCalls": 0 }
+  ],
+  "hostcallCopyBudget": {
+    "$comment": "One law, two hosts. A guest may copy at most `limit` bytes across host imports per invocation: the UTF-8 byte length of every request it sends plus every reply or declared error the host returns, summed; equality is allowed. Startup and every call each get a separate full budget (Rust GuestLimits.hostcall_copy_bytes, Node hostcallCopyBytes), so the budget is per invocation, not per instance lifetime. A request that would pass the limit is refused before the host function runs. A reply that would pass it is withheld from the guest after the host ran. Both fault with certainty unknown, never a declared error and never not-started: the guest was already running and a withheld reply follows a host effect that may have happened. HostReply::Unknown and thrown host errors carry no copied payload and are not counted. The import-call fixture sends a 16-byte request and returns whatever the host replies. `outcomes` lists the admission outcome alone when admission fails, otherwise one outcome per call.",
+    "requestBytes": 16,
+    "default": 134217728,
+    "cases": [
+      {"name": "an-exactly-equal-budget-completes", "fixture": "import-call", "limit": 18, "replyKind": "ok", "reply": "{}", "lifetime": "per-call", "calls": 1, "outcomes": ["completed"], "hostCalls": 1},
+      {"name": "a-reply-one-byte-over-is-withheld-after-the-host-ran", "fixture": "import-call", "limit": 17, "replyKind": "ok", "reply": "{}", "lifetime": "per-call", "calls": 1, "outcomes": ["unknown"], "hostCalls": 1},
+      {"name": "a-request-over-budget-never-reaches-the-host", "fixture": "import-call", "limit": 15, "replyKind": "ok", "reply": "{}", "lifetime": "per-call", "calls": 1, "outcomes": ["unknown"], "hostCalls": 0},
+      {"name": "utf8-bytes-not-characters-are-counted-for-a-reply-at-the-limit", "fixture": "import-call", "limit": 24, "replyKind": "ok", "reply": "éééé", "lifetime": "per-call", "calls": 1, "outcomes": ["completed"], "hostCalls": 1},
+      {"name": "utf8-bytes-not-characters-are-counted-for-a-reply-over-the-limit", "fixture": "import-call", "limit": 23, "replyKind": "ok", "reply": "éééé", "lifetime": "per-call", "calls": 1, "outcomes": ["unknown"], "hostCalls": 1},
+      {"name": "a-declared-error-reply-is-counted-at-the-limit", "fixture": "import-call", "limit": 24, "replyKind": "err", "reply": "éééé", "lifetime": "per-call", "calls": 1, "outcomes": ["declared-error"], "hostCalls": 1},
+      {"name": "a-declared-error-reply-is-counted-over-the-limit", "fixture": "import-call", "limit": 23, "replyKind": "err", "reply": "éééé", "lifetime": "per-call", "calls": 1, "outcomes": ["unknown"], "hostCalls": 1},
+      {"name": "the-budget-is-per-invocation-not-per-instance", "fixture": "import-call", "limit": 18, "replyKind": "ok", "reply": "{}", "lifetime": "persistent", "calls": 2, "outcomes": ["completed", "completed"], "hostCalls": 2},
+      {"name": "startup-is-budgeted-and-refuses-before-the-host-runs", "fixture": "startup-trap", "limit": 15, "replyKind": "ok", "reply": "{}", "lifetime": "per-call", "calls": 1, "outcomes": ["unknown"], "hostCalls": 0}
+    ]
+  }
+}

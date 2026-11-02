@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "canonical": [
+    {
+      "name": "utf8-order-and-ecmascript-numbers",
+      "value": {
+        "é": 1,
+        "z": -0.0,
+        "a": [true, null, 1e+21]
+      },
+      "canonical": "{\"a\":[true,null,1e+21],\"z\":0,\"é\":1}"
+    }
+  ],
+  "contracts": [
+    {
+      "name": "todos-create",
+      "contract": {
+        "version": 1,
+        "id": "todos.create",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string", "minLength": 1 }
+          },
+          "required": ["title"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "title": { "type": "string" }
+          },
+          "required": ["id", "title"],
+          "additionalProperties": false
+        },
+        "reads": ["todos"],
+        "changes": ["todos"]
+      },
+      "identityCanonical": "{\"changes\":[\"todos\"],\"id\":\"todos.create\",\"inputSchema\":{\"additionalProperties\":false,\"properties\":{\"title\":{\"minLength\":1,\"type\":\"string\"}},\"required\":[\"title\"],\"type\":\"object\"},\"outputSchema\":{\"additionalProperties\":false,\"properties\":{\"id\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"}},\"required\":[\"id\",\"title\"],\"type\":\"object\"},\"reads\":[\"todos\"],\"version\":1}",
+      "contractDigest": "sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b"
+    }
+  ],
+  "programs": [
+    {
+      "name": "one-interaction",
+      "contracts": ["todos-create"],
+      "identityCanonical": "[{\"changes\":[\"todos\"],\"id\":\"todos.create\",\"inputSchema\":{\"additionalProperties\":false,\"properties\":{\"title\":{\"minLength\":1,\"type\":\"string\"}},\"required\":[\"title\"],\"type\":\"object\"},\"outputSchema\":{\"additionalProperties\":false,\"properties\":{\"id\":{\"type\":\"string\"},\"title\":{\"type\":\"string\"}},\"required\":[\"id\",\"title\"],\"type\":\"object\"},\"reads\":[\"todos\"],\"version\":1}]",
+      "programDigest": "sha256:af8a13a5d14c9ce46f716572f0d55c7fb2aae01048b14231366dac98589d8fa3"
+    }
+  ]
+}

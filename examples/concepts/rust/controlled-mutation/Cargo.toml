@@ -1,0 +1,16 @@
+[package]
+name = "boundary-controlled-mutation-example"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+boundary-core = { workspace = true, features = ["schemars", "derive", "test-util"] }
+schemars.workspace = true
+serde.workspace = true
+
+[lints]
+workspace = true

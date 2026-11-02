@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "$comment": "Reviewed evidence for the version 1 Handoff HTTP framing. Authored by hand from packages/adapters/http/protocol.ts and remote.ts, which every TypeScript mount already shares. This promotes an existing convention to a specified transport so a non-TypeScript host can serve it and a non-TypeScript client can reach it. A gate may verify these vectors but must never rewrite them.",
+  "$scope": "Framing only: routes, methods, status mapping, cache validation, and the rejection envelope. Envelope identity is program.json and handoff-response.json; this vector never restates them.",
+
+  "routes": {
+    "$comment": "Exactly two routes under a host-chosen absolute base path. The base must not be the application root and carries no trailing slash. Anything else is 404.",
+    "manifest": { "method": "GET", "suffix": "/manifest" },
+    "invoke": { "method": "POST", "suffix": "/invoke" }
+  },
+
+  "contentType": {
+    "response": "application/json; charset=utf-8",
+    "request": "application/json"
+  },
+
+  "manifest": {
+    "$comment": "The ETag is the binding digest in quotes, so a client revalidates against exact Binding identity rather than a timestamp. A replaced Installation produces a different digest and therefore a different ETag.",
+    "okStatus": 200,
+    "etagFormat": "\"{bindingDigest}\"",
+    "cacheControl": "no-cache",
+    "notModified": {
+      "requestHeader": "if-none-match",
+      "status": 304,
+      "emptyBody": true,
+      "echoesEtag": true
+    }
+  },
+
+  "invoke": {
+    "$comment": "The request body is the bare HandoffInvocation envelope and the response body is the bare HandoffOutcome envelope. There is no wrapper object. A fault is still an outcome envelope; it is carried on a non-2xx status, and a client must read the envelope rather than infer meaning from the status alone.",
+    "requestBody": "bare HandoffInvocation",
+    "responseBody": "bare HandoffOutcome",
+    "faultsCarryAnOutcomeEnvelope": true
+  },
+
+  "statusForOutcome": [
+    { "name": "returned", "result": { "kind": "returned" }, "status": 200 },
+    { "name": "proposed", "result": { "kind": "proposed" }, "status": 202 },
+    { "name": "denied", "result": { "kind": "denied" }, "status": 403 },
+    {
+      "name": "declared-error",
+      "$note": "422, not 400: a declared error is a domain outcome the contract predicted, not a malformed request.",
+      "result": { "kind": "declared-error" },
+      "status": 422
+    },
+    {
+      "name": "fault-invalid-input",
+      "result": { "kind": "fault", "cause": "invalid-input" },
+      "status": 400
+    },
+    {
+      "name": "fault-invalid-invocation",
+      "result": { "kind": "fault", "cause": "invalid-invocation" },
+      "status": 400
+    },
+    {
+      "name": "fault-revoked",
+      "$note": "409, so a client can distinguish a stale pin from a malformed request and re-handshake.",
+      "result": { "kind": "fault", "cause": "revoked" },
+      "status": 409
+    },
+    {
+      "name": "fault-admission-failed",
+      "result": { "kind": "fault", "cause": "admission-failed" },
+      "status": 500
+    },
+    {
+      "name": "fault-request-failed",
+      "result": { "kind": "fault", "cause": "request-failed" },
+      "status": 500
+    },
+    {
+      "name": "fault-invalid-realization-outcome",
+      "result": { "kind": "fault", "cause": "invalid-realization-outcome" },
+      "status": 500
+    },
+    {
+      "name": "fault-realization-failed",
+      "result": { "kind": "fault", "cause": "realization-failed" },
+      "status": 500
+    }
+  ],
+
+  "rejections": {
+    "$comment": "A rejection happens before an outcome exists, so it carries a diagnostic envelope instead. `kind` is `protocol` when the receiver recognized the failure and `internal` otherwise; an internal rejection never carries a path, because a path would leak host structure.",
+    "envelopeShape": {
+      "error": {
+        "kind": "protocol | internal",
+        "code": "string",
+        "path": "string, present only when kind is protocol",
+        "issues": "optional array of { path, message }",
+        "message": "string"
+      }
+    },
+    "cases": [
+      {
+        "name": "route-not-found",
+        "status": 404,
+        "kind": "protocol",
+        "code": "ROUTE_NOT_FOUND",
+        "path": "request.url"
+      },
+      {
+        "name": "empty-body",
+        "status": 400,
+        "kind": "protocol",
+        "code": "INVALID_REQUEST",
+        "path": "request.body"
+      },
+      {
+        "name": "malformed-json",
+        "status": 400,
+        "kind": "protocol",
+        "code": "INVALID_REQUEST",
+        "path": "request.body"
+      },
+      {
+        "name": "internal-failure",
+        "status": 500,
+        "kind": "internal",
+        "code": "REMOTE_EXECUTION_FAILED",
+        "path": null
+      }
+    ],
+    "conflictStatusRule": {
+      "$comment": "A recognized rejection is 409 when the pin is stale rather than the request malformed, and 400 otherwise.",
+      "status": 409,
+      "codePrefixes": ["STALE_"],
+      "codes": ["INTERACTION_NOT_EXPOSED", "MODE_NOT_EXPOSED"],
+      "otherwise": 400
+    }
+  }
+}

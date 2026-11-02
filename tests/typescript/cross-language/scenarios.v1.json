@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "id": "todo-seven-interaction-v1",
+  "direct": {
+    "steps": [
+      {
+        "kind": "call",
+        "interactionId": "todos.create",
+        "input": { "title": "Map the descriptor boundary" },
+        "expected": {
+          "completed": false,
+          "id": "todo-1",
+          "title": "Map the descriptor boundary"
+        }
+      },
+      {
+        "kind": "call",
+        "interactionId": "todos.create",
+        "input": { "title": "Exercise every interaction" },
+        "expected": {
+          "completed": false,
+          "id": "todo-2",
+          "title": "Exercise every interaction"
+        }
+      },
+      {
+        "kind": "call",
+        "interactionId": "todos.list",
+        "input": { "filter": "all" },
+        "expected": {
+          "items": [
+            {
+              "completed": false,
+              "id": "todo-1",
+              "title": "Map the descriptor boundary"
+            },
+            {
+              "completed": false,
+              "id": "todo-2",
+              "title": "Exercise every interaction"
+            }
+          ]
+        }
+      },
+      {
+        "kind": "call",
+        "interactionId": "todos.rename",
+        "input": { "id": "todo-1", "title": "Map the native boundary" },
+        "expected": {
+          "completed": false,
+          "id": "todo-1",
+          "title": "Map the native boundary"
+        }
+      },
+      {
+        "kind": "call",
+        "interactionId": "todos.setCompleted",
+        "input": { "completed": true, "id": "todo-1" },
+        "expected": {
+          "completed": true,
+          "id": "todo-1",
+          "title": "Map the native boundary"
+        }
+      },
+      {
+        "kind": "call",
+        "interactionId": "todos.list",
+        "input": { "filter": "completed" },
+        "expected": {
+          "items": [
+            {
+              "completed": true,
+              "id": "todo-1",
+              "title": "Map the native boundary"
+            }
+          ]
+        }
+      },
+      {
+        "kind": "call",
+        "interactionId": "todos.setAllCompleted",
+        "input": { "completed": true },
+        "expected": { "count": "1" }
+      },
+      {
+        "kind": "domain-error",
+        "interactionId": "todos.rename",
+        "input": { "id": "todo-missing", "title": "Never applied" },
+        "expected": { "id": "todo-missing" }
+      },
+      {
+        "kind": "call",
+        "interactionId": "todos.remove",
+        "input": { "id": "todo-2" },
+        "expected": {
+          "completed": true,
+          "id": "todo-2",
+          "title": "Exercise every interaction"
+        }
+      },
+      {
+        "kind": "call",
+        "interactionId": "todos.clearCompleted",
+        "expected": { "count": "1" }
+      },
+      {
+        "kind": "call",
+        "interactionId": "todos.list",
+        "input": { "filter": "all" },
+        "expected": { "items": [] }
+      }
+    ]
+  },
+  "boundary": {
+    "invalidCreateInput": { "title": 42 },
+    "emptyCreateInput": { "title": "" }
+  },
+  "controlled": {
+    "title": "Apply exactly once across uncertainty",
+    "leaseDurationMs": 50
+  }
+}

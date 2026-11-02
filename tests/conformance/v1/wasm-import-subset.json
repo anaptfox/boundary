@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "$comment": "Reviewed evidence for the guest import-subset check. A component's actual imports, read from the binary, must be a subset of the host imports. The refusal names every unmapped import and what was provided. Both languages consume this file independently; a gate may verify it but must never rewrite it. Fixture components live at tests/fixtures/wasm-imports/. Each case also pins authorityDigest: sha256 over boundary.wasm-authority/v1, a NUL, the full interface name, then a NUL and each provided WIT name in sorted order. The realization id answers which bytes ran; this answers what they could reach, and the same component under a narrow and a wide offer is byte-identical so the pair is needed. Goldens were computed with an independent SHA-256 implementation over the reviewed inputs, not exported from either runtime.",
+  "interface": "boundary:guest/footprints@1.0.0",
+  "fixtures": {
+    "compliant": "tests/fixtures/wasm-imports/compliant.component.wasm",
+    "overreach": "tests/fixtures/wasm-imports/overreach.component.wasm",
+    "wasi": "tests/fixtures/wasm-imports/wasi.component.wasm",
+    "import-shapes": "tests/fixtures/wasm-imports/import-shapes.component.wasm",
+    "aliased-imports": "tests/fixtures/wasm-imports/aliased-imports.component.wasm",
+    "instantiated-alias-imports": "tests/fixtures/wasm-imports/instantiated-alias-imports.component.wasm",
+    "outer-alias-imports": "tests/fixtures/wasm-imports/outer-alias-imports.component.wasm",
+    "component-argument-imports": "tests/fixtures/wasm-imports/component-argument-imports.component.wasm",
+    "ascribed-alias-imports": "tests/fixtures/wasm-imports/ascribed-alias-imports.component.wasm"
+  },
+  "cases": [
+    {
+      "name": "component-argument-retains-the-declared-exported-type",
+      "component": "component-argument-imports",
+      "rustLoadRefusal": "unsupported type export",
+      "provided": ["images"],
+      "required": ["derived#allowed"],
+      "expected": {
+        "status": "refused",
+        "unmapped": ["derived#allowed"],
+        "provided": ["images"],
+        "authorityDigest": "sha256:20364853bde334998e4242eb2ded5230a66f207405cb4d005a69c35d789a2cae"
+      }
+    },
+    {
+      "name": "export-ascription-narrows-the-aliased-type",
+      "component": "ascribed-alias-imports",
+      "provided": ["images"],
+      "required": ["derived#allowed"],
+      "expected": {
+        "status": "refused",
+        "unmapped": ["derived#allowed"],
+        "provided": ["images"],
+        "authorityDigest": "sha256:20364853bde334998e4242eb2ded5230a66f207405cb4d005a69c35d789a2cae"
+      }
+    },
+    {
+      "name": "outer-type-alias-preserves-the-host-import",
+      "component": "outer-alias-imports",
+      "provided": ["images"],
+      "required": ["derived#run"],
+      "expected": {
+        "status": "refused",
+        "unmapped": ["derived#run"],
+        "provided": ["images"],
+        "authorityDigest": "sha256:20364853bde334998e4242eb2ded5230a66f207405cb4d005a69c35d789a2cae"
+      }
+    },
+    {
+      "name": "instantiated-type-alias-preserves-the-wider-argument",
+      "component": "instantiated-alias-imports",
+      "rustLoadRefusal": "unsupported type export",
+      "provided": ["images"],
+      "required": ["derived#allowed", "derived#extra"],
+      "expected": {
+        "status": "refused",
+        "unmapped": ["derived#allowed", "derived#extra"],
+        "provided": ["images"],
+        "authorityDigest": "sha256:20364853bde334998e4242eb2ded5230a66f207405cb4d005a69c35d789a2cae"
+      }
+    },
+    {
+      "name": "aliased-instance-type-retains-every-host-import",
+      "component": "aliased-imports",
+      "rustLoadRefusal": "unsupported type export",
+      "provided": ["images"],
+      "required": ["derived#run", "provider#shape"],
+      "expected": {
+        "status": "refused",
+        "unmapped": ["derived#run", "provider#shape"],
+        "provided": ["images"],
+        "authorityDigest": "sha256:20364853bde334998e4242eb2ded5230a66f207405cb4d005a69c35d789a2cae"
+      }
+    },
+    {
+      "name": "multiple-interfaces-and-direct-function-are-all-observed",
+      "component": "import-shapes",
+      "provided": ["images"],
+      "required": [
+        "boundary:guest/footprints@1.0.0#images",
+        "boundary:guest/secondary@1.0.0#publications",
+        "direct-call"
+      ],
+      "expected": {
+        "status": "refused",
+        "unmapped": [
+          "boundary:guest/secondary@1.0.0#publications",
+          "direct-call"
+        ],
+        "provided": ["images"],
+        "authorityDigest": "sha256:20364853bde334998e4242eb2ded5230a66f207405cb4d005a69c35d789a2cae"
+      }
+    },
+    {
+      "name": "compliant-within-offer",
+      "component": "compliant",
+      "provided": [
+        "images"
+      ],
+      "expected": {
+        "status": "satisfied",
+        "used": [
+          "images"
+        ],
+        "authorityDigest": "sha256:20364853bde334998e4242eb2ded5230a66f207405cb4d005a69c35d789a2cae"
+      }
+    },
+    {
+      "name": "overreach-refused",
+      "component": "overreach",
+      "provided": [
+        "images"
+      ],
+      "expected": {
+        "status": "refused",
+        "unmapped": [
+          "boundary:guest/footprints@1.0.0#publications"
+        ],
+        "provided": [
+          "images"
+        ],
+        "authorityDigest": "sha256:20364853bde334998e4242eb2ded5230a66f207405cb4d005a69c35d789a2cae"
+      }
+    },
+    {
+      "name": "widening-the-offer-admits-the-same-bytes",
+      "component": "overreach",
+      "provided": [
+        "images",
+        "publications"
+      ],
+      "expected": {
+        "status": "satisfied",
+        "used": [
+          "images",
+          "publications"
+        ],
+        "authorityDigest": "sha256:86e8e84dc9c95e3ffed8d7dc5dc5f006bcf39e6fa63c9099869de45fc2b159d3"
+      }
+    },
+    {
+      "name": "empty-offer-refuses-any-import",
+      "component": "compliant",
+      "provided": [],
+      "expected": {
+        "status": "refused",
+        "unmapped": [
+          "boundary:guest/footprints@1.0.0#images"
+        ],
+        "provided": [],
+        "authorityDigest": "sha256:52aff06fdadb80f046e5495b02ee3e5015ca8f5be327a8c679da2c5b9ad1ff94"
+      }
+    },
+    {
+      "name": "wasi-withheld-by-construction",
+      "component": "wasi",
+      "provided": [
+        "images"
+      ],
+      "expected": {
+        "status": "refused",
+        "unmapped": [
+          "wasi:clocks/wall-clock@0.2.0#now"
+        ],
+        "provided": [
+          "images"
+        ],
+        "authorityDigest": "sha256:20364853bde334998e4242eb2ded5230a66f207405cb4d005a69c35d789a2cae"
+      }
+    },
+    {
+      "name": "wrong-interface-version-is-unmapped",
+      "component": "compliant",
+      "interface": "boundary:guest/footprints@9.9.9",
+      "provided": [
+        "images"
+      ],
+      "expected": {
+        "status": "refused",
+        "unmapped": [
+          "boundary:guest/footprints@1.0.0#images"
+        ],
+        "provided": [
+          "images"
+        ],
+        "authorityDigest": "sha256:b8609cb48102c9aab87ccd0944d43df416fca8c84d7505085d076e36f0da3133"
+      }
+    }
+  ]
+}

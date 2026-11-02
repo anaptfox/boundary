@@ -1,0 +1,7 @@
+{
+  "extends": "../../../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "test-host.ts", "../../../../tests/typescript/persistent-bot*.test.ts"]
+}

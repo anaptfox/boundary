@@ -1,0 +1,16 @@
+package boundary:guest@1.0.0;
+
+interface footprints {
+  images: func(request: string) -> result<string, string>;
+}
+
+interface secondary {
+  publications: func(request: string) -> result<string, string>;
+}
+
+world guest {
+  import footprints;
+  import secondary;
+  import direct-call: func();
+  export inspect-shapes: func();
+}

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "cases": [
+    { "law": "admission-before-retained", "admit": false, "coordinate": "retained", "resultKind": "denied", "certainty": "not-started", "hooks": 0, "dispatches": 0 },
+    { "law": "retained-exact-pins", "admit": true, "coordinate": "retained", "resultKind": "returned", "certainty": "completed", "hooks": 1, "dispatches": 0 },
+    { "law": "wrong-retained-pins", "admit": true, "coordinate": "wrong-pins", "resultKind": "fault", "certainty": "unknown", "hooks": 1, "dispatches": 0 },
+    { "law": "wrong-retained-schema", "admit": true, "coordinate": "wrong-output", "resultKind": "fault", "certainty": "unknown", "hooks": 1, "dispatches": 0 },
+    { "law": "one-shot-proceed", "admit": true, "coordinate": "proceed", "resultKind": "returned", "certainty": "completed", "hooks": 1, "dispatches": 1 },
+    { "law": "coordinator-error-is-unknown", "admit": true, "coordinate": "error", "resultKind": "fault", "certainty": "unknown", "hooks": 1, "dispatches": 0 },
+    { "law": "unknown-preservation", "admit": true, "coordinate": "unknown", "resultKind": "fault", "certainty": "unknown", "hooks": 1, "dispatches": 0 },
+    { "law": "child-inherits-required-coordinator", "admit": true, "coordinate": "proceed", "restricted": true, "resultKind": "returned", "certainty": "completed", "hooks": 1, "dispatches": 1 },
+    { "law": "revocation-after-awaited-queue", "admit": true, "coordinate": "revoke", "resultKind": "fault", "certainty": "not-started", "hooks": 1, "dispatches": 0 },
+    { "law": "request-coordinator-failure", "mode": "request", "admit": true, "coordinate": "error", "resultKind": "fault", "certainty": "unknown", "hooks": 1, "dispatches": 0 }
+  ],
+  "contract": {
+    "coordinationIsHostOwned": true,
+    "contextReferenceIsExact": true,
+    "inputIsCheckedBeforeCoordination": true,
+    "retainedOutcomeIsNotRedispatched": true,
+    "requestCoordinatorFailureCertainty": "unknown",
+    "oneObservationPerInvocation": true
+  }
+}

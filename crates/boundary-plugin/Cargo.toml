@@ -1,0 +1,32 @@
+[package]
+name = "boundary-plugin"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.96.0"
+license.workspace = true
+authors.workspace = true
+publish = false
+description = "Interaction implementation plugins for interaction-first programs"
+
+[dependencies]
+boundary-core = { workspace = true, features = ["schemars"] }
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+wasmtime = { version = "49.0.2", default-features = false, features = [
+    "component-model",
+    "cranelift",
+    "runtime",
+    "std",
+] }
+
+[dev-dependencies]
+# Parallel compilation is a test-host choice; production hosts retain their configuration.
+wasmtime = { version = "49.0.2", default-features = false, features = ["parallel-compilation"] }
+futures.workspace = true
+schemars.workspace = true
+serde.workspace = true
+wasmparser = "=0.258.3"
+
+[lints]
+workspace = true

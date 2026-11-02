@@ -1,0 +1,11 @@
+package boundary:guest@1.0.0;
+
+interface footprints {
+  images: func(request: string) -> result<string, string>;
+}
+
+world guest {
+  import footprints;
+  import wasi:clocks/wall-clock@0.2.0;
+  export images-make-thumbnail: func(input: string) -> result<string, string>;
+}

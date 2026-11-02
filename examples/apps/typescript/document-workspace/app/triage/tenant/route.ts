@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server";
+export async function POST(request: Request) { const tenant = (await request.formData()).get("tenant"); if (tenant !== "acme" && tenant !== "harbor") return new Response("unknown tenant", { status: 400 }); const response = NextResponse.redirect(new URL("/triage", request.url), 303); response.cookies.set("boundary_triage_tenant", tenant, { httpOnly: true, sameSite: "lax", path: "/triage" }); return response; }

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "patterns": {"uuid": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$", "email": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"},
+  "parity": [
+    {"name": "strict-object", "contract": {"additionalProperties": false, "properties": {"count": {"maximum": 255, "minimum": 0, "type": "integer"}, "id": {"type": "string"}}, "required": ["id", "count"], "type": "object"}, "digest": "sha256:a6bf9525f94a6c0eb98b19feb6022bfd3a6a0ed72022bb596a56d52ef6e33200"},
+    {"name": "optional-nullable", "contract": {"additionalProperties": false, "properties": {"note": {"anyOf": [{"type": "string"}, {"type": "null"}]}}, "type": "object"}, "digest": "sha256:480c36928198af09800f51b10859019f1fa660c229673976697d7453baec8fee"},
+    {"name": "catchall", "contract": {"additionalProperties": {"maximum": 255, "minimum": 0, "type": "integer"}, "properties": {"x": {"maximum": 255, "minimum": 0, "type": "integer"}}, "required": ["x"], "type": "object"}, "digest": "sha256:5c64a330bf34567933d98170a178d3ed559ce6021e2a64df06efa133a9cd6671"},
+    {"name": "tagged-union", "contract": {"oneOf": [{"additionalProperties": false, "properties": {"t": {"const": "U", "type": "string"}}, "required": ["t"], "type": "object"}, {"additionalProperties": false, "properties": {"t": {"const": "S", "type": "string"}, "x": {"maximum": 255, "minimum": 0, "type": "integer"}}, "required": ["t", "x"], "type": "object"}]}, "digest": "sha256:be03399cd52c5ae3dfb0fa09b60b74eeee531df6f2fe46827c77db37643352b5"},
+    {"name": "untagged-union", "contract": {"anyOf": [{"maximum": 255, "minimum": 0, "type": "integer"}, {"type": "string"}, {"additionalProperties": false, "properties": {"x": {"maximum": 255, "minimum": 0, "type": "integer"}}, "required": ["x"], "type": "object"}]}, "digest": "sha256:09c4bc05d95ebad492af3e02d1f97b1ed1829f2d52537b7b2302d8e42d06b947"},
+    {"name": "uuid-email", "contract": {"additionalProperties": false, "properties": {"e": {"pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$", "type": "string"}, "id": {"pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$", "type": "string"}}, "required": ["id", "e"], "type": "object"}, "digest": "sha256:6d53728e5f6daede355a7ba01dd01f5b48b7be8a02f43d64227ab5401e9c4274"}
+  ],
+  "declaredErrors": [
+    {"name": "payload-and-unit", "errorSchema": {"oneOf":[{"additionalProperties":false,"properties":{"code":{"const":"item_conflict"},"details":{"additionalProperties":false,"properties":{"actual":{"maximum":255,"minimum":0,"type":"integer"},"expected":{"maximum":255,"minimum":0,"type":"integer"}},"required":["expected","actual"],"type":"object"}},"required":["code","details"],"type":"object"},{"additionalProperties":false,"properties":{"code":{"const":"item_gone"},"details":{"type":"null"}},"required":["code","details"],"type":"object"},{"additionalProperties":false,"properties":{"code":{"const":"item_not_found"},"details":{"additionalProperties":false,"properties":{"id":{"type":"string"}},"required":["id"],"type":"object"}},"required":["code","details"],"type":"object"}]}, "digest": "sha256:b90e431ba78ff43956afaedeb4f1d31f86a2ac0acf1839abba797db77f2cc780"},
+    {"name": "single-code", "errorSchema": {"additionalProperties":false,"properties":{"code":{"const":"item_gone"},"details":{"additionalProperties":false,"properties":{"id":{"type":"string"}},"required":["id"],"type":"object"}},"required":["code","details"],"type":"object"}, "digest": "sha256:ea02f81a2dc165801ad750c1c581953f7f669cd66efa49b0b880372cb92b4d4b"}
+  ],
+  "rejected": [
+    {"name": "open-object", "zod": "z.object({ a: z.string() })", "rust": "struct with no deny_unknown_fields"},
+    {"name": "open-enum-variant", "zod": "z.discriminatedUnion over z.object branches", "rust": "internally tagged enum with no deny_unknown_fields"},
+    {"name": "flatten-struct", "zod": "z.object(...).and(z.object(...))", "rust": "#[serde(flatten)] of a struct"}
+  ]
+}

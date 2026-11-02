@@ -1,0 +1,19 @@
+[package]
+name = "boundary-mcp"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.96.0"
+license.workspace = true
+authors.workspace = true
+publish = false
+description = "Model Context Protocol server over reachable interaction surfaces"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+
+[lints]
+workspace = true

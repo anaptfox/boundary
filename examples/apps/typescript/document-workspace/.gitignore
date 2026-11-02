@@ -1,0 +1,2 @@
+# Application state stays local; missing stores use built-in first-run seeds.
+/data/

@@ -1,0 +1,22 @@
+[package]
+name = "boundary-bus"
+version.workspace = true
+edition.workspace = true
+rust-version = "1.96.0"
+license.workspace = true
+authors.workspace = true
+publish = false
+description = "Per-user local bus for Reach records"
+
+[dependencies]
+# The `client` feature is not optional here: registration proves possession
+# of the surface by fetching its manifest, which needs the transport client.
+boundary-reach = { workspace = true, features = ["client"] }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+
+[lints]
+workspace = true

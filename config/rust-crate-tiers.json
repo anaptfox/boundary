@@ -1,0 +1,71 @@
+{
+  "$comment": "Single source of truth for Rust crate tiers. Adding a crate to the workspace requires adding it here, so a new dependency wall is a deliberate reviewed act. Enforced by scripts/check/rust-architecture.mjs via `just rust-architecture`.",
+  "version": 1,
+  "lineLimit": 500,
+  "tiers": {
+    "pure": {
+      "description": "Published library laws. No runtime, transport, framework, or host embedding. Consumed by every other tier.",
+      "rustVersion": "1.88.0",
+      "bannedDependencies": [
+        "askama",
+        "axum",
+        "clap",
+        "hyper",
+        "reqwest",
+        "rmcp",
+        "tokio",
+        "tower",
+        "wasmtime",
+        "wasmtime-wasi"
+      ],
+      "mayDependOn": [
+        "pure"
+      ],
+      "members": [
+        "boundary-core",
+        "boundary-macros"
+      ]
+    },
+    "composition": {
+      "description": "Host-side libraries that embed runtimes and transports. They compose the pure tier and are never depended on by it.",
+      "rustVersion": "1.96.0",
+      "bannedDependencies": [],
+      "mayDependOn": [
+        "pure",
+        "composition"
+      ],
+      "members": [
+        "boundary-ffi",
+        "boundary-bus",
+        "boundary-mcp",
+        "boundary-reach",
+        "boundary-plugin"
+      ]
+    },
+    "binary": {
+      "description": "Executables that only wire composition crates together. Main function and argument parsing only.",
+      "rustVersion": "1.96.0",
+      "bannedDependencies": [],
+      "mayDependOn": [
+        "pure",
+        "composition"
+      ],
+      "members": [
+        "boundary-cli"
+      ]
+    },
+    "example": {
+      "description": "Executable proofs. Not published, not part of the MSRV promise.",
+      "rustVersion": null,
+      "bannedDependencies": [],
+      "mayDependOn": [
+        "pure",
+        "composition"
+      ],
+      "members": [
+        "boundary-controlled-mutation-example",
+        "boundary-todo-example"
+      ]
+    }
+  }
+}

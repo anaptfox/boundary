@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "admission": [
+    { "name": "both allow", "parent": "allow", "additional": "allow", "calls": ["parent", "additional"], "dispatches": 1 },
+    { "name": "parent denies", "parent": "deny", "additional": "allow", "calls": ["parent"], "dispatches": 0 },
+    { "name": "additional denies", "parent": "allow", "additional": "deny", "calls": ["parent", "additional"], "dispatches": 0 },
+    { "name": "both deny", "parent": "deny", "additional": "deny", "calls": ["parent"], "dispatches": 0 }
+  ],
+  "subset": [
+    { "name": "same selection", "difference": "none", "status": "bound" },
+    { "name": "renamed alias", "difference": "alias", "status": "bound" },
+    { "name": "empty selection", "difference": "empty", "status": "bound" },
+    { "name": "unselected interaction", "difference": "interaction", "status": "unrealized", "reason": "interaction-not-selected" },
+    { "name": "changed expected contract", "difference": "contract", "status": "unrealized", "reason": "contract-not-selected" },
+    { "name": "unselected mode", "difference": "mode", "status": "unrealized", "reason": "mode-not-selected" }
+  ],
+  "revocation": {
+    "parentBlocksChild": true,
+    "parentBlocksGrandchild": true,
+    "childBlocksGrandchild": true,
+    "childBlocksParent": false,
+    "childBlocksSibling": false,
+    "checkAfterAwaitedAdmission": true,
+    "revokedParentRefusesEmptySelection": true,
+    "revokedInstallationRefusesEmptySelection": true,
+    "revokedInstallationRefusesEmptyRootBinding": true
+  },
+  "identity": {
+    "preserveActualInstallation": true,
+    "preserveActualRealization": true,
+    "policyChangesDigest": false,
+    "lineageIsPortable": false
+  }
+}

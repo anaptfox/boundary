@@ -1,0 +1,123 @@
+.shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 54px 28px 90px;
+  color: #202521;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  align-items: end;
+  border-bottom: 1px solid #d8ddd5;
+  padding-bottom: 28px;
+}
+.header h1,
+.shell h2 {
+  font-family: Georgia,serif;
+}
+.header h1 {
+  font-size: 44px;
+  margin: 9px 0;
+}
+.header p {
+  color: #687066;
+  max-width: 590px;
+}
+.kicker,
+.label {
+  color: #62765f;
+  font: 600 10px ui-monospace,monospace;
+  letter-spacing: 1.1px;
+}
+.header nav,
+.header nav form,
+.pick {
+  display: flex;
+  gap: 6px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 32px;
+  padding-top: 30px;
+}
+.card,
+.ticket {
+  background: #fff;
+  border: 1px solid #dce1d9;
+  border-radius: 12px;
+  padding: 22px;
+}
+.shell label {
+  display: grid;
+  gap: 6px;
+  margin: 15px 0;
+  font-size: 12px;
+}
+.shell :is(input,textarea,select) {
+  width: 100%;
+  border: 1px solid #cfd6cd;
+  border-radius: 7px;
+  padding: 10px;
+}
+.shell textarea {
+  min-height: 76px;
+}
+.shell button {
+  border: 0;
+  border-radius: 7px;
+  padding: 10px 13px;
+  background: #2d4731;
+  color: white;
+}
+.list {
+  display: grid;
+  gap: 15px;
+}
+.ticketHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.status {
+  border-radius: 99px;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.new {
+  background: #edf1ea;
+}
+.investigating {
+  background: #fff2d7;
+}
+.resolved {
+  background: #dceee2;
+}
+.evidence {
+  border-left: 2px solid #9db594;
+  padding-left: 13px;
+  margin: 18px 0;
+}
+.muted {
+  color: #747c72;
+}
+.resolve {
+  border-top: 1px solid #e5e9e3;
+  margin-top: 17px;
+}
+.notice {
+  background: #fff1d9;
+  border: 1px solid #edc477;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+@media (max-width:720px) {
+  .header,
+  .grid {
+    display: block;
+  }
+  .card {
+    margin-bottom: 22px;
+  }
+}

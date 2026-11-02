@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "law": "const, enum and uniqueItems use recursive portable JSON equality: finite binary64 numeric values are equal independently of integer, decimal or exponent spelling; negative zero equals zero; JSON types, object members and array order remain distinct.",
+  "cases": [
+    {
+      "name": "integer matches decimal const",
+      "schemaJson": "{\"const\":1.0}",
+      "valueJson": "1",
+      "accepted": true
+    },
+    {
+      "name": "decimal matches integer const",
+      "schemaJson": "{\"const\":1}",
+      "valueJson": "1.0",
+      "accepted": true
+    },
+    {
+      "name": "exponent matches decimal const",
+      "schemaJson": "{\"const\":1.25}",
+      "valueJson": "125e-2",
+      "accepted": true
+    },
+    {
+      "name": "negative integer matches enum",
+      "schemaJson": "{\"enum\":[-2.0,3.0]}",
+      "valueJson": "-2",
+      "accepted": true
+    },
+    {
+      "name": "nested const retains structural numeric equality",
+      "schemaJson": "{\"const\":{\"version\":1.0,\"values\":[2.0,{\"revision\":3.0}]}}",
+      "valueJson": "{\"values\":[2,{\"revision\":3}],\"version\":1}",
+      "accepted": true
+    },
+    {
+      "name": "nested enum retains structural numeric equality",
+      "schemaJson": "{\"enum\":[{\"revision\":1.0},[2.0,{\"revision\":3.0}]]}",
+      "valueJson": "[2,{\"revision\":3}]",
+      "accepted": true
+    },
+    {
+      "name": "negative zero equals zero",
+      "schemaJson": "{\"const\":0}",
+      "valueJson": "-0.0",
+      "accepted": true
+    },
+    {
+      "name": "number is not a string",
+      "schemaJson": "{\"const\":1}",
+      "valueJson": "\"1\"",
+      "accepted": false
+    },
+    {
+      "name": "number is not a boolean",
+      "schemaJson": "{\"const\":1}",
+      "valueJson": "true",
+      "accepted": false
+    },
+    {
+      "name": "different integral number is refused",
+      "schemaJson": "{\"const\":1}",
+      "valueJson": "2",
+      "accepted": false
+    },
+    {
+      "name": "numeric enum refuses string",
+      "schemaJson": "{\"enum\":[1.0,2.0]}",
+      "valueJson": "\"1\"",
+      "accepted": false
+    },
+    {
+      "name": "nested const refuses extra authority field",
+      "schemaJson": "{\"const\":{\"version\":1.0}}",
+      "valueJson": "{\"version\":1,\"role\":\"reviewer\"}",
+      "accepted": false
+    },
+    {
+      "name": "nested const preserves boolean distinction",
+      "schemaJson": "{\"const\":[1.0,{\"approved\":false}]}",
+      "valueJson": "[1,{\"approved\":true}]",
+      "accepted": false
+    },
+    {
+      "name": "unique items refuses integer decimal duplicate",
+      "schemaJson": "{\"type\":\"array\",\"uniqueItems\":true}",
+      "valueJson": "[1,1.0]",
+      "accepted": false
+    },
+    {
+      "name": "unique items refuses nested numeric duplicates",
+      "schemaJson": "{\"uniqueItems\":true}",
+      "valueJson": "[{\"n\":[1,{\"revision\":2.0}]},{\"n\":[1.0,{\"revision\":2}]}]",
+      "accepted": false
+    },
+    {
+      "name": "unique items refuses signed zero duplicate",
+      "schemaJson": "{\"uniqueItems\":true}",
+      "valueJson": "[0,-0.0]",
+      "accepted": false
+    },
+    {
+      "name": "unique items preserves JSON type distinctions",
+      "schemaJson": "{\"uniqueItems\":true}",
+      "valueJson": "[null,false,0,\"0\",[],{}]",
+      "accepted": true
+    },
+    {
+      "name": "unique items preserves different nested values",
+      "schemaJson": "{\"uniqueItems\":true}",
+      "valueJson": "[{\"revision\":1,\"approved\":true},{\"revision\":1.0,\"approved\":false}]",
+      "accepted": true
+    },
+    {
+      "name": "unique items preserves array order",
+      "schemaJson": "{\"uniqueItems\":true}",
+      "valueJson": "[[1,2],[2.0,1.0]]",
+      "accepted": true
+    },
+    {
+      "name": "numeric equality applies in oneOf",
+      "schemaJson": "{\"oneOf\":[{\"const\":1.0},{\"type\":\"integer\"}]}",
+      "valueJson": "1",
+      "accepted": false
+    },
+    {
+      "name": "numeric equality applies in not",
+      "schemaJson": "{\"not\":{\"const\":1.0}}",
+      "valueJson": "1",
+      "accepted": false
+    },
+    {
+      "name": "wire version integer satisfies decimal const",
+      "schemaJson": "{\"type\":\"object\",\"properties\":{\"version\":{\"const\":1.0}},\"required\":[\"version\"],\"additionalProperties\":false}",
+      "valueJson": "{\"version\":1}",
+      "accepted": true
+    },
+    {
+      "name": "closed version object refuses extra field",
+      "schemaJson": "{\"type\":\"object\",\"properties\":{\"version\":{\"const\":1.0}},\"required\":[\"version\"],\"additionalProperties\":false}",
+      "valueJson": "{\"version\":1,\"role\":\"reviewer\"}",
+      "accepted": false
+    },
+    {
+      "name": "largest safe integer matches its decimal spelling",
+      "schemaJson": "{\"const\":9007199254740991.0}",
+      "valueJson": "9007199254740991",
+      "accepted": true
+    },
+    {
+      "name": "different safe integer remains different",
+      "schemaJson": "{\"const\":9007199254740991.0}",
+      "valueJson": "9007199254740990",
+      "accepted": false
+    }
+  ],
+  "refusedSchemas": [
+    {
+      "name": "integer and decimal enum entries are duplicates",
+      "schemaJson": "{\"enum\":[1,1.0]}"
+    },
+    {
+      "name": "positive and negative zero enum entries are duplicates",
+      "schemaJson": "{\"enum\":[0,-0.0]}"
+    },
+    {
+      "name": "nested numeric enum entries are duplicates",
+      "schemaJson": "{\"enum\":[{\"version\":1,\"values\":[2.0]},{\"values\":[2],\"version\":1.0}]}"
+    }
+  ]
+}

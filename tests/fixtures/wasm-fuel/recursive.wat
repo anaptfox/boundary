@@ -1,0 +1,1 @@
+(module (func $run (export "run") (param $count i32) (param $depth i32) (local $i i32) (local.set $i (local.get $count)) (if (local.get $depth) (then (loop $again (call $run (local.get $count) (i32.sub (local.get $depth) (i32.const 1))) (local.tee $i (i32.sub (local.get $i) (i32.const 1))) (if (then (br $again))))))))

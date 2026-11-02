@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "emptySurface": {
+    "selectedInteractions": 0,
+    "bindingInteractions": 0,
+    "callableInteractions": 0,
+    "bindStatus": "bound",
+    "unselectedInvocation": "INTERACTION_NOT_EXPOSED",
+    "programDigest": "sha256:6582db870ca012895645e307b87d45e8b9b2bceb6f34103a077c454a51b05a0c",
+    "projectionDigest": "sha256:318ee0ed4edc38018add7e87a0e2a8fbde93050bba049b71b6c1c9ee03a00225"
+  },
+  "observation": {
+    "version": 1,
+    "bindingDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "projectionDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "installationId": "notebook:1",
+    "installationDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "interactionId": "notebook.write",
+    "expectedContractDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "actualContractDigest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "mode": "direct",
+    "realizationId": "write:release-1",
+    "certainty": "unknown",
+    "resultKind": "fault",
+    "reads": [],
+    "changes": [
+      "notebook"
+    ],
+    "correlation": {
+      "run": "run-7"
+    }
+  },
+  "presentation": {
+    "version": 1,
+    "projectionDigest": "sha256:92a600b9966f72cb754c062eaac8de988ab65060943d8ec216bf72da72bce26f",
+    "interactions": [
+      {
+        "alias": "create",
+        "interactionId": "todos.create",
+        "contractDigest": "sha256:d37c59dc376922352109edc2b1d06c153e8060d31c302d40f553255cec62fe8b",
+        "inputArity": 1,
+        "modes": [
+          "direct",
+          "request"
+        ],
+        "title": "Create todo",
+        "description": "Propose or create a todo.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "title"
+          ],
+          "additionalProperties": false
+        },
+        "directOutputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "title"
+          ],
+          "additionalProperties": false
+        },
+        "reads": [
+          "todos"
+        ],
+        "changes": [
+          "todos"
+        ]
+      }
+    ],
+    "presentationDigest": "sha256:7c7d6c7d19aad6c1339b32e343bbce0c570a84930844aea189464ccce0578df3"
+  }
+}

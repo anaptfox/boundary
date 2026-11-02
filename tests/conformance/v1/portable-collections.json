@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "name": "closed tuple",
+      "schema": {"type": "array", "prefixItems": [{"type": "integer", "minimum": 0, "maximum": 255}, {"type": "string"}], "items": false, "minItems": 2, "maxItems": 2},
+      "values": [{"value": [1, "a"], "valid": true}, {"value": [1], "valid": false}, {"value": [1, "a", "b"], "valid": false}, {"value": ["a", 1], "valid": false}, {"value": [256, "a"], "valid": false}, {"value": {}, "valid": false}]
+    },
+    {
+      "name": "items false alone forbids items after the prefix",
+      "schema": {"type": "array", "prefixItems": [{"type": "string"}], "items": false},
+      "values": [{"value": [], "valid": true}, {"value": ["a"], "valid": true}, {"value": ["a", "b"], "valid": false}, {"value": [1], "valid": false}]
+    },
+    {
+      "name": "rest tuple",
+      "schema": {"type": "array", "prefixItems": [{"type": "string"}], "items": {"type": "number"}, "minItems": 1},
+      "values": [{"value": ["a"], "valid": true}, {"value": ["a", 1, 2.5], "valid": true}, {"value": ["a", "b"], "valid": false}, {"value": [], "valid": false}, {"value": [1], "valid": false}]
+    },
+    {
+      "name": "items false without prefixItems admits only the empty array",
+      "schema": {"type": "array", "items": false},
+      "values": [{"value": [], "valid": true}, {"value": [1], "valid": false}]
+    },
+    {
+      "name": "string-keyed record",
+      "schema": {"type": "object", "propertyNames": {"type": "string", "minLength": 1}, "additionalProperties": {"type": "string", "maxLength": 3}},
+      "values": [{"value": {}, "valid": true}, {"value": {"a": "xyz"}, "valid": true}, {"value": {"": "x"}, "valid": false}, {"value": {"a": 1}, "valid": false}, {"value": {"a": "wxyz"}, "valid": false}, {"value": [], "valid": false}]
+    },
+    {
+      "name": "propertyNames applies to named and additional keys",
+      "schema": {"type": "object", "properties": {"id": {"type": "string"}}, "propertyNames": {"pattern": "^[a-z]+$"}},
+      "values": [{"value": {"id": "x"}, "valid": true}, {"value": {"ok": 1}, "valid": true}, {"value": {"id": "x", "Bad": 1}, "valid": false}, {"value": {"id": 1}, "valid": false}]
+    }
+  ],
+  "invalid": [
+    {"type": "array", "items": true},
+    {"type": "array", "prefixItems": []},
+    {"type": "array", "prefixItems": {"type": "string"}},
+    {"type": "array", "prefixItems": [true]},
+    {"type": "object", "propertyNames": true},
+    {"type": "object", "propertyNames": "string"}
+  ],
+  "authoring": [
+    { "name": "byte-string-tuple", "contract": {"type": "array", "prefixItems": [{"type": "integer", "minimum": 0, "maximum": 255}, {"type": "string"}], "items": false, "minItems": 2, "maxItems": 2} },
+    { "name": "string-byte-record", "contract": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0, "maximum": 255}} }
+  ]
+}

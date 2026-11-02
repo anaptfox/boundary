@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "scope": "Native lifecycle outcomes and apply suppression; not record encoding or durable adapter parity",
+  "cases": [
+    {
+      "id": "completed-replay",
+      "loseEffectResponse": false,
+      "initial": "completed",
+      "replay": "completed",
+      "afterLeaseExpiry": "completed",
+      "applyCalls": 1
+    },
+    {
+      "id": "lost-effect-response",
+      "loseEffectResponse": true,
+      "initial": "uncertain",
+      "replay": "uncertain",
+      "afterLeaseExpiry": "completed",
+      "applyCalls": 1
+    }
+  ]
+}

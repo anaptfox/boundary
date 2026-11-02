@@ -1,0 +1,395 @@
+{
+  "version": 1,
+  "$comment": "Reviewed evidence for the interaction Draft. 'Proposal' already names Control's pending effect, so a contract that does not exist yet gets its own word: Draft. A Draft wraps a FULL interaction contract -- the entire declared identity, never a fragment, because anything less forks contract identity, which is the whole thing to avoid -- plus gap (free text explaining what is missing), proposer (an opaque host-supplied string), and createdAt (a host-supplied ISO-8601 timestamp; Boundary never reads a clock internally). Digests are computed over boundary.interaction-draft/v1 with canonical JSON, hashing { version, contract, gap, proposer, createdAt } where contract is the contract's own canonical identity value. A Draft is not a Program entry and is never callable: it is an inert artifact a person reviews. A gate may verify these vectors but must never rewrite them.",
+  "domain": "boundary.interaction-draft/v1",
+  "cases": [
+    {
+      "name": "todos-archive",
+      "input": {
+        "contract": {
+          "version": 1,
+          "id": "todos.archive",
+          "inputSchema": {
+            "type": "object",
+            "properties": { "id": { "type": "string" } },
+            "required": ["id"],
+            "additionalProperties": false
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "archivedAt": { "type": "string" }
+            },
+            "required": ["id", "archivedAt"],
+            "additionalProperties": false
+          },
+          "reads": ["todos"],
+          "changes": ["todos"]
+        },
+        "gap": "Only delete exists today; archive would keep history instead of removing the row.",
+        "proposer": "agent:catalog-bot",
+        "createdAt": "2026-09-06T12:00:00Z"
+      },
+      "expected": {
+        "draftDigest": "sha256:9484d7924a2ee37c5bff19c8470f637ec04ed43d37146347e21d79f1dde75e95"
+      }
+    },
+    {
+      "name": "todos-archive-with-error",
+      "input": {
+        "contract": {
+          "version": 1,
+          "id": "todos.archive",
+          "inputSchema": {
+            "type": "object",
+            "properties": { "id": { "type": "string" } },
+            "required": ["id"],
+            "additionalProperties": false
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "archivedAt": { "type": "string" }
+            },
+            "required": ["id", "archivedAt"],
+            "additionalProperties": false
+          },
+          "errorSchema": {
+            "type": "object",
+            "properties": { "code": { "type": "string" } },
+            "required": ["code"],
+            "additionalProperties": false
+          },
+          "reads": ["todos"],
+          "changes": ["todos"]
+        },
+        "gap": "Archive would also need a documented failure mode for todos already archived.",
+        "proposer": "agent:catalog-bot",
+        "createdAt": "2026-09-06T12:00:00.500+02:00"
+      },
+      "expected": {
+        "draftDigest": "sha256:74d4454dd3f52ace4fce6580c4d675380d67810eee8d8de773a4990e7ea4ffad"
+      }
+    },
+    {
+      "name": "billing-refund",
+      "input": {
+        "contract": {
+          "version": 1,
+          "id": "billing.refund",
+          "inputSchema": {
+            "type": "object",
+            "properties": { "orderId": { "type": "string" } },
+            "required": ["orderId"],
+            "additionalProperties": false
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "orderId": { "type": "string" },
+              "refunded": { "type": "boolean" }
+            },
+            "required": ["orderId", "refunded"],
+            "additionalProperties": false
+          },
+          "reads": ["billing.accounts", "billing.ledger"],
+          "changes": ["billing.ledger"]
+        },
+        "gap": "No refund flow exists; support has been running manual reversals.",
+        "proposer": "human:reviewer-1",
+        "createdAt": "2020-02-29T23:59:60Z"
+      },
+      "expected": {
+        "draftDigest": "sha256:4e602ebe32f77e2d813bceb89fd90e1d92d5da55e800255b92209b7efebf4da8"
+      }
+    },
+    {
+      "name": "notes-pin",
+      "input": {
+        "contract": {
+          "version": 1,
+          "id": "notes.pin",
+          "inputSchema": {
+            "type": "object",
+            "properties": { "noteId": { "type": "string" } },
+            "required": ["noteId"],
+            "additionalProperties": false
+          },
+          "outputSchema": {
+            "type": "object",
+            "properties": {
+              "noteId": { "type": "string" },
+              "pinned": { "type": "boolean" }
+            },
+            "required": ["noteId", "pinned"],
+            "additionalProperties": false
+          },
+          "reads": [],
+          "changes": ["notes"]
+        },
+        "gap": "Pinning UI exists but there is no interaction contract wiring it yet.",
+        "proposer": "human:designer",
+        "createdAt": "2026-01-01T00:00:00Z"
+      },
+      "expected": {
+        "draftDigest": "sha256:a7ad2ee85d743f611021d882f0b126fe8be5f16e4469bdacc5a01bc2028a4509"
+      }
+    }
+  ],
+  "refusals": [
+    {
+      "name": "empty-gap",
+      "contract": {
+        "version": 1,
+        "id": "todos.archive",
+        "inputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "archivedAt": { "type": "string" }
+          },
+          "required": ["id", "archivedAt"],
+          "additionalProperties": false
+        },
+        "reads": ["todos"],
+        "changes": ["todos"]
+      },
+      "gap": "",
+      "proposer": "agent:catalog-bot",
+      "createdAt": "2026-09-06T12:00:00Z",
+      "expected": { "status": "empty-gap" }
+    },
+    {
+      "name": "whitespace-only-gap",
+      "contract": {
+        "version": 1,
+        "id": "todos.archive",
+        "inputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "archivedAt": { "type": "string" }
+          },
+          "required": ["id", "archivedAt"],
+          "additionalProperties": false
+        },
+        "reads": ["todos"],
+        "changes": ["todos"]
+      },
+      "gap": "   ",
+      "proposer": "agent:catalog-bot",
+      "createdAt": "2026-09-06T12:00:00Z",
+      "expected": { "status": "empty-gap" }
+    },
+    {
+      "name": "empty-proposer",
+      "contract": {
+        "version": 1,
+        "id": "todos.archive",
+        "inputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "archivedAt": { "type": "string" }
+          },
+          "required": ["id", "archivedAt"],
+          "additionalProperties": false
+        },
+        "reads": ["todos"],
+        "changes": ["todos"]
+      },
+      "gap": "Only delete exists today; archive would keep history instead of removing the row.",
+      "proposer": "",
+      "createdAt": "2026-09-06T12:00:00Z",
+      "expected": { "status": "empty-proposer" }
+    },
+    {
+      "name": "missing-offset-timestamp",
+      "contract": {
+        "version": 1,
+        "id": "todos.archive",
+        "inputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "archivedAt": { "type": "string" }
+          },
+          "required": ["id", "archivedAt"],
+          "additionalProperties": false
+        },
+        "reads": ["todos"],
+        "changes": ["todos"]
+      },
+      "gap": "Only delete exists today; archive would keep history instead of removing the row.",
+      "proposer": "agent:catalog-bot",
+      "createdAt": "2026-09-06T12:00:00",
+      "expected": { "status": "invalid-created-at" }
+    },
+    {
+      "name": "invalid-month-timestamp",
+      "contract": {
+        "version": 1,
+        "id": "todos.archive",
+        "inputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "archivedAt": { "type": "string" }
+          },
+          "required": ["id", "archivedAt"],
+          "additionalProperties": false
+        },
+        "reads": ["todos"],
+        "changes": ["todos"]
+      },
+      "gap": "Only delete exists today; archive would keep history instead of removing the row.",
+      "proposer": "agent:catalog-bot",
+      "createdAt": "2026-13-01T00:00:00Z",
+      "expected": { "status": "invalid-created-at" }
+    },
+    {
+      "name": "non-leap-day-timestamp",
+      "contract": {
+        "version": 1,
+        "id": "todos.archive",
+        "inputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "archivedAt": { "type": "string" }
+          },
+          "required": ["id", "archivedAt"],
+          "additionalProperties": false
+        },
+        "reads": ["todos"],
+        "changes": ["todos"]
+      },
+      "gap": "Only delete exists today; archive would keep history instead of removing the row.",
+      "proposer": "agent:catalog-bot",
+      "createdAt": "2023-02-29T00:00:00Z",
+      "expected": { "status": "invalid-created-at" }
+    },
+    {
+      "name": "lowercase-designator-timestamp",
+      "contract": {
+        "version": 1,
+        "id": "todos.archive",
+        "inputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "archivedAt": { "type": "string" }
+          },
+          "required": ["id", "archivedAt"],
+          "additionalProperties": false
+        },
+        "reads": ["todos"],
+        "changes": ["todos"]
+      },
+      "gap": "Only delete exists today; archive would keep history instead of removing the row.",
+      "proposer": "agent:catalog-bot",
+      "createdAt": "2026-09-06t12:00:00z",
+      "expected": { "status": "invalid-created-at" }
+    },
+    {
+      "name": "trailing-garbage-timestamp",
+      "contract": {
+        "version": 1,
+        "id": "todos.archive",
+        "inputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "archivedAt": { "type": "string" }
+          },
+          "required": ["id", "archivedAt"],
+          "additionalProperties": false
+        },
+        "reads": ["todos"],
+        "changes": ["todos"]
+      },
+      "gap": "Only delete exists today; archive would keep history instead of removing the row.",
+      "proposer": "agent:catalog-bot",
+      "createdAt": "2026-09-06T12:00:00Zgarbage",
+      "expected": { "status": "invalid-created-at" }
+    },
+    {
+      "name": "invalid-contract-empty-read",
+      "contract": {
+        "version": 1,
+        "id": "todos.archive",
+        "inputSchema": {
+          "type": "object",
+          "properties": { "id": { "type": "string" } },
+          "required": ["id"],
+          "additionalProperties": false
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "archivedAt": { "type": "string" }
+          },
+          "required": ["id", "archivedAt"],
+          "additionalProperties": false
+        },
+        "reads": [""],
+        "changes": ["todos"]
+      },
+      "gap": "Only delete exists today; archive would keep history instead of removing the row.",
+      "proposer": "agent:catalog-bot",
+      "createdAt": "2026-09-06T12:00:00Z",
+      "expected": { "status": "invalid-contract" }
+    }
+  ]
+}

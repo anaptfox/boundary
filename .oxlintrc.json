@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import"
+  ],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "no-unused-vars": "error",
+    "import/no-cycle": "error",
+    "unicorn/no-useless-spread": "off"
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "target/**",
+    "docs-internal/**",
+    "**/.next/**",
+    "**/*.d.ts",
+    "**/*.wasm"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "tests/**",
+        "**/*.test.ts",
+        "**/*.types.ts"
+      ],
+      "rules": {
+        "no-unused-expressions": "off",
+        "unicorn/no-thenable": "off",
+        "unicorn/no-useless-spread": "off",
+        "unicorn/no-new-array": "off"
+      }
+    },
+    {
+      "files": [
+        "**/*.types.ts"
+      ],
+      "rules": {
+        "no-unused-vars": "off"
+      }
+    }
+  ]
+}
