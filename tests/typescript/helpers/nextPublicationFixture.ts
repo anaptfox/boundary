@@ -4,15 +4,8 @@ import { join, resolve } from "node:path";
 import { z } from "zod";
 import { normalizePublicProposal } from "@foxworth/boundary/control";
 import { contributeControlRequests } from "@foxworth/boundary/control/host";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  type InteractionInstallation,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, type InteractionInstallation, projectInteractions } from "@foxworth/boundary/pipeline";
+import { defineInteraction } from "@foxworth/boundary";
 import {
   createPublicationControl,
   Published,
@@ -130,7 +123,7 @@ export async function createPublicationFixture(options: {
   const projection = await projectInteractions(compiled, {
     publish: { interaction: compiled.handles.publish, modes: ["request"] },
   });
-  const bound = await bindProjection(projection, installation, {
+  const bound = await bindSurface(projection, installation, {
     admit: ({ context }) =>
       context.delegation?.workspace && context.delegation.workspace !== "folio"
         ? {

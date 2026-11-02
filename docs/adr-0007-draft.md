@@ -51,7 +51,7 @@ app.program; app.installation; app.manifest; app.binding(assistant).manifest; //
 
 The facade has no logic beyond composing `compileInteractions`,
 `implementInteractions` (or native bindings), `installInteractions`,
-`projectInteractions`, `bindProjection`, and `createCaller`. Its tests assert
+`projectInteractions`, `bindSurface`, and `createCaller`. Its tests assert
 that the artifacts it returns equal the explicit pipeline's artifacts for the
 same inputs, and that contract and Program digests of the reviewed lifecycle
 vector are unchanged.
@@ -115,7 +115,7 @@ never stable across processes.
 
 `@foxworth/boundary/pipeline` carries `compileInteractions`,
 `implementInteractions`, `bindNativeInteractions`, `installInteractions`,
-`projectInteractions`, `bindProjection`, `restrictBinding`, `createCaller`,
+`projectInteractions`, `bindSurface`, `restrictBinding`, `createCaller`,
 the inspection helpers, and their types. Tests that exercise the pipeline on
 purpose (unrealized reports, restriction, admission ordering, native dispatch)
 import from it. Nothing in it is a second model: the short path composes it.

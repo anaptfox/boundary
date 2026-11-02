@@ -1,15 +1,14 @@
 /** In-process Fetch/SSE teaching fixture, with test identity and app-owned state. */
 import { z } from "zod";
-import { bindProjection, compileInteractions, defineInteraction, direct, directRealizationIds,
-  implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary";
+import { defineInteraction } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, realizationIdsFor, createCaller } from "@foxworth/boundary/pipeline";
 import type { InvocationObservation } from "@foxworth/boundary/program";
 import { createObservationHttpHandler } from "@foxworth/boundary/http/observations";
 import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
 // #region imports
-import { createInvocationState, createProjectionClient, pinProjectionReferences } from "@foxworth/boundary/client";
+import { createInvocationState, createSurfaceClient, pinSurfaceReferences } from "@foxworth/boundary/client";
 import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client/cache";
 import { subscribeToObservations } from "@foxworth/boundary/client/observations";
-import { createCaller } from "@foxworth/boundary/pipeline";
 // #endregion imports
 
 type Todo = Readonly<{ id: number; title: string }>;
@@ -29,7 +28,7 @@ export async function createScopedObservationExample(
   const rows: Todo[] = [];
   const compiled = await compileInteractions(interactions);
   const projection = await projectInteractions(compiled, {
-    list: direct(compiled.handles.list), create: direct(compiled.handles.create),
+    list: { interaction: compiled.handles.list, modes: ["direct"] }, create: { interaction: compiled.handles.create, modes: ["direct"] },
   });
   const implementations = implementInteractions<typeof interactions, Context>(interactions, {
     list: () => [...rows],
@@ -41,10 +40,10 @@ export async function createScopedObservationExample(
   });
   const { installation } = await installInteractions(compiled, {
     installationId: "todos:scoped-observations:1", implementations,
-    realizationIds: directRealizationIds(compiled, "release-1"),
+    realizationIds: realizationIdsFor(compiled, "release-1"),
   });
   const listeners = new Set<(event: InvocationObservation) => void>();
-  const bound = await bindProjection(projection, installation, {
+  const bound = await bindSurface(projection, installation, {
     admit: ({ context }) => context.role === "owner" ? { decision: "allow" } : { decision: "deny", reason: "owner required" },
     observation: { publish: (event) => { for (const send of listeners) send(event); } },
   });
@@ -65,13 +64,13 @@ export async function createScopedObservationExample(
   };
   const baseUrl = "http://boundary.test";
   const headers = { authorization: "Bearer test-owner" };
-  const screenClient = createProjectionClient(fetchTransport({ baseUrl: `${baseUrl}/boundary`, headers, fetch: exampleFetch }));
-  const otherClient = createProjectionClient(fetchTransport({ baseUrl: `${baseUrl}/boundary`, headers, fetch: exampleFetch }));
+  const screenClient = createSurfaceClient(fetchTransport({ baseUrl: `${baseUrl}/boundary`, headers, fetch: exampleFetch }));
+  const otherClient = createSurfaceClient(fetchTransport({ baseUrl: `${baseUrl}/boundary`, headers, fetch: exampleFetch }));
   const references = projection.handles;
   const observationOptions = { url: `${baseUrl}/events`, headers, fetch: exampleFetch };
 
   // #region client
-  const handles = await pinProjectionReferences(screenClient, references);
+  const handles = await pinSurfaceReferences(screenClient, references);
   const scope = createInteractionCacheScope();
   const todos = watchInteraction(screenClient, handles.list, { scope });
   const stopRendering = todos.subscribe(() => render(todos.getSnapshot()));

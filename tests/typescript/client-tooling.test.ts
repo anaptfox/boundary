@@ -1,18 +1,11 @@
 import { setImmediate } from "node:timers/promises";
 import { describe, expect, it, vi } from "vitest";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary/pipeline";
+import { defineInteraction, type BindingManifest } from "@foxworth/boundary";
 import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-  type ProjectionBindingManifest,
-} from "@foxworth/boundary";
-import {
-  createProjectionClient,
+  createSurfaceClient,
   handlesFromBinding,
-  pinProjectionReferences,
+  pinSurfaceReferences,
 } from "@foxworth/boundary/client";
 import { createCheckedHandoff } from "@foxworth/boundary/handoff";
 import { portableSchema } from "@foxworth/boundary/program";
@@ -45,7 +38,7 @@ async function fixture() {
   const projection = await projectInteractions(compiled, {
     ["__proto__"]: { interaction: compiled.handles.ping, modes: ["direct"] },
   });
-  const bound = await bindProjection(projection, installation, {
+  const bound = await bindSurface(projection, installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (bound.status !== "bound") throw new Error("fixture did not bind");
@@ -62,7 +55,7 @@ describe("caller tooling boundaries", () => {
     const observe = (reason: unknown) => { unhandled.push(reason); };
     process.on("unhandledRejection", observe);
     try {
-      const client = createProjectionClient({ inspect, invoke });
+      const client = createSurfaceClient({ inspect, invoke });
       await setImmediate();
       await setImmediate();
       expect(inspect).toHaveBeenCalledTimes(1);
@@ -82,8 +75,8 @@ describe("caller tooling boundaries", () => {
 
   it("retains the manifest validation diagnostic behind a failed handshake", async () => {
     const app = await fixture();
-    const bindingDigest: ProjectionBindingManifest["bindingDigest"] = `sha256:${"0".repeat(64)}`;
-    const client = createProjectionClient({
+    const bindingDigest: BindingManifest["bindingDigest"] = `sha256:${"0".repeat(64)}`;
+    const client = createSurfaceClient({
       inspect: async () => ({ ...app.handoff.manifest, bindingDigest }),
       invoke: (invocation) => app.handoff.invoke(invocation, undefined),
     });
@@ -101,7 +94,7 @@ describe("caller tooling boundaries", () => {
       await app.handoff.invoke(invocation, undefined);
       throw cause;
     });
-    const client = createProjectionClient({
+    const client = createSurfaceClient({
       inspect: async () => app.handoff.manifest,
       invoke,
     });
@@ -117,7 +110,7 @@ describe("caller tooling boundaries", () => {
 
   it("keeps rejected response pins unknown while retaining the mismatched field", async () => {
     const app = await fixture();
-    const client = createProjectionClient({
+    const client = createSurfaceClient({
       inspect: async () => app.handoff.manifest,
       invoke: async (invocation) => ({
         ...await app.handoff.invoke(invocation, undefined),
@@ -133,7 +126,7 @@ describe("caller tooling boundaries", () => {
 
   it("hydrates and checks __proto__ as an enumerable own alias", async () => {
     const app = await fixture();
-    const client = createProjectionClient({
+    const client = createSurfaceClient({
       inspect: async () => app.handoff.manifest,
       invoke: (invocation) => app.handoff.invoke(invocation, undefined),
     });
@@ -142,9 +135,9 @@ describe("caller tooling boundaries", () => {
     expect(Object.hasOwn(handles, "__proto__")).toBe(true);
     expect(Object.getPrototypeOf(handles)).toBe(Object.prototype);
     expect(handles["__proto__"]).toEqual(app.projection.handles["__proto__"]);
-    await expect(pinProjectionReferences(client, handles)).resolves.toBe(handles);
-    const contractDigest: ProjectionBindingManifest["bindingDigest"] = `sha256:${"0".repeat(64)}`;
-    await expect(pinProjectionReferences(client, {
+    await expect(pinSurfaceReferences(client, handles)).resolves.toBe(handles);
+    const contractDigest: BindingManifest["bindingDigest"] = `sha256:${"0".repeat(64)}`;
+    await expect(pinSurfaceReferences(client, {
       ["__proto__"]: { ...handles["__proto__"], contractDigest },
     })).rejects.toMatchObject({ code: "STALE_REFERENCE", path: "__proto__" });
     await expect(client.callRaw("client-tooling.ping")).resolves.toEqual({ ok: true });

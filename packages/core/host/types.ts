@@ -11,10 +11,10 @@ import type {
   PortableSchema,
   PortableSchemaValue,
   Program,
-  ProjectionBindingManifest,
-  ProjectionBindingInteraction,
-  ProjectionManifest,
-  ProjectionInteraction,
+  BindingManifest,
+  BindingInteraction,
+  SurfaceManifest,
+  SurfaceInteraction,
   RawInvocationOutcome,
   RawInvocationResult,
   RealizationId,
@@ -28,10 +28,10 @@ export type {
   InstallationManifest,
   InputArity,
   InteractionMode,
-  ProjectionBindingManifest,
-  ProjectionBindingInteraction,
-  ProjectionManifest,
-  ProjectionInteraction,
+  BindingManifest,
+  BindingInteraction,
+  SurfaceManifest,
+  SurfaceInteraction,
   RawInvocationOutcome,
   RawInvocationResult,
   RealizationId,
@@ -304,7 +304,7 @@ export interface InstalledInteractions<Context = unknown> {
   readonly controller: InstallationController;
 }
 
-export interface ProjectionSelection<
+export interface HandleSelection<
   Handle extends InteractionHandle = InteractionHandle,
   Modes extends readonly InteractionMode[] = readonly InteractionMode[],
 > {
@@ -312,11 +312,11 @@ export interface ProjectionSelection<
   readonly modes: Modes;
 }
 
-export type ProjectionSelections = Readonly<
-  Record<string, ProjectionSelection>
+export type HandleSelections = Readonly<
+  Record<string, HandleSelection>
 >;
 
-export interface ProjectedInteractionHandle<
+export interface SurfaceHandle<
   Handle extends InteractionHandle = InteractionHandle,
   Modes extends readonly InteractionMode[] = readonly InteractionMode[],
   RequestOutput extends JsonValue = JsonValue,
@@ -329,21 +329,21 @@ export interface ProjectedInteractionHandle<
   };
 }
 
-export type ProjectedHandles<Selections extends ProjectionSelections> = {
-  readonly [Alias in keyof Selections]: ProjectedInteractionHandle<
+export type SurfaceHandles<Selections extends HandleSelections> = {
+  readonly [Alias in keyof Selections]: SurfaceHandle<
     Selections[Alias]["interaction"],
     Selections[Alias]["modes"]
   >;
 };
 
-export interface Projection<
-  Selections extends ProjectionSelections = ProjectionSelections,
+export interface CompiledSurface<
+  Selections extends HandleSelections = HandleSelections,
 > {
   readonly program: Program;
-  readonly interactions: readonly ProjectionInteraction[];
+  readonly interactions: readonly SurfaceInteraction[];
   readonly projectionDigest: Sha256Digest;
-  readonly handles: ProjectedHandles<Selections>;
-  readonly manifest: ProjectionManifest;
+  readonly handles: SurfaceHandles<Selections>;
+  readonly manifest: SurfaceManifest;
 }
 
 export type AdmissionDecision =
@@ -395,7 +395,7 @@ export interface UnrealizedIssue {
 }
 
 export interface UnrealizedReport {
-  readonly projection: ProjectionManifest;
+  readonly projection: SurfaceManifest;
   readonly installationId: InstallationId;
   readonly issues: readonly UnrealizedIssue[];
 }
@@ -426,14 +426,14 @@ type HandleOutput<Handle extends InteractionHandle> = DefinitionOutput<
 type HandleArity<Handle extends InteractionHandle> = DefinitionArity<
   HandleDefinition<Handle>
 >;
-type HandleModes<Handle> = Handle extends ProjectedInteractionHandle<
+type HandleModes<Handle> = Handle extends SurfaceHandle<
   InteractionHandle,
   infer Modes,
   any
 >
   ? Modes[number]
   : never;
-type HandleRequestOutput<Handle> = Handle extends ProjectedInteractionHandle<
+type HandleRequestOutput<Handle> = Handle extends SurfaceHandle<
   InteractionHandle,
   readonly InteractionMode[],
   infer RequestOutput
@@ -455,7 +455,7 @@ type RawArguments<Context> = [Context] extends [void]
   : readonly [input: unknown, context: Context];
 
 export interface DirectInteractionCaller<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle>>,
+  Handles extends Readonly<Record<string, SurfaceHandle>>,
   Context,
 > {
   call<Handle extends Handles[keyof Handles]>(
@@ -470,7 +470,7 @@ export interface DirectInteractionCaller<
 }
 
 export interface RequestInteractionCaller<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle>>,
+  Handles extends Readonly<Record<string, SurfaceHandle>>,
   Context,
 > extends DirectInteractionCaller<Handles, Context> {
   request<Handle extends Handles[keyof Handles]>(
@@ -484,7 +484,7 @@ export interface RequestInteractionCaller<
   ): Promise<RawInvocationOutcome>;
 }
 
-type HasRequest<Handles extends Readonly<Record<string, ProjectedInteractionHandle>>> =
+type HasRequest<Handles extends Readonly<Record<string, SurfaceHandle>>> =
   Extract<
     {
       [Alias in keyof Handles]: HandleModes<Handles[Alias]>;
@@ -495,7 +495,7 @@ type HasRequest<Handles extends Readonly<Record<string, ProjectedInteractionHand
     : true;
 
 export type InteractionCaller<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle>>,
+  Handles extends Readonly<Record<string, SurfaceHandle>>,
   Context,
 > = HasRequest<Handles> extends true
   ? RequestInteractionCaller<Handles, Context>
@@ -512,13 +512,13 @@ type InvokeArguments<Context> = [Context] extends [void]
   ? readonly [invocation: BindingInvocation]
   : readonly [invocation: BindingInvocation, context: Context];
 
-export interface ProjectionBinding<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle>> = Readonly<
-    Record<string, ProjectedInteractionHandle>
+export interface Binding<
+  Handles extends Readonly<Record<string, SurfaceHandle>> = Readonly<
+    Record<string, SurfaceHandle>
   >,
   Context = unknown,
 > {
-  readonly manifest: ProjectionBindingManifest;
+  readonly manifest: BindingManifest;
   connect(): InteractionCaller<Handles, Context>;
   resolve(interactionId: string): ResolvedBindingInteraction | undefined;
   invoke(...args: InvokeArguments<Context>): Promise<RawInvocationOutcome>;
@@ -531,12 +531,12 @@ export interface BindingController {
 }
 
 export type BindResult<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle>>,
+  Handles extends Readonly<Record<string, SurfaceHandle>>,
   Context,
 > =
   | Readonly<{
       status: "bound";
-      binding: ProjectionBinding<Handles, Context>;
+      binding: Binding<Handles, Context>;
       controller: BindingController;
     }>
   | Readonly<{

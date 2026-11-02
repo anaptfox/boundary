@@ -1,5 +1,5 @@
-import { createCheckedHandoff, createHandoffInvocation, validateHandoffResponse, validateProjectionBindingManifest, type HandoffExecutable, type HandoffInvocation, type HandoffOutcome } from "@foxworth/boundary/handoff";
-import { normalizeJson, validateSchemaValue, type InteractionMode, type InvocationCertainty, type JsonValue, type ProjectionBindingManifest } from "@foxworth/boundary/program";
+import { createCheckedHandoff, createHandoffInvocation, validateHandoffResponse, validateBindingManifest, type HandoffExecutable, type HandoffInvocation, type HandoffOutcome } from "@foxworth/boundary/handoff";
+import { normalizeJson, validateSchemaValue, type InteractionMode, type InvocationCertainty, type JsonValue, type BindingManifest } from "@foxworth/boundary/program";
 
 /** Transport is host-owned. Each invocation is one attempt and must not be retried. */
 export interface InspectorTransport {
@@ -32,7 +32,7 @@ export function mountInspector(container: HTMLElement, options: { transport: Ins
   const shadow = root.attachShadow({ mode: "open" });
   const style = doc.createElement("style"); style.textContent = css; shadow.appendChild(style);
   const shell = doc.createElement("section"); shell.className = "shell"; shell.setAttribute("aria-label", "Boundary interaction inspector"); shadow.appendChild(shell); container.appendChild(root);
-  let transport = options.transport, manifest: ProjectionBindingManifest | null = null;
+  let transport = options.transport, manifest: BindingManifest | null = null;
   let selected: string | null = null, epoch = 0, disposed = false, busy = false;
   let status = "Loading selected interactions…", outcome = "";
   // A small in-memory set of attempts survives view/transport changes. It is not
@@ -109,7 +109,7 @@ export function mountInspector(container: HTMLElement, options: { transport: Ins
       })();
     };
   }
-  async function load() { const token = ++epoch; manifest = null; selected = null; outcome = ""; busy = false; if (!transport) { status = "Disconnected"; render(); return; } status = "Loading selected interactions…"; render(); try { const result = await transport.manifest(); const checked = await validateProjectionBindingManifest(result); if (disposed || token !== epoch) return; manifest = checked; status = checked.interactions.length ? "Connected — selection is not authorization." : "Connected — no interactions selected."; } catch { if (disposed || token !== epoch) return; status = "Unable to load a valid Binding. Check the connection and refresh."; } render(); }
+  async function load() { const token = ++epoch; manifest = null; selected = null; outcome = ""; busy = false; if (!transport) { status = "Disconnected"; render(); return; } status = "Loading selected interactions…"; render(); try { const result = await transport.manifest(); const checked = await validateBindingManifest(result); if (disposed || token !== epoch) return; manifest = checked; status = checked.interactions.length ? "Connected — selection is not authorization." : "Connected — no interactions selected."; } catch { if (disposed || token !== epoch) return; status = "Unable to load a valid Binding. Check the connection and refresh."; } render(); }
   render(); void load();
   return { async setTransport(next) { transport = next; await load(); }, refresh: load, dispose() { if (disposed) return; disposed = true; epoch++; root.remove(); } };
 }

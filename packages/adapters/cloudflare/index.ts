@@ -1,14 +1,14 @@
 export {
-  createProjectionDurableObject,
+  createSurfaceDurableObject,
   type DurableObjectHandlerFactory,
-  type ProjectionDurableObjectClass,
-  type ProjectionDurableObjectInstance,
+  type SurfaceDurableObjectClass,
+  type SurfaceDurableObjectInstance,
 } from "./durable-object";
 export {
-  createProjectionWorkerFetch,
-  createProjectionWorkerFetchWithContext,
-  type ProjectionWorkerHandlerFactory,
-  type ProjectionWorkerInvocation,
-  type ProjectionWorkerOptions,
+  createSurfaceWorkerFetch,
+  createSurfaceWorkerFetchWithContext,
+  type SurfaceWorkerHandlerFactory,
+  type SurfaceWorkerInvocation,
+  type SurfaceWorkerOptions,
   type WorkerFetch,
 } from "./worker";

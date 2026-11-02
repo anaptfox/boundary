@@ -33,10 +33,10 @@ const entries = manifest.interactions;
 const members = entries.map((entry) => {
   const declaration = declarations.find((item) => item.contract.id === entry.interactionId);
   if (!declaration || entry.mode !== "direct" || declaration.contractDigest !== entry.expectedContractDigest) throw new Error("unexpected fixture identity");
-  return `  readonly ${JSON.stringify(entry.alias)}: ProjectedInteractionHandle<InteractionHandle<InteractionDefinition<${JSON.stringify(entry.interactionId)}, ${typeOf(declaration.contract.inputSchema)}, ${typeOf(declaration.contract.outputSchema)}, Record<string, JsonValue>, ${entry.inputArity}>>, readonly ["direct"]>;`;
+  return `  readonly ${JSON.stringify(entry.alias)}: SurfaceHandle<InteractionHandle<InteractionDefinition<${JSON.stringify(entry.interactionId)}, ${typeOf(declaration.contract.inputSchema)}, ${typeOf(declaration.contract.outputSchema)}, Record<string, JsonValue>, ${entry.inputArity}>>, readonly ["direct"]>;`;
 });
 const values = entries.map((entry) => `  ${JSON.stringify(entry.alias)}: Object.freeze({ interactionId: ${JSON.stringify(entry.interactionId)}, contractDigest: ${JSON.stringify(entry.expectedContractDigest)}, inputArity: ${entry.inputArity}, modes: Object.freeze(["direct"] as const) }),`);
-const source = `// Generated from the native Rust fixture by tests/typescript/cross-language/generate.mjs.\n// Input/output types only; no declared-error interoperability claim.\nimport type { InteractionDefinition, InteractionHandle, ProjectedInteractionHandle } from "@foxworth/boundary";\nimport type { JsonValue } from "@foxworth/boundary/program";\n\nexport const references: Readonly<{\n${members.join("\n")}\n}> = Object.freeze({\n${values.join("\n")}\n});\n`;
+const source = `// Generated from the native Rust fixture by tests/typescript/cross-language/generate.mjs.\n// Input/output types only; no declared-error interoperability claim.\nimport type { InteractionDefinition, InteractionHandle, SurfaceHandle } from "@foxworth/boundary";\nimport type { JsonValue } from "@foxworth/boundary/program";\n\nexport const references: Readonly<{\n${members.join("\n")}\n}> = Object.freeze({\n${values.join("\n")}\n});\n`;
 const destination = new URL("./references.ts", import.meta.url);
 if (process.argv.includes("--write")) writeFileSync(destination, source);
 else if (readFileSync(destination, "utf8") !== source) throw new Error("fixture references drifted; review then regenerate with --write");

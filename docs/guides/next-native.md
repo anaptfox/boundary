@@ -7,7 +7,7 @@ description: "Call a pinned Binding from a Next Server Action without turning a 
 
 `@foxworth/boundary/frameworks/next` has two separate jobs.
 
-`createProjectionHandlers(handler)` remains the App Router route-export helper
+`createSurfaceHandlers(handler)` remains the App Router route-export helper
 for an explicit HTTP boundary. It is suitable for browser, MCP, and other
 network callers. It does not turn an HTTP route into the server-side API for
 your own page or form.

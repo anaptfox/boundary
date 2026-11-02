@@ -2,26 +2,26 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  type ProjectionClient,
+  type SurfaceClient,
 } from "@foxworth/boundary/client";
 import {
-  createProjectionContext,
+  createSurfaceContext,
   useInteraction,
-  type ProjectionProviderProps,
-  type ProjectionViewProps,
+  type SurfaceProviderProps,
+  type SurfaceViewProps,
 } from "@foxworth/boundary/react";
 import { describe, expect, it } from "vitest";
 
-type TodoProjectionClient = ProjectionClient &
+type TodoProjectionClient = SurfaceClient &
   Readonly<{ surface: "todo-projection" }>;
 
 describe("@foxworth/boundary/react", () => {
-  it("creates a typed Projection client context with explicit views", () => {
-    const react = createProjectionContext<TodoProjectionClient>();
+  it("creates a typed CompiledSurface client context with explicit views", () => {
+    const react = createSurfaceContext<TodoProjectionClient>();
     const client = Object.freeze({}) as TodoProjectionClient;
 
     function TodoView(
-      _props: ProjectionViewProps<TodoProjectionClient> & {
+      _props: SurfaceViewProps<TodoProjectionClient> & {
         readonly heading: string;
       },
     ) {
@@ -31,7 +31,7 @@ describe("@foxworth/boundary/react", () => {
     const BoundView = react.view(TodoView);
     const providerElement = (
       react.Provider as (
-        props: ProjectionProviderProps<TodoProjectionClient>,
+        props: SurfaceProviderProps<TodoProjectionClient>,
       ) => { readonly props: { readonly value: TodoProjectionClient } }
     )({ client, children: "child" });
 
@@ -40,7 +40,7 @@ describe("@foxworth/boundary/react", () => {
     expect(typeof react.useClient).toBe("function");
     expect(typeof useInteraction).toBe("function");
     expect(typeof BoundView).toBe("function");
-    expect(BoundView.displayName).toBe("ProjectionView(TodoView)");
+    expect(BoundView.displayName).toBe("SurfaceView(TodoView)");
     expect(providerElement.props.value).toBe(client);
   });
 

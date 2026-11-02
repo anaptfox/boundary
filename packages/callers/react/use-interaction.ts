@@ -1,14 +1,8 @@
 "use client";
 
-import type {
-  AnyInteractionDefinition,
-  DefinitionArity,
-  DefinitionInput,
-  DefinitionOutput,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-} from "@foxworth/boundary";
-import type { ProjectionClient } from "@foxworth/boundary/client";
+import type { AnyInteractionDefinition, DefinitionArity, DefinitionInput, DefinitionOutput } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
+import type { SurfaceClient } from "@foxworth/boundary/client";
 import {
   AdapterError,
   RemoteDomainError,
@@ -35,36 +29,36 @@ import {
 import { useInteractionCacheScope } from "./cache-scope";
 import { useInvocationState } from "./use-invocation-state";
 
-type AnyProjectedInteractionHandle = ProjectedInteractionHandle<any, any>;
-type DefinitionOf<Handle> = Handle extends ProjectedInteractionHandle<
+type AnySurfaceHandle = SurfaceHandle<any, any>;
+type DefinitionOf<Handle> = Handle extends SurfaceHandle<
   InteractionHandle<infer Definition>,
   any
 >
   ? Definition
   : AnyInteractionDefinition;
-type HandleInput<Handle extends AnyProjectedInteractionHandle> = DefinitionInput<
+type HandleInput<Handle extends AnySurfaceHandle> = DefinitionInput<
   DefinitionOf<Handle>
 >;
-type HandleOutput<Handle extends AnyProjectedInteractionHandle> = DefinitionOutput<
+type HandleOutput<Handle extends AnySurfaceHandle> = DefinitionOutput<
   DefinitionOf<Handle>
 >;
-type HandleArity<Handle extends AnyProjectedInteractionHandle> = DefinitionArity<
+type HandleArity<Handle extends AnySurfaceHandle> = DefinitionArity<
   DefinitionOf<Handle>
 >;
-type HandleArguments<Handle extends AnyProjectedInteractionHandle> =
+type HandleArguments<Handle extends AnySurfaceHandle> =
   HandleArity<Handle> extends 0
     ? readonly []
     : readonly [input: HandleInput<Handle>];
-type CallArguments<Handle extends AnyProjectedInteractionHandle> =
+type CallArguments<Handle extends AnySurfaceHandle> =
   | readonly []
   | HandleArguments<Handle>;
-type DirectHandle<Handle extends AnyProjectedInteractionHandle> = Handle &
+type DirectHandle<Handle extends AnySurfaceHandle> = Handle &
   ("direct" extends Handle["modes"][number] ? unknown : never);
 
-export type UseInteractionError<Value extends AnyProjectedInteractionHandle> =
+export type UseInteractionError<Value extends AnySurfaceHandle> =
   InteractionReadError<Value>;
 
-export type UseInteractionResult<Value extends AnyProjectedInteractionHandle> = Readonly<{
+export type UseInteractionResult<Value extends AnySurfaceHandle> = Readonly<{
   data: HandleOutput<Value> | undefined;
   error: UseInteractionError<Value> | undefined;
   isPending: boolean;
@@ -116,8 +110,8 @@ function asInteractionError(caught: unknown): Error {
   return caught instanceof Error ? caught : new Error(String(caught));
 }
 
-export function useInteraction<Value extends AnyProjectedInteractionHandle>(
-  client: ProjectionClient,
+export function useInteraction<Value extends AnySurfaceHandle>(
+  client: SurfaceClient,
   handle: DirectHandle<Value>,
   ...args: [] | HandleArguments<Value>
 ): UseInteractionResult<Value> {
@@ -149,7 +143,7 @@ export function useInteraction<Value extends AnyProjectedInteractionHandle>(
 
   const createRead = useCallback((callArgs: CallArguments<Value>) => {
     const watch = watchInteraction as (
-      client: ProjectionClient,
+      client: SurfaceClient,
       handle: DirectHandle<Value>,
       ...input: readonly unknown[]
     ) => InteractionRead<Value>;

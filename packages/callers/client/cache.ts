@@ -1,15 +1,9 @@
-import type {
-  ProjectedInteractionHandle,
-  ProjectionBindingManifest,
-} from "@foxworth/boundary";
-import type { ProjectionClient } from "./client";
+import type { BindingManifest } from "@foxworth/boundary";
+import type { SurfaceHandle } from "@foxworth/boundary/pipeline";
+import type { SurfaceClient } from "./client";
 import { normalizeJson, validateInvocationObservation, type JsonValue } from "@foxworth/boundary/program";
-import { AdapterError, type RemoteInteractionError } from "@foxworth/boundary/remote";
+import { AdapterError, type RemoteInteractionError, snapshotSurfaceHandle, type AnySurfaceHandle } from "@foxworth/boundary/remote";
 import type { InteractionInput, InteractionOutput } from "@foxworth/boundary/remote";
-import {
-  snapshotProjectedHandle,
-  type AnyProjectedInteractionHandle,
-} from "@foxworth/boundary/remote";
 
 export type InteractionFootprint = Readonly<{
   reads: readonly string[];
@@ -29,13 +23,13 @@ export type FootprintSource = Readonly<{
 }>;
 
 type MountedRead = Readonly<{
-  client: ProjectionClient;
+  client: SurfaceClient;
   interactionId: string;
   refresh: () => Promise<void>;
 }>;
 
 type ClientCache = {
-  handshake: Promise<ProjectionBindingManifest>;
+  handshake: Promise<BindingManifest>;
   footprints?: ReadonlyMap<string, InteractionFootprint>;
 };
 
@@ -44,10 +38,10 @@ export type InteractionCacheScope = Readonly<{
   readonly kind: "boundary-interaction-cache-scope";
 }>;
 
-type DirectHandle<Handle extends AnyProjectedInteractionHandle> = Handle &
+type DirectHandle<Handle extends AnySurfaceHandle> = Handle &
   ("direct" extends Handle["modes"][number] ? unknown : never);
 
-type WatchInteractionArguments<Handle extends AnyProjectedInteractionHandle> =
+type WatchInteractionArguments<Handle extends AnySurfaceHandle> =
   Handle["inputArity"] extends 0
     ? readonly [options?: WatchInteractionOptions]
     : readonly [input: InteractionInput<Handle>, options?: WatchInteractionOptions];
@@ -57,27 +51,27 @@ export type WatchInteractionOptions = Readonly<{
   scope?: InteractionCacheScope;
 }>;
 
-export type InteractionReadError<Handle extends AnyProjectedInteractionHandle> =
+export type InteractionReadError<Handle extends AnySurfaceHandle> =
   | RemoteInteractionError<Handle>
   | Error;
 
-export type InteractionReadSnapshot<Handle extends AnyProjectedInteractionHandle> = Readonly<{
+export type InteractionReadSnapshot<Handle extends AnySurfaceHandle> = Readonly<{
   data: InteractionOutput<Handle> | undefined;
   error: InteractionReadError<Handle> | undefined;
   isPending: boolean;
 }>;
 
 /** A framework-neutral, lifecycle-owned read of one direct projected interaction. */
-export type InteractionRead<Handle extends AnyProjectedInteractionHandle> = Readonly<{
+export type InteractionRead<Handle extends AnySurfaceHandle> = Readonly<{
   getSnapshot(): InteractionReadSnapshot<Handle>;
   subscribe(listener: () => void): () => void;
   refresh(): Promise<InteractionOutput<Handle>>;
   dispose(): void;
 }>;
 
-const caches = new WeakMap<ProjectionClient, ClientCache>();
+const caches = new WeakMap<SurfaceClient, ClientCache>();
 const scopeReads = new WeakMap<InteractionCacheScope, Set<MountedRead>>();
-const clientScopes = new WeakMap<ProjectionClient, InteractionCacheScope>();
+const clientScopes = new WeakMap<SurfaceClient, InteractionCacheScope>();
 
 export function createInteractionCacheScope(): InteractionCacheScope {
   const scope = Object.freeze({ kind: "boundary-interaction-cache-scope" as const });
@@ -86,7 +80,7 @@ export function createInteractionCacheScope(): InteractionCacheScope {
 }
 
 function scopeFor(
-  client: ProjectionClient,
+  client: SurfaceClient,
   scope?: InteractionCacheScope,
 ): InteractionCacheScope {
   if (scope) {
@@ -100,7 +94,7 @@ function scopeFor(
   return created;
 }
 
-function cacheFor(client: ProjectionClient): ClientCache {
+function cacheFor(client: SurfaceClient): ClientCache {
   const existing = caches.get(client);
   if (existing) return existing;
   const created = {} as ClientCache;
@@ -151,7 +145,7 @@ export function isReadInteraction(
 }
 
 export async function footprintsFor(
-  client: ProjectionClient,
+  client: SurfaceClient,
 ): Promise<ReadonlyMap<string, InteractionFootprint>> {
   const cache = cacheFor(client);
   if (!cache.footprints) {
@@ -162,13 +156,13 @@ export async function footprintsFor(
 
 /** The footprint index, when the client's handshake has already resolved. */
 export function peekFootprints(
-  client: ProjectionClient,
+  client: SurfaceClient,
 ): ReadonlyMap<string, InteractionFootprint> | undefined {
   return caches.get(client)?.footprints;
 }
 
 export function mountRead(
-  client: ProjectionClient,
+  client: SurfaceClient,
   interactionId: string,
   refresh: () => Promise<void>,
   scope?: InteractionCacheScope,
@@ -192,7 +186,7 @@ function abortError(): Error {
   return error;
 }
 
-function snapshotFor<Handle extends AnyProjectedInteractionHandle>(
+function snapshotFor<Handle extends AnySurfaceHandle>(
   data: InteractionOutput<Handle> | undefined,
   error: InteractionReadError<Handle> | undefined,
   isPending: boolean,
@@ -221,12 +215,12 @@ type ActiveRead<Output> = {
  * change: the pinned Binding and declared footprint are checked before every
  * transport call. Invalidation is deliberately scoped to mounted readers.
  */
-export function watchInteraction<Handle extends AnyProjectedInteractionHandle>(
-  client: ProjectionClient,
+export function watchInteraction<Handle extends AnySurfaceHandle>(
+  client: SurfaceClient,
   handleValue: DirectHandle<Handle>,
   ...args: WatchInteractionArguments<Handle>
 ): InteractionRead<Handle> {
-  const handle = snapshotProjectedHandle(handleValue, "watchInteraction.handle");
+  const handle = snapshotSurfaceHandle(handleValue, "watchInteraction.handle");
   const supplied = args as readonly unknown[];
   let input: JsonValue | undefined;
   let options: WatchInteractionOptions | undefined;
@@ -304,7 +298,7 @@ export function watchInteraction<Handle extends AnyProjectedInteractionHandle>(
     if (disposed) throw abortError();
     run.phase = "dispatched";
     const call = client.call as (
-      value: AnyProjectedInteractionHandle,
+      value: AnySurfaceHandle,
       ...callArgs: readonly JsonValue[]
     ) => Promise<InteractionOutput<Handle>>;
     const value = handle.inputArity === 0
@@ -419,8 +413,8 @@ function readInvalidatedByResources(
  * do not imply completion and therefore do not invalidate reads.
  */
 export async function invalidateReadsForChange(
-  client: ProjectionClient,
-  change: Pick<ProjectedInteractionHandle<any, any>, "interactionId">,
+  client: SurfaceClient,
+  change: Pick<SurfaceHandle<any, any>, "interactionId">,
   scope?: InteractionCacheScope,
 ): Promise<void> {
   const changeFootprints = await footprintsFor(client);
@@ -465,7 +459,7 @@ export async function invalidateReadsForObservation(value: unknown, scope: Inter
 }
 
 /** Refresh this installation's mounted reads after reconnect; never repeats changes. */
-export async function refreshReadsForClient(client: ProjectionClient, scope: InteractionCacheScope): Promise<void> {
+export async function refreshReadsForClient(client: SurfaceClient, scope: InteractionCacheScope): Promise<void> {
   const mounted = scopeReads.get(scope);
   if (!mounted) throw new TypeError("an authentic interaction cache scope is required");
   const expected = await cacheFor(client).handshake;

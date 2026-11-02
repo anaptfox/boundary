@@ -2,7 +2,7 @@ import type {
   InstallationId,
   JsonValue,
   InteractionMode,
-  ProjectionBindingManifest,
+  BindingManifest,
   RawInvocationOutcome,
   RealizationId,
   InvocationCertainty,
@@ -84,15 +84,15 @@ export type HandoffBindingInvocation = Readonly<{
   input: unknown;
 }>;
 
-/** Live Binding seam Handoff needs. A structural copy so Handoff never imports Host; `tests/typescript/handoff-host-seam.test.ts` proves Host's ProjectionBinding satisfies it. */
+/** Live Binding seam Handoff needs. A structural copy so Handoff never imports Host; `tests/typescript/handoff-host-seam.test.ts` proves Host's Binding satisfies it. */
 export interface HandoffExecutable {
-  readonly manifest: ProjectionBindingManifest;
+  readonly manifest: BindingManifest;
   resolve(interactionId: string): HandoffResolvedInteraction | undefined;
   invoke(...args: any[]): Promise<RawInvocationOutcome>;
 }
 
 export interface CheckedHandoff<Context = unknown> {
-  readonly manifest: ProjectionBindingManifest;
+  readonly manifest: BindingManifest;
   invoke(
     invocation: HandoffInvocation,
     context: Context,

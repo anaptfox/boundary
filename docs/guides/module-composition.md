@@ -165,14 +165,12 @@ const localCompiled = {
   tasks: await compileInteractions(taskModule),
   capacity: await compileInteractions(capacityModule),
 };
-const taskEditor = await projectAllDirect(localCompiled.tasks);
-const taskReader = await pickProjection(taskEditor, "query");
-const capacityReader = await pickProjection(
-  await projectAllDirect(localCompiled.capacity), "query",
-);
+const taskEditor = await projectSurface(localCompiled.tasks, surface.all(taskModule));
+const taskReader = await projectSurface(localCompiled.tasks, surface(taskModule, { call: ["query"] }));
+const capacityReader = await projectSurface(localCompiled.capacity, surface(capacityModule, { call: ["query"] }));
 ```
 
-`bindProjection` matches expected interactions to installed realizations by
+`bindSurface` matches expected interactions to installed realizations by
 identity and compatibility, then pins the actual realization. It does not
 require matching alias names between the projection and installation. A task
 reader selects only `query`; the installation's other interactions do not

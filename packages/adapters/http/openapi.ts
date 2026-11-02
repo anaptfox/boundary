@@ -1,16 +1,12 @@
-import type {
-  AnyCaller,
-  Projection,
-  ProjectionBindingInteraction,
-} from "@foxworth/boundary";
+import type { AnyCaller, BindingInteraction } from "@foxworth/boundary";
+import type { CompiledSurface } from "@foxworth/boundary/pipeline";
 import {
   createCheckedHandoff,
   type HandoffFaultCause,
 } from "@foxworth/boundary/handoff";
 import type { InvocationCertainty, JsonObject, JsonSchema, InteractionDescriptor } from "@foxworth/boundary/program";
-import { AdapterError } from "@foxworth/boundary/remote";
+import { AdapterError, compileBindingResolution, compileSurfaceResolution, interactionKey, seamOf } from "@foxworth/boundary/remote";
 import type { HttpRoute } from "./handler";
-import { compileBindingResolution, compileProjectionResolution, interactionKey, seamOf } from "@foxworth/boundary/remote";
 
 type OpenApiCommon = Readonly<{
   routes: readonly HttpRoute[];
@@ -19,7 +15,7 @@ type OpenApiCommon = Readonly<{
 }>;
 
 export type OpenApiOptions<Context = unknown> = OpenApiCommon & (
-  | Readonly<{ projection: Projection<any>; caller?: never }>
+  | Readonly<{ projection: CompiledSurface<any>; caller?: never }>
   | Readonly<{ caller: AnyCaller<Context>; projection?: never }>
 );
 
@@ -60,7 +56,7 @@ function withoutProperties(schema: JsonSchema, excluded: ReadonlySet<string>): J
 function identityProperties(
   descriptor: InteractionDescriptor,
   mode: "direct" | "request",
-  binding?: ProjectionBindingInteraction,
+  binding?: BindingInteraction,
   installationId?: string,
 ): JsonObject {
   return {
@@ -91,7 +87,7 @@ function outcomeSchema(
   mode: "direct" | "request",
   branches: readonly OutcomeBranch[],
   bindingDigest?: string,
-  binding?: ProjectionBindingInteraction,
+  binding?: BindingInteraction,
   installationId?: string,
 ): JsonObject {
   const properties: Record<string, JsonSchema> = {
@@ -213,7 +209,7 @@ function interactionPath(
   route: HttpRoute,
   descriptor: InteractionDescriptor,
   bindingDigest?: string,
-  binding?: ProjectionBindingInteraction,
+  binding?: BindingInteraction,
   installationId?: string,
 ): JsonObject {
   if (route.inputMapping === "custom") {
@@ -401,7 +397,7 @@ export async function openapi<Context>(options: OpenApiOptions<Context>): Promis
   const declarations = options.routes.map((route) => ({ handle: route.handle, mode: route.mode }));
   let resolved: ReadonlyMap<string, Readonly<{
     descriptor: InteractionDescriptor;
-    binding?: ProjectionBindingInteraction;
+    binding?: BindingInteraction;
   }>>;
   let bindingDigest: string | undefined;
   let installationId: string | undefined;
@@ -419,7 +415,7 @@ export async function openapi<Context>(options: OpenApiOptions<Context>): Promis
       binding: value.binding,
     }]));
   } else {
-    const projection = await compileProjectionResolution(options.projection, declarations);
+    const projection = await compileSurfaceResolution(options.projection, declarations);
     programDigest = projection.projection.program.programDigest;
     sourceDigest = projection.projection.projectionDigest;
     resolved = new Map([...projection.interactions].map(([key, value]) => [key, {

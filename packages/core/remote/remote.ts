@@ -1,12 +1,5 @@
-import type {
-  AnyInteractionDefinition,
-  DefinitionArity,
-  DefinitionInput,
-  DefinitionOutput,
-  InteractionHandle,
-  InteractionMode,
-  ProjectedInteractionHandle,
-} from "@foxworth/boundary";
+import type { AnyInteractionDefinition, DefinitionArity, DefinitionInput, DefinitionOutput, InteractionMode } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
 import {
   createHandoffInvocation,
   validateHandoffOutcomeAgainstManifest,
@@ -22,21 +15,21 @@ import { AdapterError } from "./errors";
 import {
   compileBindingResolution,
   interactionKey,
-  type AnyProjectedInteractionHandle,
+  type AnySurfaceHandle,
   type BindingResolution,
   type ResolvedBindingInteraction,
 } from "./resolution";
 
-type DefinitionOf<Handle> = Handle extends ProjectedInteractionHandle<
+type DefinitionOf<Handle> = Handle extends SurfaceHandle<
   InteractionHandle<infer Definition>,
   any
 > ? Definition : AnyInteractionDefinition;
 
-export type InteractionInput<Handle extends AnyProjectedInteractionHandle> =
+export type InteractionInput<Handle extends AnySurfaceHandle> =
   DefinitionInput<DefinitionOf<Handle>>;
-export type InteractionOutput<Handle extends AnyProjectedInteractionHandle> =
+export type InteractionOutput<Handle extends AnySurfaceHandle> =
   DefinitionOutput<DefinitionOf<Handle>>;
-export type InteractionHasInput<Handle extends AnyProjectedInteractionHandle> =
+export type InteractionHasInput<Handle extends AnySurfaceHandle> =
   DefinitionArity<DefinitionOf<Handle>> extends 0 ? false : true;
 
 export type SerializedInvocation<Input extends JsonValue = JsonValue> =
@@ -48,7 +41,7 @@ export type Exposure = BindingResolution;
 export async function compileExposure(
   handoff: CheckedHandoff<any>,
   selected: readonly Readonly<{
-    handle: AnyProjectedInteractionHandle;
+    handle: AnySurfaceHandle;
     mode: InteractionMode;
   }>[],
 ): Promise<Exposure> {
@@ -76,7 +69,7 @@ export async function compileHandoffExposure(
         contractDigest: descriptor.contractDigest,
         inputArity: interaction.inputArity,
         modes: Object.freeze(modesById.get(interaction.interactionId)!),
-      }) as AnyProjectedInteractionHandle,
+      }) as AnySurfaceHandle,
       mode: interaction.mode,
     });
   });
@@ -130,7 +123,7 @@ export function faultResult(
 export async function executeExposedInteraction<Context>(args: Readonly<{
   exposure: Exposure;
   context: Context;
-  handle: AnyProjectedInteractionHandle;
+  handle: AnySurfaceHandle;
   mode: InteractionMode;
   input: unknown;
 }>): Promise<HandoffOutcome> {
@@ -141,7 +134,7 @@ export async function executeExposedInteraction<Context>(args: Readonly<{
 /** Validate and serialize locally, before the consequential dispatch boundary. */
 export async function prepareExposedInteraction(args: Readonly<{
   exposure: Exposure;
-  handle: AnyProjectedInteractionHandle;
+  handle: AnySurfaceHandle;
   mode: InteractionMode;
   input: unknown;
 }>): Promise<Readonly<{
@@ -196,7 +189,7 @@ export function statusForRemoteResult(result: HandoffOutcome): number {
 }
 
 export type {
-  AnyProjectedInteractionHandle,
+  AnySurfaceHandle,
   CheckedHandoff,
   HandoffInvocation,
   HandoffOutcome,

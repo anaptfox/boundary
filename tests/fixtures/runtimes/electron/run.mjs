@@ -22,9 +22,9 @@ try {
   await writeFile(page, "<!doctype html><title>boundary-electron-proof</title>");
   await writeFile(entry, `import { app, BrowserWindow, ipcMain, protocol, session } from "electron";
 import { createHandoffInvocation } from "@foxworth/boundary/handoff";
-import { prepareProjectionElectron } from "@foxworth/boundary/electron";
+import { prepareSurfaceElectron } from "@foxworth/boundary/electron";
 import { installTrustedProjection } from ${JSON.stringify(resolve(root, "tests/fixtures/runtimes/electron/trusted-ipc.ts"))};
-prepareProjectionElectron({ app, protocol }, { scheme: "my-app-boundary" });
+prepareSurfaceElectron({ app, protocol }, { scheme: "my-app-boundary" });
 app.whenReady().then(async () => {
   const options = { show: false, webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: ${JSON.stringify(preload)} } };
   const first = new BrowserWindow(options); const second = new BrowserWindow(options); const third = new BrowserWindow(options);

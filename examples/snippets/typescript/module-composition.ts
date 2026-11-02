@@ -1,24 +1,6 @@
 // #region imports
-import {
-  declaredInteractionError,
-  defineInteraction,
-  type DefinitionInput,
-  type InteractionDefinitions,
-} from "@foxworth/boundary";
-import {
-  bindNativeInteractions,
-  bindProjection,
-  compileInteractions,
-  composeCompiledInteractions,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  pickProjection,
-  projectAllDirect,
-  type Admission,
-  type AdmissionRequest,
-  type ImplementationMap,
-} from "@foxworth/boundary/pipeline";
+import { declaredInteractionError, defineInteraction, type DefinitionInput, type InteractionDefinitions, type Admission, type AdmissionRequest, surface } from "@foxworth/boundary";
+import { bindNativeInteractions, bindSurface, compileInteractions, composeCompiledInteractions, implementInteractions, installInteractions, type ImplementationMap, realizationIdsFor, projectSurface } from "@foxworth/boundary/pipeline";
 import { portableSchema } from "@foxworth/boundary/program";
 // #endregion imports
 
@@ -187,7 +169,7 @@ export async function createModuleCompositionHost(options: Readonly<{
   } satisfies ImplementationMap<typeof hostDefinitions, Context>;
   const identity = {
     installationId: "modules:local:v1",
-    realizationIds: directRealizationIds(compiled, "v1"),
+    realizationIds: realizationIdsFor(compiled, "v1"),
   };
 
   const installed = options.style === "native"
@@ -230,11 +212,9 @@ export async function createModuleCompositionHost(options: Readonly<{
     tasks: await compileInteractions(taskModule),
     capacity: await compileInteractions(capacityModule),
   };
-  const taskEditor = await projectAllDirect(localCompiled.tasks);
-  const taskReader = await pickProjection(taskEditor, "query");
-  const capacityReader = await pickProjection(
-    await projectAllDirect(localCompiled.capacity), "query",
-  );
+  const taskEditor = await projectSurface(localCompiled.tasks, surface.all(taskModule));
+  const taskReader = await projectSurface(localCompiled.tasks, surface(taskModule, { call: ["query"] }));
+  const capacityReader = await projectSurface(localCompiled.capacity, surface(capacityModule, { call: ["query"] }));
   // #endregion selected-projections
 
   // #region admission
@@ -265,9 +245,9 @@ export async function createModuleCompositionHost(options: Readonly<{
   // #endregion admission
 
   // #region binding
-  const taskEditorResult = await bindProjection(taskEditor, installed.installation, { admit });
-  const taskReaderResult = await bindProjection(taskReader, installed.installation, { admit });
-  const capacityReaderResult = await bindProjection(capacityReader, installed.installation, { admit });
+  const taskEditorResult = await bindSurface(taskEditor, installed.installation, { admit });
+  const taskReaderResult = await bindSurface(taskReader, installed.installation, { admit });
+  const capacityReaderResult = await bindSurface(capacityReader, installed.installation, { admit });
   if (taskEditorResult.status !== "bound" || taskReaderResult.status !== "bound" ||
       capacityReaderResult.status !== "bound") {
     throw new Error("the selected module interfaces did not bind to the installation");

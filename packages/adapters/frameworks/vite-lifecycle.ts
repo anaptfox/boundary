@@ -1,17 +1,17 @@
 import type { HttpHandler } from "@foxworth/boundary/http";
 
 /** Vite server mode used to prepare an explicit candidate. */
-export type ProjectionViteMode = "development" | "preview";
+export type SurfaceViteMode = "development" | "preview";
 
 /** A host-owned implementation generation and its cleanup boundary. */
-export type ProjectionViteCandidate = Readonly<{
+export type SurfaceViteCandidate = Readonly<{
   readonly generation: string;
   readonly handler: HttpHandler;
   readonly dispose?: () => void | Promise<void>;
 }>;
 
 /** Non-authoritative lifecycle diagnostics; observers cannot change truth. */
-export type ProjectionViteDiagnostic = Readonly<{
+export type SurfaceViteDiagnostic = Readonly<{
   readonly code:
     | "CANDIDATE_REJECTED"
     | "CANDIDATE_DISPOSAL_FAILED"
@@ -25,15 +25,15 @@ export type ProjectionViteDiagnostic = Readonly<{
 }>;
 
 /** Snapshot of the published generation and lifecycle state. */
-export type ProjectionViteStatus = Readonly<{
+export type SurfaceViteStatus = Readonly<{
   readonly state: "idle" | "starting" | "ready" | "failed" | "closed";
   readonly generation?: string;
-  readonly diagnostic?: ProjectionViteDiagnostic;
+  readonly diagnostic?: SurfaceViteDiagnostic;
 }>;
 
 /** Explicit inputs supplied to the host entry loader. */
-export type ProjectionViteEntryContext = Readonly<{
-  readonly mode: ProjectionViteMode;
+export type SurfaceViteEntryContext = Readonly<{
+  readonly mode: SurfaceViteMode;
   readonly previousGeneration?: string;
   readonly signal: AbortSignal;
   /** Vite's native SSR loader when the host supplies one. */
@@ -41,19 +41,19 @@ export type ProjectionViteEntryContext = Readonly<{
 }>;
 
 /** Host callbacks for preparing, validating, and observing generations. */
-export type ProjectionViteLifecycleOptions = Readonly<{
+export type SurfaceViteLifecycleOptions = Readonly<{
   readonly entry: (
-    context: ProjectionViteEntryContext,
-  ) => ProjectionViteCandidate | Promise<ProjectionViteCandidate>;
-  readonly validate?: (candidate: ProjectionViteCandidate) => void | Promise<void>;
-  readonly onDiagnostic?: (diagnostic: ProjectionViteDiagnostic) => void;
+    context: SurfaceViteEntryContext,
+  ) => SurfaceViteCandidate | Promise<SurfaceViteCandidate>;
+  readonly validate?: (candidate: SurfaceViteCandidate) => void | Promise<void>;
+  readonly onDiagnostic?: (diagnostic: SurfaceViteDiagnostic) => void;
 }>;
 
 type Lease = {
   release(): void;
   cancel(): Promise<void>;
 };
-type LiveCandidate = ProjectionViteCandidate & {
+type LiveCandidate = SurfaceViteCandidate & {
   active: number;
   leases: Set<Lease>;
   retired: boolean;
@@ -65,7 +65,7 @@ type LiveCandidate = ProjectionViteCandidate & {
 
 const freeze = <const T>(value: T): Readonly<T> => Object.freeze(value);
 
-function validCandidate(value: ProjectionViteCandidate): void {
+function validCandidate(value: SurfaceViteCandidate): void {
   if (!value || typeof value !== "object") throw new TypeError("candidate must be an object");
   if (!value.generation || typeof value.generation !== "string") throw new TypeError("candidate.generation must be a non-empty string");
   if (typeof value.handler !== "function") throw new TypeError("candidate.handler must be a function");
@@ -76,23 +76,23 @@ function validCandidate(value: ProjectionViteCandidate): void {
  * Own explicit Vite implementation generations without rebinding outstanding
  * requests. Publication follows successful preparation and validation only.
  */
-export function createProjectionViteLifecycle(options: ProjectionViteLifecycleOptions) {
+export function createSurfaceViteLifecycle(options: SurfaceViteLifecycleOptions) {
   if (typeof options.entry !== "function") throw new TypeError("entry must be a function");
   let current: LiveCandidate | undefined;
   const candidates = new Set<LiveCandidate>();
   const accepted = new WeakSet<object>();
-  let status: ProjectionViteStatus = freeze({ state: "idle" });
-  let lastDiagnostic: ProjectionViteDiagnostic | undefined;
+  let status: SurfaceViteStatus = freeze({ state: "idle" });
+  let lastDiagnostic: SurfaceViteDiagnostic | undefined;
   let closed = false;
   let closePromise: Promise<void> | undefined;
   const abort = new AbortController();
   let queue = Promise.resolve();
 
-  const report = (value: ProjectionViteDiagnostic) => {
+  const report = (value: SurfaceViteDiagnostic) => {
     lastDiagnostic = freeze(value);
     try { options.onDiagnostic?.(lastDiagnostic); } catch { /* observers cannot alter lifecycle truth */ }
   };
-  const disposeCandidate = async (candidate: LiveCandidate | ProjectionViteCandidate, code: "CANDIDATE_DISPOSAL_FAILED" | "RETIRED_DISPOSAL_FAILED") => {
+  const disposeCandidate = async (candidate: LiveCandidate | SurfaceViteCandidate, code: "CANDIDATE_DISPOSAL_FAILED" | "RETIRED_DISPOSAL_FAILED") => {
     if ("disposed" in candidate) {
       if (candidate.disposed) return;
       candidate.disposed = true;
@@ -107,10 +107,10 @@ export function createProjectionViteLifecycle(options: ProjectionViteLifecycleOp
   };
   const retire = (candidate: LiveCandidate) => { candidate.retired = true; cleanup(candidate); };
 
-  const run = async (mode: ProjectionViteMode, kind: "start" | "replace", loadModule?: ProjectionViteEntryContext["loadModule"]) => {
+  const run = async (mode: SurfaceViteMode, kind: "start" | "replace", loadModule?: SurfaceViteEntryContext["loadModule"]) => {
     if (closed) return status;
     status = freeze({ state: "starting", ...(current ? { generation: current.generation } : {}) });
-    let prepared: ProjectionViteCandidate | undefined;
+    let prepared: SurfaceViteCandidate | undefined;
     let disposePrepared = false;
     try {
       prepared = await options.entry({ mode, ...(current ? { previousGeneration: current.generation } : {}), signal: abort.signal, ...(loadModule ? { loadModule } : {}) });
@@ -138,12 +138,12 @@ export function createProjectionViteLifecycle(options: ProjectionViteLifecycleOp
       return status;
     }
   };
-  const enqueue = (mode: ProjectionViteMode, kind: "start" | "replace", loadModule?: ProjectionViteEntryContext["loadModule"]) => { const result = queue.then(() => run(mode, kind, loadModule)); queue = result.then(() => undefined, () => undefined); return result; };
+  const enqueue = (mode: SurfaceViteMode, kind: "start" | "replace", loadModule?: SurfaceViteEntryContext["loadModule"]) => { const result = queue.then(() => run(mode, kind, loadModule)); queue = result.then(() => undefined, () => undefined); return result; };
   const release = (candidate: LiveCandidate, lease: Lease) => { if (!candidate.leases.delete(lease)) return; candidate.active -= 1; if (candidate.retired && candidate.active === 0) cleanup(candidate); };
 
   return {
-    start: (mode: ProjectionViteMode, loadModule?: ProjectionViteEntryContext["loadModule"]) => enqueue(mode, "start", loadModule),
-    replace: (mode: ProjectionViteMode, loadModule?: ProjectionViteEntryContext["loadModule"]) => enqueue(mode, "replace", loadModule),
+    start: (mode: SurfaceViteMode, loadModule?: SurfaceViteEntryContext["loadModule"]) => enqueue(mode, "start", loadModule),
+    replace: (mode: SurfaceViteMode, loadModule?: SurfaceViteEntryContext["loadModule"]) => enqueue(mode, "replace", loadModule),
     status: () => status,
     diagnostic: () => lastDiagnostic,
     async dispatch(request: Request): Promise<Response> {

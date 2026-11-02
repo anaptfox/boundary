@@ -2,15 +2,8 @@ import { describe, expect, it } from "vitest";
 import { portableSchema } from "@foxworth/boundary/program";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  installInteractions,
-  projectInteractions,
-  type NativeDispatchRequest,
-  type NativeDispatchOutcome,
-} from "../../packages/core/host/index";
+import { bindSurface, compileInteractions, installInteractions, projectInteractions, type NativeDispatchRequest, type NativeDispatchOutcome } from "../../packages/core/host/pipeline";
+import { defineInteraction } from "../../packages/core/host/index";
 
 const semanticFixtures = JSON.parse(
   readFileSync(
@@ -93,7 +86,7 @@ describe("native dispatch outcomes", () => {
     const projection = await projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -175,7 +168,7 @@ describe("native dispatch outcomes", () => {
     });
     expect(dispatches).toBe(beforeInvalid);
 
-    const replacement = await bindProjection(projection, installation, {
+    const replacement = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(replacement.status).toBe("bound");
@@ -213,7 +206,7 @@ describe("native dispatch outcomes", () => {
     const projection = await projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (result.status !== "bound") throw new Error("expected bound");
@@ -250,10 +243,10 @@ describe("native dispatch outcomes", () => {
     const projection = await projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const first = await bindProjection(projection, installation, {
+    const first = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
-    const second = await bindProjection(projection, installation, {
+    const second = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (first.status !== "bound" || second.status !== "bound") {

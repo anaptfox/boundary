@@ -1,11 +1,5 @@
-import type {
-  AnyInteractionDefinition,
-  CompiledInteractions,
-  DefinitionInput,
-  InteractionDefinitions,
-  InteractionHandle,
-  RealizationId,
-} from "@foxworth/boundary";
+import type { AnyInteractionDefinition, DefinitionInput, InteractionDefinitions, RealizationId } from "@foxworth/boundary";
+import type { CompiledInteractions, InteractionHandle } from "@foxworth/boundary/pipeline";
 import {
   createControlRequestContributions,
   type ControlRequestContributionSources,

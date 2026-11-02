@@ -11,7 +11,7 @@ outcomes. Transports only frame and carry those values; they do not establish
 identity, selection, admission, or execution authority.
 
 ```text
-Projection + Installation --atomic bind--> ProjectionBinding
+Projection + Installation --atomic bind--> Binding
                                                |
                                                v
                                    version 1 Binding manifest
@@ -27,11 +27,11 @@ separately through `@foxworth/boundary/control/host`.
 
 ## Projection binding manifest version 1
 
-A remote handshake publishes one exact `ProjectionBindingManifest` derived
+A remote handshake publishes one exact `BindingManifest` derived
 from a successful live Binding:
 
 ```ts
-type ProjectionBindingManifest = {
+type BindingManifest = {
   version: 1;
   bindingDigest: Sha256Digest;
   projectionDigest: Sha256Digest;
@@ -42,10 +42,10 @@ type ProjectionBindingManifest = {
   expectedProgram: Program;
   actualProgram: Program;
   actualCatalog: Catalog;
-  interactions: readonly ProjectionBindingInteraction[];
+  interactions: readonly BindingInteraction[];
 };
 
-type ProjectionBindingInteraction = {
+type BindingInteraction = {
   alias: string;
   interactionId: string;
   expectedContractDigest: Sha256Digest;
@@ -194,7 +194,7 @@ invocation exposes the full outcome.
 `validateHandoffResponse(manifest, invocation, outcome)` validates the sent input
 against both pinned contracts, checks the outcome schemas and certainty, and
 requires its interaction, mode, Binding, Installation, contracts, and Realization
-to match the sent invocation. ProjectionClient and WebMCP's transport adapter
+to match the sent invocation. SurfaceClient and WebMCP's transport adapter
 use this shared check. A valid response for another exposed interaction is still
 an invalid response to this attempt. These identity checks do not prove which
 input computed a returned value.

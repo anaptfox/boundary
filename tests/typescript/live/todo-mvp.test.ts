@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
-import { createProjectionElectronMain } from "@foxworth/boundary/electron";
+import { createSurfaceElectronMain } from "@foxworth/boundary/electron";
 import { createTodoServing } from "../../../examples/apps/typescript/todo-multisurface/serve";
 import { fakeElectron } from "../helpers/electron";
 
@@ -8,7 +8,7 @@ describe("Todo MVP localhost transport", () => {
   it("mounts the same serving on an Electron HTTP door", async () => {
     const serving = await createTodoServing();
     try {
-      const main = await createProjectionElectronMain({
+      const main = await createSurfaceElectronMain({
         electron: fakeElectron().electron,
         handler: serving.handler,
         port: 0,

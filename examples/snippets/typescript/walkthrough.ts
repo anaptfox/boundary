@@ -4,20 +4,8 @@
  */
 // #region setup
 import { z } from "zod";
-import {
-  admitWhen,
-  bindProjection,
-  compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  isDeclaredInteractionError,
-  InteractionFault,
-  pickProjection,
-  projectAllDirect,
-} from "@foxworth/boundary";
+import { admitWhen, declaredInteractionError, defineInteraction, isDeclaredInteractionError, InteractionFault, surface } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectSurface, realizationIdsFor } from "@foxworth/boundary/pipeline";
 import { interactions } from "./readme";
 
 type Actor = { kind: "screen" | "agent"; actorId: string };
@@ -33,8 +21,8 @@ export async function runWalkthroughExample() {
   // #region project
   const compiled = await compileInteractions(interactions);
 
-  const screen = await projectAllDirect(compiled);
-  const agent = await pickProjection(screen, "complete");
+  const screen = await projectSurface(compiled, surface.all(interactions));
+  const agent = await projectSurface(compiled, surface(interactions, { call: ["complete"] }));
   // #endregion project
 
   // #region install
@@ -58,16 +46,16 @@ export async function runWalkthroughExample() {
     {
       installationId: "todos:local:v1",
       implementations,
-      realizationIds: directRealizationIds(compiled, "v1"),
+      realizationIds: realizationIdsFor(compiled, "v1"),
     },
   );
   // #endregion install
 
   // #region bind
-  const screenBound = await bindProjection(screen, installation, {
+  const screenBound = await bindSurface(screen, installation, {
     admit: admitWhen((actor) => actor.kind === "screen", "screen caller required"),
   });
-  const agentBound = await bindProjection(agent, installation, {
+  const agentBound = await bindSurface(agent, installation, {
     admit: admitWhen((actor) => actor.kind === "agent", "agent caller required"),
   });
   if (screenBound.status !== "bound" || agentBound.status !== "bound") {
@@ -125,10 +113,10 @@ export async function runWalkthroughExample() {
     implementations: implementInteractions<typeof partialInteractions, Actor>(partialInteractions, {
       complete: (input) => ({ id: input.id, title: "partial", done: true }),
     }),
-    realizationIds: directRealizationIds(partial, "v1"),
+    realizationIds: realizationIdsFor(partial, "v1"),
   });
 
-  const unrealized = await bindProjection(screen, partialInstallation, {
+  const unrealized = await bindSurface(screen, partialInstallation, {
     admit: admitWhen((actor: Actor) => actor.kind === "screen"),
   });
   // unrealized.status === "unrealized"; unrealized.report.issues names "clear"
@@ -146,9 +134,9 @@ export async function runWalkthroughExample() {
     }),
   } as const;
   const staleCompiled = await compileInteractions(staleInteractions);
-  const staleAgent = await projectAllDirect(staleCompiled);
+  const staleAgent = await projectSurface(staleCompiled, surface.all(staleInteractions));
 
-  const stale = await bindProjection(staleAgent, installation, {
+  const stale = await bindSurface(staleAgent, installation, {
     admit: admitWhen((actor: Actor) => actor.kind === "agent"),
   });
   // stale.status === "unrealized": same id, different contract, refused before dispatch

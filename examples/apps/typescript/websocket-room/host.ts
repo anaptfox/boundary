@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { admitWhen, bindProjection, pickProjection } from "@foxworth/boundary";
+import { admitWhen, surface } from "@foxworth/boundary";
+import { bindSurface, projectSurface } from "@foxworth/boundary/pipeline";
 import { createTodoHost, type TodoCaller } from "../todo-multisurface/host";
 
 export async function createRoomHost() {
   const todos = await createTodoHost();
-  const readProjection = await pickProjection(todos.screen, "list");
-  const selected = await bindProjection(readProjection, todos.installation, {
+  const readProjection = await projectSurface(todos.compiled, surface(todos.interactions, { call: ["list"] }));
+  const selected = await bindSurface(readProjection, todos.installation, {
     admit: admitWhen((context: TodoCaller) => context.kind === "agent", "agent only"),
   });
   if (selected.status !== "bound") throw new Error("read-only room Binding unavailable");

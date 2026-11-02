@@ -1,10 +1,7 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
-import {
-  bindProjection, compileInteractions, defineInteraction, directRealizationIds,
-  implementInteractions, installInteractions, projectAllDirect,
-  type AnyInteractionDefinition,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectSurface, realizationIdsFor } from "@foxworth/boundary/pipeline";
+import { defineInteraction, type AnyInteractionDefinition, surface } from "@foxworth/boundary";
 import {
   createCheckedHandoff, createHandoffInvocation, executeHandoff,
   type HandoffExecutable,
@@ -30,10 +27,10 @@ async function fixture(count: number) {
       Record<`echo${number}`, (input: unknown) => unknown>);
   const { installation } = await installInteractions(compiled, {
     installationId: `perf:handoff:${count}`, implementations,
-    realizationIds: directRealizationIds(compiled, "v1"),
+    realizationIds: realizationIdsFor(compiled, "v1"),
   });
-  const projection = await projectAllDirect(compiled);
-  const bound = await bindProjection(projection, installation, {
+  const projection = await projectSurface(compiled, surface.all(definitions));
+  const bound = await bindSurface(projection, installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (bound.status !== "bound") throw new Error("performance fixture is unbound");

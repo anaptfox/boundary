@@ -1,4 +1,4 @@
-import { mountProjection } from "@foxworth/boundary/frameworks/hono";
+import { mountSurface } from "@foxworth/boundary/frameworks/hono";
 import { describe, expect, it, vi } from "vitest";
 
 describe("@foxworth/boundary/frameworks/hono", () => {
@@ -6,7 +6,7 @@ describe("@foxworth/boundary/frameworks/hono", () => {
     const handler = vi.fn(async (request: Request) =>
       Response.json({ pathname: new URL(request.url).pathname }),
     );
-    const middleware = mountProjection(handler);
+    const middleware = mountSurface(handler);
     const request = new Request("https://example.test/domain/todos");
 
     const response = await middleware(

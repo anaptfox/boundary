@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import "./helpers/folio-environment";
-import { createProjectionClient, handlesFromBinding } from "../../packages/callers/client/client";
+import { createSurfaceClient, handlesFromBinding } from "../../packages/callers/client/client";
 import { fetchTransport } from "../../packages/adapters/http/protocol";
-import { registerWebMcpTransport, type ModelContextPort, type ModelContextTool } from "../../packages/callers/webmcp";
-import { webMcpTool } from "../../packages/callers/webmcp";
+import { registerWebMcpTransport, type ModelContextPort, type ModelContextTool, webMcpTool } from "../../packages/callers/webmcp";
 
 const { folioMcpHandler, agentBoundaryHandler } = await import("../../examples/apps/typescript/document-workspace/lib/agent-entry");
 const { GET: mcpGET } = await import("../../examples/apps/typescript/document-workspace/app/api/mcp/route");
@@ -65,7 +64,7 @@ describe("Folio MCP and browser agent entries", () => {
       ...init,
       headers: { ...init?.headers, cookie: "boundary_demo_session=alice", origin: "https://folio.test", host: "folio.test" },
     }));
-    const client = createProjectionClient(fetchTransport({ baseUrl: "https://folio.test/api/agent-boundary", fetch: browserFetch }));
+    const client = createSurfaceClient(fetchTransport({ baseUrl: "https://folio.test/api/agent-boundary", fetch: browserFetch }));
     const handles = await handlesFromBinding(client);
     expect(Object.keys(handles)).toEqual(["get", "publicationStatus", "publish", "save"]);
     const manifest = await client.inspect();

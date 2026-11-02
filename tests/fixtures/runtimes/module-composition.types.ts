@@ -1,4 +1,5 @@
-import { compileInteractions, type DefinitionInput } from "@foxworth/boundary";
+import { compileInteractions } from "@foxworth/boundary/pipeline";
+import { type DefinitionInput } from "@foxworth/boundary";
 import {
   capacityModule,
   createModuleCompositionHost,

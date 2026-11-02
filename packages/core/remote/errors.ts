@@ -1,9 +1,5 @@
-import type {
-  AnyInteractionDefinition,
-  DefinitionErrors,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-} from "@foxworth/boundary";
+import type { AnyInteractionDefinition, DefinitionErrors } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
 import type { HandoffValidationIssue } from "@foxworth/boundary/handoff";
 import { BoundaryErrorBase, type JsonValue, type Sha256Digest } from "@foxworth/boundary/program";
 
@@ -59,7 +55,7 @@ export class RemoteProtocolRejection extends AdapterError {
   }
 }
 
-type DefinitionOf<Handle> = Handle extends ProjectedInteractionHandle<
+type DefinitionOf<Handle> = Handle extends SurfaceHandle<
   InteractionHandle<infer Definition>,
   any
 > ? Definition : AnyInteractionDefinition;

@@ -1,7 +1,4 @@
-import type {
-  AnyCaller,
-  ProjectionBindingManifest,
-} from "@foxworth/boundary";
+import type { AnyCaller, BindingManifest } from "@foxworth/boundary";
 import {
   createCheckedHandoff,
   HandoffError,
@@ -10,11 +7,10 @@ import {
   type HandoffInvocation,
   type HandoffOutcome,
 } from "@foxworth/boundary/handoff";
-import { AdapterError, RemoteProtocolRejection, seamOf } from "@foxworth/boundary/remote";
+import { AdapterError, RemoteProtocolRejection, seamOf, statusForRemoteResult } from "@foxworth/boundary/remote";
 import type { HttpHandler } from "./handler";
-import { statusForRemoteResult } from "@foxworth/boundary/remote";
 
-export type ProgramHandshake = ProjectionBindingManifest;
+export type ProgramHandshake = BindingManifest;
 
 import type { ClientTransport, ClientInvokeFraming } from "@foxworth/boundary/client";
 
@@ -182,12 +178,12 @@ export function fetchTransport(options: FetchTransportOptions): ClientTransport 
     throw new AdapterError("INVALID_DECLARATION", "fetchTransport.baseUrl", "baseUrl is required");
   }
   return Object.freeze({
-    async inspect(): Promise<ProjectionBindingManifest> {
+    async inspect(): Promise<BindingManifest> {
       const response = await fetcher(`${base}/manifest`, {
         method: "GET",
         ...(options.headers === undefined ? {} : { headers: options.headers }),
       });
-      return await responseJson(response, "transport.inspect") as ProjectionBindingManifest;
+      return await responseJson(response, "transport.inspect") as BindingManifest;
     },
     async invoke(
       invocation: HandoffInvocation,

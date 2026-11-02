@@ -1,14 +1,13 @@
 import { portableSchema } from "@foxworth/boundary/program";
+import { admitAll, defineInteraction } from "@foxworth/boundary";
 import {
-  admitAll,
-  bindProjection,
+  bindSurface,
   compileInteractions,
-  defineInteraction,
+  createCaller,
   implementInteractions,
   installInteractions,
   projectInteractions,
-} from "@foxworth/boundary";
-import { createCaller } from "@foxworth/boundary/pipeline";
+} from "@foxworth/boundary/pipeline";
 import { createMcpServer, tool } from "@foxworth/boundary/mcp";
 
 if (!process.execArgv.includes("--conditions=workerd")) {
@@ -58,7 +57,7 @@ const { installation } = await installInteractions(compiled, {
 const projection = await projectInteractions(compiled, {
   create: { interaction: compiled.handles.create, modes: ["direct"] },
 });
-const result = await bindProjection(projection, installation, {
+const result = await bindSurface(projection, installation, {
   admit: admitAll,
 });
 if (result.status !== "bound") {

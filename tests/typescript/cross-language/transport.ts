@@ -3,7 +3,7 @@ import { once } from "node:events";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline";
 import type { ClientTransport } from "@foxworth/boundary/client";
-import { validateProjectionBindingManifest, type HandoffInvocation, type HandoffOutcome } from "@foxworth/boundary/handoff";
+import { validateBindingManifest, type HandoffInvocation, type HandoffOutcome } from "@foxworth/boundary/handoff";
 
 /** One owned Rust process, serial requests, bounded waits, no retry. */
 export function startRustTodo() {
@@ -45,14 +45,14 @@ export function startRustTodo() {
   }
   let dropNext = false;
   const transport: ClientTransport = {
-    inspect: async () => validateProjectionBindingManifest(await request({ kind: "inspect" })),
+    inspect: async () => validateBindingManifest(await request({ kind: "inspect" })),
     async invoke(invocation: HandoffInvocation) {
       const outcome = await request({ kind: "invoke", invocation });
       if (dropNext && invocation.interactionId === "todos.create") {
         dropNext = false;
         throw new Error("fixture discarded the response after Rust finished");
       }
-      // The production ProjectionClient validates this untrusted wire value
+      // The production SurfaceClient validates this untrusted wire value
       // against the exact invocation; the fixture must not rewrite it.
       return outcome as HandoffOutcome;
     },

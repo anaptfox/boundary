@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { WebSocket } from "../../../examples/apps/typescript/websocket-room/server";
+import { WebSocket, startRoomServer } from "../../../examples/apps/typescript/websocket-room/server";
 import { WebSocketChatTransport, readUIMessageStream, type UIMessage } from "../../../examples/apps/typescript/websocket-room/node_modules/ai";
-import { startRoomServer } from "../../../examples/apps/typescript/websocket-room/server";
 
 const servers: Array<Awaited<ReturnType<typeof startRoomServer>>> = [];
 const transports: WebSocketChatTransport<UIMessage>[] = [];

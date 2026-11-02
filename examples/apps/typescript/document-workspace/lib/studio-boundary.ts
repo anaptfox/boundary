@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { bindProjection, compileInteractions, declaredInteractionError, defineInteraction, implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary";
+import { declaredInteractionError, defineInteraction } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, createCaller } from "@foxworth/boundary/pipeline";
 import { createNextServerCaller } from "@foxworth/boundary/frameworks/next";
 import { readStudio, type StudioCandidate, updateStudio } from "./studio-store";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 const Candidate = z.strictObject({
   id: z.string(),
@@ -184,7 +184,7 @@ export const studioProjection = await projectInteractions(compiled, {
   compare: { interaction: compiled.handles.compare, modes: ["direct"] },
   choose: { interaction: compiled.handles.choose, modes: ["direct"] },
 });
-const bound = await bindProjection(studioProjection, installation, {
+const bound = await bindSurface(studioProjection, installation, {
   admit: ({ context, handle }) => {
     const role = context.role;
     const allowed = (handle.interactionId === "studio.candidates.view" ||

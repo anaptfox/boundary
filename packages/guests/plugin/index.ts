@@ -7,12 +7,12 @@ export {
 
 export {
   DEFAULT_WIT_PROJECTION_OPTIONS,
-  WitProjectionError,
+  WitWorldError,
   projectWit,
-  type ProjectedInteraction,
-  type WitProjection,
-  type WitProjectionDiagnosticCode,
-  type WitProjectionOptions,
+  type WitInteraction,
+  type WitWorld,
+  type WitWorldDiagnosticCode,
+  type WitWorldOptions,
 } from "./wit";
 
 export {

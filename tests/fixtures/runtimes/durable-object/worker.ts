@@ -5,17 +5,8 @@ import * as workers from "cloudflare:workers";
 import { z } from "zod";
 import { compileZodSchema } from "@foxworth/boundary/program/zod";
 import { type Sha256Digest } from "@foxworth/boundary/program";
-import {
-  admitWhen,
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-  type ProjectionBinding,
-} from "@foxworth/boundary";
+import { admitWhen, defineInteraction } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, type Binding, createCaller, realizationIdsFor } from "@foxworth/boundary/pipeline";
 import {
   createControlCapabilities,
   digestControlRealization,
@@ -26,7 +17,6 @@ import {
 import { contributeControlRequests } from "@foxworth/boundary/control/host";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import { WorkspaceControlJournal } from "./controlJournal";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 type Session = Readonly<{ actorId: string; role: "owner" }>;
 type Context = Readonly<{ workspace: Workspace; session: Session }>;
@@ -37,7 +27,7 @@ type Environment = Readonly<{
 }>;
 type Runtime = Readonly<{
   installation: Installation;
-  binding: ProjectionBinding<typeof projection.handles, Context>;
+  binding: Binding<typeof projection.handles, Context>;
   control: ControlCapabilities<Session, Context>;
 }>;
 
@@ -361,9 +351,9 @@ export class Workspace extends DurableObject<Environment> {
       read: () => this.read(),
       increment: (input) => this.#directIncrement(input.amount),
     });
-    const result = await installInteractions<typeof interactions, Context>(compiled, { installationId: `installation:workspace:${installation.workspaceId}:${installation.deploymentId}`, implementations, requests: contributeControlRequests(compiled, control.requester, { increment: { interaction: compiled.handles.increment, control: controlled, executionRealizationId, actor: (context) => context.session } }), realizationIds: { ...directRealizationIds(compiled, `workspace:${installation.workspaceId}:${installation.deploymentId}`), increment: { direct: `workspace:${installation.workspaceId}:${installation.deploymentId}:increment:direct`, request: requestRealizationId } } });
+    const result = await installInteractions<typeof interactions, Context>(compiled, { installationId: `installation:workspace:${installation.workspaceId}:${installation.deploymentId}`, implementations, requests: contributeControlRequests(compiled, control.requester, { increment: { interaction: compiled.handles.increment, control: controlled, executionRealizationId, actor: (context) => context.session } }), realizationIds: { ...realizationIdsFor(compiled, `workspace:${installation.workspaceId}:${installation.deploymentId}`), increment: { direct: `workspace:${installation.workspaceId}:${installation.deploymentId}:increment:direct`, request: requestRealizationId } } });
     installed = result.installation;
-    const bound = await bindProjection(projection, installed, { admit: admitWhen((context: Context) => context.session.role === "owner", "owner session required") });
+    const bound = await bindSurface(projection, installed, { admit: admitWhen((context: Context) => context.session.role === "owner", "owner session required") });
     if (bound.status !== "bound") throw new Error("workspace projection did not bind");
     return { installation, binding: bound.binding, control };
   }

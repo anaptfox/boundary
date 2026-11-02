@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { publishExecutionEvidence } from "@foxworth/boundary";
+import { publishExecutionEvidence } from "@foxworth/boundary/pipeline";
 import { validateExecutionEvidence } from "@foxworth/boundary/program";
 
 type Vector = { name: string; patches: Array<{ path: string[]; value: unknown }>; valid: boolean };

@@ -1,12 +1,4 @@
-import type {
-  AnyCaller,
-  CallerCallAliases,
-  CallerDefinitions,
-  CallerProposeAliases,
-  DefinitionArity,
-  DefinitionInput,
-  DefinitionOutput,
-} from "@foxworth/boundary";
+import type { AnyCaller, CallerCallAliases, CallerDefinitions, CallerProposeAliases, DefinitionArity, DefinitionInput, DefinitionOutput } from "@foxworth/boundary";
 import type { JsonValue } from "@foxworth/boundary/program";
 import { AdapterError } from "@foxworth/boundary/remote";
 import { indexInteractionFootprints, isReadInteraction } from "@foxworth/boundary/client/cache";
@@ -160,7 +152,7 @@ export function createNextServerCaller<C extends AnyCaller<any>, Context>(
   return Object.freeze({ read: Object.freeze(read), action: Object.freeze(action) }) as unknown as NextServerCaller<C>;
 }
 
-export type ProjectionHandlers = Readonly<{
+export type SurfaceHandlers = Readonly<{
   GET: HttpHandler;
   POST: HttpHandler;
   PUT: HttpHandler;
@@ -174,9 +166,9 @@ export type ProjectionHandlers = Readonly<{
  * Bind one explicit HTTP handler to Next App Router method exports.
  * Route placement and segment config stay in the caller's `route.ts` file.
  */
-export function createProjectionHandlers(
+export function createSurfaceHandlers(
   handler: HttpHandler,
-): ProjectionHandlers {
+): SurfaceHandlers {
   return Object.freeze({
     GET: handler,
     POST: handler,

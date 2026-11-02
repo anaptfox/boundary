@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ProjectionClient } from "@foxworth/boundary/client";
+import type { SurfaceClient } from "@foxworth/boundary/client";
 import { describeInteractionError, useInteraction } from "@foxworth/boundary/react";
 import type { Todo } from "../interactions";
 import type { TodoUiRuntime } from "./client";
@@ -36,7 +36,7 @@ function CreateForm({
   client,
   handle,
 }: {
-  client: ProjectionClient;
+  client: SurfaceClient;
   handle: Handles["create"];
 }) {
   const [draft, setDraft] = useState("");
@@ -74,7 +74,7 @@ function ClearButton({
   handle,
   empty,
 }: {
-  client: ProjectionClient;
+  client: SurfaceClient;
   handle: Handles["clear"];
   empty: boolean;
 }) {
@@ -101,7 +101,7 @@ function DeskView({
 }: {
   name: string;
   note: string;
-  client: ProjectionClient;
+  client: SurfaceClient;
   handles: Handles;
   canCreate: boolean;
   canClear: boolean;

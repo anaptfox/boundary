@@ -14,22 +14,12 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import {
-  bindProjection,
-  compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  direct,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, createCaller, realizationIdsFor } from "@foxworth/boundary/pipeline";
+import { declaredInteractionError, defineInteraction } from "@foxworth/boundary";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import { statusForRemoteResult } from "@foxworth/boundary/remote";
 import { portableSchema } from "@foxworth/boundary/program";
 import type { HandoffOutcome } from "@foxworth/boundary/handoff";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 type StatusCase = {
   readonly name: string;
@@ -125,13 +115,13 @@ async function fixture(options: { readonly admit?: boolean } = {}) {
   const { installation } = await installInteractions(compiled, {
     installationId: "deploy:http-framing:1",
     implementations,
-    realizationIds: directRealizationIds(compiled, "v1"),
+    realizationIds: realizationIdsFor(compiled, "v1"),
   });
   const projection = await projectInteractions(compiled, {
-    echo: direct(compiled.handles.echo),
-    fail: direct(compiled.handles.fail),
+    echo: { interaction: compiled.handles.echo, modes: ["direct"] },
+    fail: { interaction: compiled.handles.fail, modes: ["direct"] },
   });
-  const bound = await bindProjection(projection, installation, {
+  const bound = await bindSurface(projection, installation, {
     admit: () =>
       options.admit === false
         ? { decision: "deny" as const, reason: "DENIED" }

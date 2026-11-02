@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
-import { bindProjection, compileInteractions, defineInteraction, directRealizationIds, implementInteractions, installInteractions, projectAllDirect } from "../../packages/core/host/index";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectSurface, realizationIdsFor } from "../../packages/core/host/pipeline";
+import { defineInteraction, surface } from "../../packages/core/host/index";
 import { portableSchema, type InvocationObservation } from "../../packages/core/program/index";
 
 it("pins observer methods to their original receiver and isolates publication failure", async () => {
@@ -13,12 +14,12 @@ it("pins observer methods to their original receiver and isolates publication fa
   const observer = new Observer();
   const interactions = { read: defineInteraction({ id: "observer.read", output: portableSchema<string>({ type: "string" }) }) };
   const compiled = await compileInteractions(interactions);
-  const projection = await projectAllDirect(compiled);
+  const projection = await projectSurface(compiled, surface.all(interactions));
   const installed = await installInteractions(compiled, {
-    installationId: "observer:test", realizationIds: directRealizationIds(compiled, "v1"),
+    installationId: "observer:test", realizationIds: realizationIdsFor(compiled, "v1"),
     implementations: implementInteractions<typeof interactions, { run: number }>(interactions, { read: () => "returned" }),
   });
-  const bound = await bindProjection(projection, installed.installation, { admit: () => ({ decision: "allow" }), observation: observer });
+  const bound = await bindSurface(projection, installed.installation, { admit: () => ({ decision: "allow" }), observation: observer });
   if (bound.status !== "bound") throw new Error("missing binding");
   observer.publish = () => { throw new Error("replacement must not be used"); };
   await expect(bound.binding.connect().call(projection.handles.read, { run: 7 })).resolves.toBe("returned");

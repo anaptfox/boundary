@@ -21,7 +21,7 @@ function headersFrom(entries: readonly [string, string][]): Headers {
 }
 
 /** Resolve a renderer fetch input against the in-process projection origin. */
-export function projectionRequest(
+export function surfaceRequest(
   input: RequestInfo | URL,
   origin: string,
   init?: RequestInit,

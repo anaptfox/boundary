@@ -3,15 +3,15 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  createProjectionViteLifecycle,
-  type ProjectionViteCandidate,
+  createSurfaceViteLifecycle,
+  type SurfaceViteCandidate,
 } from "@foxworth/boundary/frameworks/vite";
 import { createViteTodoHost } from "../fixtures/runtimes/vite/host";
 
 function candidate(
   generation: string,
   dispose: () => void | Promise<void> = () => undefined,
-): ProjectionViteCandidate {
+): SurfaceViteCandidate {
   return {
     generation,
     handler: async () => new Response(generation),
@@ -50,7 +50,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
 
   it("publishes a validated explicit generation atomically", async () => {
     const seen: string[] = [];
-    const lifecycle = createProjectionViteLifecycle({
+    const lifecycle = createSurfaceViteLifecycle({
       entry: ({ previousGeneration }) => {
         const next = previousGeneration === undefined ? "g1" : "g2";
         return candidate(next);
@@ -75,7 +75,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
   it("keeps the previous generation when a candidate fails and disposes the candidate", async () => {
     const rejectedDispose = vi.fn();
     let next = candidate("g1");
-    const lifecycle = createProjectionViteLifecycle({
+    const lifecycle = createSurfaceViteLifecycle({
       entry: () => next,
       onDiagnostic: () => {
         throw new Error("observer failed");
@@ -117,7 +117,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
       await held;
       return new Response("old");
     };
-    const lifecycle = createProjectionViteLifecycle({
+    const lifecycle = createSurfaceViteLifecycle({
       entry: () => ({
         generation: active ? "g1" : "g2",
         handler: active ? oldHandler : async () => new Response("new"),
@@ -146,7 +146,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
   it("closes once and disposes the published generation without retrying work", async () => {
     const dispose = vi.fn();
     let entries = 0;
-    const lifecycle = createProjectionViteLifecycle({
+    const lifecycle = createSurfaceViteLifecycle({
       entry: () => {
         entries += 1;
         return candidate(`g${entries}`, dispose);
@@ -167,7 +167,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
     const dispose = vi.fn();
     const current = candidate("g1", dispose);
     let calls = 0;
-    const lifecycle = createProjectionViteLifecycle({
+    const lifecycle = createSurfaceViteLifecycle({
       entry: () => { calls += 1; return current; },
       validate: () => { if (calls > 1) throw new Error("reject current"); },
     });
@@ -182,9 +182,9 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
   it("disposes a fresh invalid candidate but never disposes the accepted original", async () => {
     const invalidDispose = vi.fn();
     let invalid = false;
-    const lifecycle = createProjectionViteLifecycle({
+    const lifecycle = createSurfaceViteLifecycle({
       entry: () => invalid
-        ? ({ generation: "bad", handler: undefined, dispose: invalidDispose } as unknown as ProjectionViteCandidate)
+        ? ({ generation: "bad", handler: undefined, dispose: invalidDispose } as unknown as SurfaceViteCandidate)
         : candidate("g1"),
     });
 
@@ -200,7 +200,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
     const handlerReady = new Promise<void>((resolve) => { releaseHandler = resolve; });
     let streamCancelled = false;
     const dispose = vi.fn();
-    const lifecycle = createProjectionViteLifecycle({
+    const lifecycle = createSurfaceViteLifecycle({
       entry: () => ({
         generation: "g1",
         handler: async () => {
@@ -225,7 +225,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
 
   it("stamps null-body responses and observes cancellation failures before release", async () => {
     const dispose = vi.fn();
-    const lifecycle = createProjectionViteLifecycle({
+    const lifecycle = createSurfaceViteLifecycle({
       entry: () => ({ generation: "g1", handler: async () => new Response(null), dispose }),
     });
     await lifecycle.start("development");
@@ -238,7 +238,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
     const failing = new ReadableStream({
       cancel() { return Promise.reject(new Error("cancel failed")); },
     });
-    const cancelling = createProjectionViteLifecycle({
+    const cancelling = createSurfaceViteLifecycle({
       entry: () => ({ generation: "g1", handler: async () => new Response(failing), dispose: cancelDispose }),
     });
     await cancelling.start("development");
@@ -253,7 +253,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
     const gate = new Promise<void>((resolve) => { release = resolve; });
     const oldDispose = vi.fn();
     let next = false;
-    const lifecycle = createProjectionViteLifecycle({
+    const lifecycle = createSurfaceViteLifecycle({
       entry: () => ({
         generation: next ? "g2" : "g1",
         handler: async () => { if (!next) await gate; return new Response(next ? "new" : "old"); },
@@ -280,7 +280,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
     });
     const dispose = vi.fn();
     let generation = "g1";
-    const lifecycle = createProjectionViteLifecycle({ entry: () => ({ generation, handler: async () => new Response(stream), dispose: generation === "g1" ? dispose : undefined }) });
+    const lifecycle = createSurfaceViteLifecycle({ entry: () => ({ generation, handler: async () => new Response(stream), dispose: generation === "g1" ? dispose : undefined }) });
     await lifecycle.start("development");
     const response = await lifecycle.dispatch(new Request("https://vite.test/"));
     generation = "g2";
@@ -295,7 +295,7 @@ describe("@foxworth/boundary/frameworks/vite lifecycle", () => {
 
     const cancelDispose = vi.fn();
     const never = new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array([1])); } });
-    const cancelling = createProjectionViteLifecycle({ entry: () => ({ generation: "g1", handler: async () => new Response(never), dispose: cancelDispose }) });
+    const cancelling = createSurfaceViteLifecycle({ entry: () => ({ generation: "g1", handler: async () => new Response(never), dispose: cancelDispose }) });
     await cancelling.start("development");
     const cancellingResponse = await cancelling.dispatch(new Request("https://vite.test/"));
     await cancellingResponse.body?.cancel();

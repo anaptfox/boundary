@@ -1,5 +1,5 @@
 import { createHttpHandler, route } from "@foxworth/boundary/http";
-import { createProjectionWorkerFetchWithContext } from "@foxworth/boundary/cloudflare";
+import { createSurfaceWorkerFetchWithContext } from "@foxworth/boundary/cloudflare";
 import { describe, expect, it, vi } from "vitest";
 import { createAdapterFixture } from "./helpers/adapter";
 import { createWorkerNativeFetch } from "../fixtures/runtimes/cloudflare-worker/worker";
@@ -59,7 +59,7 @@ describe("@foxworth/boundary/cloudflare native Worker context", () => {
       new Response(`${new URL(request.url).pathname}:${environment.assets}:${execution.trace}`, {
         headers: { "x-fallback": "application" },
       }));
-    const fetch = createProjectionWorkerFetchWithContext(createHandler, {
+    const fetch = createSurfaceWorkerFetchWithContext(createHandler, {
       mount: "/boundary",
       fallback,
     });

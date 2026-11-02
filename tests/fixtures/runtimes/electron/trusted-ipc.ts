@@ -4,16 +4,13 @@
  * the application owns workspace state, sender policy, and observation routing.
  */
 import { portableSchema } from "@foxworth/boundary/program";
-import {
-  bindProjection, compileInteractions, defineInteraction, implementInteractions,
-  installInteractions, projectInteractions, type ProjectionBinding,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, type Binding, createCaller } from "@foxworth/boundary/pipeline";
+import { defineInteraction } from "@foxworth/boundary";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import {
-  allowElectronSender, createProjectionElectronMain, type ElectronApis,
-  type ElectronIpcSender, type ElectronIpcSenderFrame, type ProjectionElectronMain,
+  allowElectronSender, createSurfaceElectronMain, type ElectronApis,
+  type ElectronIpcSender, type ElectronIpcSenderFrame, type SurfaceElectronMain,
 } from "@foxworth/boundary/electron";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 export type WorkspaceId = "alpha" | "beta";
 export type WorkspaceContext = Readonly<{ workspaceId: WorkspaceId }>;
@@ -35,7 +32,7 @@ export async function installTrustedProjection(input: {
   electron: ElectronApis;
   trustedWindows: Readonly<Record<WorkspaceId, Readonly<{ sender: ElectronIpcSender; frame: ElectronIpcSenderFrame }>>>;
   onObservation?(workspaceId: WorkspaceId, event: unknown): void;
-}): Promise<Readonly<{ main: ProjectionElectronMain; binding: ProjectionBinding<any, WorkspaceContext>; state: ReadonlyMap<WorkspaceId, number>; revokeWindow(sender: ElectronIpcSender): void }>> {
+}): Promise<Readonly<{ main: SurfaceElectronMain; binding: Binding<any, WorkspaceContext>; state: ReadonlyMap<WorkspaceId, number>; revokeWindow(sender: ElectronIpcSender): void }>> {
   const state = new Map<WorkspaceId, number>([["alpha", 0], ["beta", 10]]);
   const compiled = await compileInteractions(interactions);
   const implementations = implementInteractions<typeof interactions, WorkspaceContext>(interactions, {
@@ -54,7 +51,7 @@ export async function installTrustedProjection(input: {
     read: { interaction: compiled.handles.read, modes: ["direct"] },
     increment: { interaction: compiled.handles.increment, modes: ["direct"] },
   });
-  const bound = await bindProjection(projection, installation, {
+  const bound = await bindSurface(projection, installation, {
     admit: () => ({ decision: "allow" }),
     observation: {
       correlate: (context) => ({ workspaceId: context.workspaceId }),
@@ -73,7 +70,7 @@ export async function installTrustedProjection(input: {
     caller: createCaller(bound.binding), path: "/_boundary",
     context: (request) => ({ workspaceId: request.headers.get("x-host-workspace") as WorkspaceId }),
   });
-  const main = await createProjectionElectronMain<WorkspaceContext>({
+  const main = await createSurfaceElectronMain<WorkspaceContext>({
     electron: input.electron, handler, port: false, scheme: "my-app-boundary", ipcChannel: "my-app-boundary",
     partition: "persist:my-app", openWindow: false,
     ipc: {

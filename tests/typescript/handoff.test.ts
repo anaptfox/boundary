@@ -1,20 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { portableSchema } from "@foxworth/boundary/program";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "../../packages/core/host/index";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions } from "../../packages/core/host/pipeline";
+import { defineInteraction } from "../../packages/core/host/index";
 import {
   createHandoffInvocation,
   executeHandoff,
   validateHandoffInvocation,
   validateHandoffOutcomeAgainstManifest,
   validateHandoffOutcome,
-  validateProjectionBindingManifest,
+  validateBindingManifest,
 } from "../../packages/core/handoff/index";
 
 const RETIRED_WIRE_VERSION = 2;
@@ -70,7 +64,7 @@ async function fixture() {
   const projection = await projectInteractions(compiled, {
     echo: { interaction: compiled.handles.echo, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = await bindSurface(projection, installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (result.status !== "bound") throw new Error("fixture did not bind");
@@ -80,7 +74,7 @@ async function fixture() {
 describe("Handoff protocol v1", () => {
   it("validates every identity pin and passes exact context once", async () => {
     const { binding, contexts } = await fixture();
-    const manifest = await validateProjectionBindingManifest(binding.manifest);
+    const manifest = await validateBindingManifest(binding.manifest);
     const invocation = await createHandoffInvocation(
       manifest,
       "handoff.echo",
@@ -126,7 +120,7 @@ describe("Handoff protocol v1", () => {
       "realization:echo:drifted";
 
     await expect(
-      validateProjectionBindingManifest(tampered),
+      validateBindingManifest(tampered),
     ).rejects.toMatchObject({
       code: "INVALID_MANIFEST",
       path: "manifest.interactions[0].realizationId",
@@ -266,7 +260,7 @@ describe("Handoff protocol v1", () => {
 
   it("sanitizes invalid Host outcomes after dispatch", async () => {
     const { binding, contexts } = await fixture();
-    const manifest = await validateProjectionBindingManifest(binding.manifest);
+    const manifest = await validateBindingManifest(binding.manifest);
     const interaction = manifest.interactions[0]!;
     const invocation = await createHandoffInvocation(
       manifest,

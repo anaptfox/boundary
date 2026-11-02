@@ -4,19 +4,19 @@ import {
   metadataForCompiled,
   metadataForHandle,
 } from "./compile";
-import { direct } from "./direct";
+import { requireSurface, type AnySurface, type Surface, type SurfaceAlias } from "./surface";
 import { failHost } from "./errors";
 import type {
   CompiledInteractions,
   HandlesOf,
   InteractionDefinitions,
   InteractionMode,
-  ProjectedInteractionHandle,
-  Projection,
-  ProjectionManifest,
-  ProjectionInteraction,
-  ProjectionSelection,
-  ProjectionSelections,
+  SurfaceHandle,
+  CompiledSurface,
+  SurfaceManifest,
+  SurfaceInteraction,
+  HandleSelection,
+  HandleSelections,
 } from "./types";
 
 export const PROJECTION_DOMAIN = "boundary.projection/v1";
@@ -27,8 +27,8 @@ type ProjectionMetadata = Readonly<{
     string,
     Readonly<{
       alias: string;
-      handle: ProjectedInteractionHandle;
-      interaction: ProjectionInteraction;
+      handle: SurfaceHandle;
+      interaction: SurfaceInteraction;
     }>
   >;
 }>;
@@ -67,24 +67,24 @@ function normalizeModes(
   return Object.freeze((modes as InteractionMode[]).sort(compareUtf8));
 }
 
-export type AliasProjectionSelections<
+export type AliasHandleSelections<
   Definitions extends InteractionDefinitions,
-  Selections extends Readonly<Record<string, InteractionMode | ProjectionSelection>>,
+  Selections extends Readonly<Record<string, InteractionMode | HandleSelection>>,
 > = {
   readonly [Alias in keyof Selections]: Selections[Alias] extends InteractionMode
     ? Alias extends keyof Definitions
-      ? ProjectionSelection<HandlesOf<Definitions>[Alias], readonly [Selections[Alias]]>
+      ? HandleSelection<HandlesOf<Definitions>[Alias], readonly [Selections[Alias]]>
       : never
-    : Selections[Alias] extends ProjectionSelection ? Selections[Alias] : never;
+    : Selections[Alias] extends HandleSelection ? Selections[Alias] : never;
 };
 
 export function projectInteractions<
   Definitions extends InteractionDefinitions,
-  const Selections extends ProjectionSelections,
->(compiled: CompiledInteractions<Definitions>, selections: Selections): Promise<Projection<Selections>>;
+  const Selections extends HandleSelections,
+>(compiled: CompiledInteractions<Definitions>, selections: Selections): Promise<CompiledSurface<Selections>>;
 export function projectInteractions<
   Definitions extends InteractionDefinitions,
-  const Selections extends Readonly<Record<string, InteractionMode | ProjectionSelection>>,
+  const Selections extends Readonly<Record<string, InteractionMode | HandleSelection>>,
 >(
   compiled: CompiledInteractions<Definitions>,
   selections: Selections & {
@@ -92,16 +92,16 @@ export function projectInteractions<
       ? Alias extends keyof Definitions ? Selections[Alias] : never
       : Selections[Alias];
   },
-): Promise<Projection<AliasProjectionSelections<Definitions, Selections>>>;
+): Promise<CompiledSurface<AliasHandleSelections<Definitions, Selections>>>;
 export async function projectInteractions(
   compiled: CompiledInteractions<any>,
-  selections: Readonly<Record<string, InteractionMode | ProjectionSelection>>,
-): Promise<Projection<any>> {
+  selections: Readonly<Record<string, InteractionMode | HandleSelection>>,
+): Promise<CompiledSurface<any>> {
   metadataForCompiled(compiled);
   if (selections === null || typeof selections !== "object" || Array.isArray(selections)) {
     return failHost("INVALID_PROJECTION", "selections", "projection selections must be a closed record");
   }
-  const lowered: Record<string, ProjectionSelection> = Object.create(null);
+  const lowered: Record<string, HandleSelection> = Object.create(null);
   for (const alias of Reflect.ownKeys(selections)) {
     const property = Object.getOwnPropertyDescriptor(selections, alias)!;
     if (typeof alias !== "string" || !property.enumerable || !("value" in property)) {
@@ -115,7 +115,7 @@ export async function projectInteractions(
       }
       lowered[alias] = Object.freeze({ interaction: handle, modes: Object.freeze([value] as const) });
     } else {
-      lowered[alias] = value as ProjectionSelection;
+      lowered[alias] = value as HandleSelection;
     }
   }
   return projectExplicit(compiled, lowered);
@@ -123,11 +123,11 @@ export async function projectInteractions(
 
 async function projectExplicit<
   Definitions extends InteractionDefinitions,
-  const Selections extends ProjectionSelections,
+  const Selections extends HandleSelections,
 >(
   compiled: CompiledInteractions<Definitions>,
   selections: Selections,
-): Promise<Projection<Selections>> {
+): Promise<CompiledSurface<Selections>> {
   const compiledMeta = metadataForCompiled(compiled);
   if (
     selections === null ||
@@ -142,13 +142,13 @@ async function projectExplicit<
   }
   const selectionKeys = Reflect.ownKeys(selections);
 
-  const handles: Record<string, ProjectedInteractionHandle> = {};
+  const handles: Record<string, SurfaceHandle> = {};
   const byAlias = new Map<
     string,
     {
       alias: string;
-      handle: ProjectedInteractionHandle;
-      interaction: ProjectionInteraction;
+      handle: SurfaceHandle;
+      interaction: SurfaceInteraction;
     }
   >();
   const selectedIds = new Set<string>();
@@ -180,7 +180,7 @@ async function projectExplicit<
         "each projection selection must be an object",
       );
     }
-    const source = selection.interaction as ProjectedInteractionHandle;
+    const source = selection.interaction as SurfaceHandle;
     const sourceMeta = metadataForHandle(source);
     if (!sourceMeta || sourceMeta.compiled !== compiled) {
       failHost(
@@ -193,7 +193,7 @@ async function projectExplicit<
       failHost(
         "DUPLICATE_PROJECTION_INTERACTION",
         `selections.${alias}.interaction`,
-        "one Projection may select an interaction only once",
+        "one CompiledSurface may select an interaction only once",
       );
     }
     selectedIds.add(sourceMeta.definition.id);
@@ -206,8 +206,8 @@ async function projectExplicit<
       contractDigest: source.contractDigest,
       inputArity: source.inputArity,
       modes,
-    }) as ProjectedInteractionHandle;
-    const interaction: ProjectionInteraction = Object.freeze({
+    }) as SurfaceHandle;
+    const interaction: SurfaceInteraction = Object.freeze({
       alias,
       interactionId: source.interactionId,
       expectedContractDigest: source.contractDigest,
@@ -252,7 +252,7 @@ async function projectExplicit<
     PROJECTION_DOMAIN,
     identity as unknown as JsonObject,
   );
-  const manifest: ProjectionManifest = Object.freeze({
+  const manifest: SurfaceManifest = Object.freeze({
     version: 1,
     program,
     interactions,
@@ -265,7 +265,7 @@ async function projectExplicit<
     projectionDigest,
     handles,
     manifest,
-  }) as Projection<Selections>;
+  }) as CompiledSurface<Selections>;
   projectionMetadata.set(projection, {
     compiled,
     aliases: byAlias,
@@ -280,12 +280,12 @@ async function projectExplicit<
   return projection;
 }
 
-export function metadataForProjection(value: unknown): ProjectionMetadata {
+export function metadataForCompiledSurface(value: unknown): ProjectionMetadata {
   if (value === null || typeof value !== "object") {
     return failHost(
       "INVALID_PROJECTION",
       "projection",
-      "an authentic Projection value is required",
+      "an authentic CompiledSurface value is required",
     );
   }
   const metadata = projectionMetadata.get(value);
@@ -293,109 +293,51 @@ export function metadataForProjection(value: unknown): ProjectionMetadata {
     return failHost(
       "INVALID_PROJECTION",
       "projection",
-      "an authentic Projection value is required",
+      "an authentic CompiledSurface value is required",
     );
   }
   return metadata;
 }
 
-export function metadataForProjectedHandle(value: unknown) {
+export function metadataForSurfaceHandle(value: unknown) {
   if (value === null || typeof value !== "object") return undefined;
   return projectedHandleMetadata.get(value);
 }
 
-export type DirectProjectionSelections<Definitions extends InteractionDefinitions> =
-  {
-    readonly [Alias in keyof Definitions]: ProjectionSelection<
-      HandlesOf<Definitions>[Alias],
-      readonly ["direct"]
-    >;
-  };
-
-/** Project every compiled handle in direct mode. */
-export async function projectAllDirect<Definitions extends InteractionDefinitions>(
-  compiled: CompiledInteractions<Definitions>,
-): Promise<Projection<DirectProjectionSelections<Definitions>>> {
-  metadataForCompiled(compiled);
-  const selections = Object.fromEntries(
-    Object.entries(compiled.handles).map(([alias, handle]) => [
-      alias,
-      direct(handle),
-    ]),
-  ) as DirectProjectionSelections<Definitions>;
-  return projectInteractions(compiled, selections);
-}
-
-function resolvePickEntry(
-  aliases: ProjectionMetadata["aliases"],
-  key: string,
-): ProjectionMetadata["aliases"] extends ReadonlyMap<string, infer Entry>
-  ? Entry | undefined
-  : never {
-  const byAlias = aliases.get(key);
-  if (byAlias) return byAlias;
-  for (const entry of aliases.values()) {
-    if (entry.handle.interactionId === key) return entry;
-  }
-  return undefined;
-}
-
 /**
- * Re-project a named subset of an existing Projection.
- * Keys resolve as aliases first, then as interaction ids.
- * The result is a new Projection with its own digest.
+ * Project a Surface over this compilation: the pipeline's way to select by
+ * alias with `surface()` and `surface.all()`. Every selected alias must name
+ * the definition this compilation compiled under that alias.
  */
-export async function pickProjection<
-  Selections extends ProjectionSelections,
-  const Keys extends readonly (keyof Selections & string)[],
+export async function projectSurface<
+  Definitions extends InteractionDefinitions,
+  Call extends SurfaceAlias<Definitions>,
+  Propose extends SurfaceAlias<Definitions>,
 >(
-  projection: Projection<Selections>,
-  ...keys: Keys
-): Promise<Projection<Pick<Selections, Keys[number]>>>;
-export async function pickProjection<Selections extends ProjectionSelections>(
-  projection: Projection<Selections>,
-  ...keys: readonly string[]
-): Promise<Projection<Selections>>;
-export async function pickProjection(
-  projection: Projection<ProjectionSelections>,
-  ...keys: readonly string[]
-): Promise<Projection<ProjectionSelections>> {
-  const meta = metadataForProjection(projection);
-
-  if (new Set(keys).size !== keys.length) {
-    return failHost(
-      "INVALID_PROJECTION",
-      "pickProjection",
-      "pickProjection aliases must be unique",
-    );
-  }
-  const selections = {} as Record<string, ProjectionSelection>;
-  const seen = new Set<string>();
-  for (const key of keys) {
-    const entry = resolvePickEntry(meta.aliases, key);
-    const source = metadataForProjectedHandle(entry?.handle)?.source;
-    if (!entry || source === undefined || typeof source !== "object") {
-      return failHost(
-        "INVALID_PROJECTION",
-        `pickProjection.${key}`,
-        "alias is not in this Projection",
-      );
+  compiled: CompiledInteractions<Definitions>,
+  selected: Surface<Definitions, Call, Propose>,
+): Promise<CompiledSurface<{
+  readonly [Alias in Call | Propose]: HandleSelection<
+    HandlesOf<Definitions>[Alias],
+    readonly (Alias extends Call ? (Alias extends Propose ? "direct" | "request" : "direct") : "request")[]
+  >;
+}>> {
+  const compiledMeta = metadataForCompiled(compiled);
+  const value: AnySurface = requireSurface(selected, "projectSurface.surface");
+  const selections: Record<string, HandleSelection> = Object.create(null) as Record<string, HandleSelection>;
+  for (const alias of new Set([...value.call, ...value.propose])) {
+    const declared = Object.getOwnPropertyDescriptor(value.definitions, alias)?.value;
+    if (declared === undefined || compiledMeta.definitions[alias] !== declared) {
+      return failHost("FOREIGN_HANDLE", `projectSurface.surface.${alias}`,
+        `expected the surface alias "${alias}" to name the definition compiled under that alias; found ${declared === undefined ? "no such alias" : "a different definition"}; fix: build the surface from the record you compiled`);
     }
-    if (seen.has(entry.alias)) {
-      return failHost(
-        "INVALID_PROJECTION",
-        "pickProjection",
-        "pickProjection aliases must be unique",
-      );
-    }
-    seen.add(entry.alias);
-    selections[entry.alias] = Object.freeze({
-      interaction: source as ProjectionSelection["interaction"],
-      modes: entry.handle.modes,
+    const modes: InteractionMode[] = [];
+    if (value.call.includes(alias)) modes.push("direct");
+    if (value.propose.includes(alias)) modes.push("request");
+    Object.defineProperty(selections, alias, {
+      value: Object.freeze({ interaction: compiled.handles[alias], modes: Object.freeze(modes) }),
+      enumerable: true, configurable: false, writable: false,
     });
   }
-  return projectInteractions(
-    meta.compiled as CompiledInteractions,
-    selections as ProjectionSelections,
-  );
+  return projectExplicit(compiled, selections) as never;
 }

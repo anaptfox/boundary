@@ -2,16 +2,16 @@ import { expect, it } from "vitest";
 import { createObservationHttpHandler } from "../../packages/adapters/http/observations";
 import { subscribeToObservations } from "../../packages/callers/client/observations";
 import { createInteractionCacheScope, mountRead } from "../../packages/callers/client/cache";
-import type { ProjectionClient } from "../../packages/callers/client/client";
+import type { SurfaceClient } from "../../packages/callers/client/client";
 import type { InvocationObservation } from "../../packages/core/program/index";
 import { readFileSync } from "node:fs";
 
 const event: InvocationObservation = JSON.parse(readFileSync(new URL("../conformance/v1/composition.json", import.meta.url), "utf8")).observation;
-function client(installationId = event.installationId, resources = event.changes): ProjectionClient {
+function client(installationId = event.installationId, resources = event.changes): SurfaceClient {
   return { inspect: async () => ({
     installationId, installationDigest: event.installationDigest,
     expectedProgram: { interactions: [{ contract: { id: "screen.read", reads: resources, changes: [] } }] },
-  }) } as unknown as ProjectionClient;
+  }) } as unknown as SurfaceClient;
 }
 function deferred<T>() {
   let resolve!: (value: T) => void;

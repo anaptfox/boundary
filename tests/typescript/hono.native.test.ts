@@ -1,5 +1,5 @@
 import { createHttpHandler, route } from "@foxworth/boundary/http";
-import { createProjectionHonoMiddleware } from "@foxworth/boundary/frameworks/hono";
+import { createSurfaceHonoMiddleware } from "@foxworth/boundary/frameworks/hono";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { createAdapterFixture } from "./helpers/adapter";
@@ -61,7 +61,7 @@ describe("@foxworth/boundary/frameworks/hono native context", () => {
     });
     app.get(
       "/boundary/todos",
-      createProjectionHonoMiddleware<HonoEnvironment, "/boundary/todos">((context) => {
+      createSurfaceHonoMiddleware<HonoEnvironment, "/boundary/todos">((context) => {
         seen.push({
           tenant: context.req.header("x-tenant"),
           deployment: context.env.deployment,
@@ -110,7 +110,7 @@ describe("@foxworth/boundary/frameworks/hono native context", () => {
     });
     app.get(
       "/native/:tenant",
-      createProjectionHonoMiddleware<HonoEnvironment, "/native/:tenant">((context) => {
+      createSurfaceHonoMiddleware<HonoEnvironment, "/native/:tenant">((context) => {
         const tenant: string = context.req.param("tenant");
         const role: "owner" | "viewer" = context.var.role;
         const deployment: string = context.env.deployment;

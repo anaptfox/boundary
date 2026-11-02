@@ -1,6 +1,6 @@
 "use client";
 
-import type { ProjectionClient } from "@foxworth/boundary/client";
+import type { SurfaceClient } from "@foxworth/boundary/client";
 import {
   createContext,
   createElement,
@@ -9,31 +9,31 @@ import {
   type ReactNode,
 } from "react";
 
-export type ProjectionProviderProps<Value extends ProjectionClient> = {
+export type SurfaceProviderProps<Value extends SurfaceClient> = {
   readonly client: Value;
   readonly children?: ReactNode;
 };
 
-export type ProjectionViewProps<Value extends ProjectionClient> = {
+export type SurfaceViewProps<Value extends SurfaceClient> = {
   readonly client: Value;
 };
 
-export type ProjectionView<
-  Value extends ProjectionClient,
+export type SurfaceView<
+  Value extends SurfaceClient,
   Props extends object = object,
 > =
-  ComponentType<Props & ProjectionViewProps<Value>>;
+  ComponentType<Props & SurfaceViewProps<Value>>;
 
-export type BoundProjectionView<Props extends object = object> =
+export type BoundSurfaceView<Props extends object = object> =
   ComponentType<Props>;
 
-export type ProjectionContext<Value extends ProjectionClient> = Readonly<{
-  Provider: ComponentType<ProjectionProviderProps<Value>>;
+export type SurfaceContext<Value extends SurfaceClient> = Readonly<{
+  Provider: ComponentType<SurfaceProviderProps<Value>>;
   useClient(): Value;
   /** Declare a view explicitly and inject only the client it needs. */
   view<Props extends object>(
-    component: ProjectionView<Value, Props>,
-  ): BoundProjectionView<Props>;
+    component: SurfaceView<Value, Props>,
+  ): BoundSurfaceView<Props>;
 }>;
 
 /**
@@ -41,12 +41,12 @@ export type ProjectionContext<Value extends ProjectionClient> = Readonly<{
  *
  * It never inspects the program, chooses a view, or carries server authority.
  */
-export function createProjectionContext<
-  Value extends ProjectionClient = ProjectionClient,
->(): ProjectionContext<Value> {
+export function createSurfaceContext<
+  Value extends SurfaceClient = SurfaceClient,
+>(): SurfaceContext<Value> {
   const Context = createContext<Value | undefined>(undefined);
 
-  function Provider({ client, children }: ProjectionProviderProps<Value>) {
+  function Provider({ client, children }: SurfaceProviderProps<Value>) {
     return createElement(Context.Provider, { value: client }, children);
   }
 
@@ -54,23 +54,23 @@ export function createProjectionContext<
     const client = useContext(Context);
     if (!client) {
       throw new Error(
-        "Projection view must be rendered inside its Projection Provider",
+        "CompiledSurface view must be rendered inside its CompiledSurface Provider",
       );
     }
     return client;
   }
 
   function view<Props extends object>(
-    Component: ProjectionView<Value, Props>,
-  ): BoundProjectionView<Props> {
+    Component: SurfaceView<Value, Props>,
+  ): BoundSurfaceView<Props> {
     function BoundView(props: Props) {
       const client = useClient();
       return createElement(Component, {
         ...props,
         client,
-      } as Props & ProjectionViewProps<Value>);
+      } as Props & SurfaceViewProps<Value>);
     }
-    BoundView.displayName = `ProjectionView(${Component.displayName ?? Component.name ?? "Anonymous"})`;
+    BoundView.displayName = `SurfaceView(${Component.displayName ?? Component.name ?? "Anonymous"})`;
     return BoundView;
   }
 

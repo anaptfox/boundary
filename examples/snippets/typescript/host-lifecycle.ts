@@ -16,16 +16,8 @@ export const hostLifecycleExampleStatus = {
 // #endregion foundation-status
 
 import { portableSchema } from "@foxworth/boundary/program";
-import {
-  bindProjection,
-  compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-  type AdmissionRequest,
-} from "../../../packages/core/host/index";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions } from "../../../packages/core/host/pipeline";
+import { declaredInteractionError, defineInteraction, type AdmissionRequest } from "../../../packages/core/host/index";
 
 type Caller = Readonly<{ kind: "screen" | "agent"; actorId: string }>;
 type Todo = Readonly<{
@@ -202,10 +194,10 @@ export async function createHostLifecycleExample() {
         : ({ decision: "deny", reason: `${expected} caller required` } as const);
     };
 
-  const screenResult = await bindProjection(screenProjection, installation, {
+  const screenResult = await bindSurface(screenProjection, installation, {
     admit: admitKind("screen"),
   });
-  const agentResult = await bindProjection(agentProjection, installation, {
+  const agentResult = await bindSurface(agentProjection, installation, {
     admit: admitKind("agent"),
   });
   if (screenResult.status !== "bound" || agentResult.status !== "bound") {
@@ -224,7 +216,7 @@ export async function createHostLifecycleExample() {
       modes: ["direct"],
     },
   });
-  const staleResult = await bindProjection(staleProjection, installation, {
+  const staleResult = await bindSurface(staleProjection, installation, {
     admit: admitKind("agent"),
   });
   const completeReference = screenProjection.handles.complete;

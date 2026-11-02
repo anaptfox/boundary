@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  compileInteractions,
-  composeCompiledInteractions,
-  declaredInteractionError,
-} from "@foxworth/boundary";
+import { compileInteractions, composeCompiledInteractions } from "@foxworth/boundary/pipeline";
+import { declaredInteractionError } from "@foxworth/boundary";
 import { verifyContentManifest, verifyPackReceipt } from "@foxworth/boundary/artifact";
 import {
   capacityModule,

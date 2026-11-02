@@ -7,7 +7,7 @@ import {
 import { controlError } from "./errors";
 import {
   isObject,
-  projectionSourceSnapshot,
+  recordSourceSnapshot,
   requiredString,
   requireExactFields,
 } from "./record-snapshot";
@@ -76,7 +76,7 @@ export function snapshotApprovalRecords(
   value: unknown,
   path: string,
 ): readonly Approval[] {
-  const approvals = projectionSourceSnapshot(value, path);
+  const approvals = recordSourceSnapshot(value, path);
   if (!Array.isArray(approvals)) {
     throw controlError(
       "CONTROL_INVALID_RECORD",

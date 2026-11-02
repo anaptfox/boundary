@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createProjectionClient } from "@foxworth/boundary/client";
+import { createSurfaceClient } from "@foxworth/boundary/client";
 import { fetchTransport } from "@foxworth/boundary/http/protocol";
 import { isWebMcpAvailable, registerWebMcpTransport, webMcpTool, type WebMcpRegistration } from "@foxworth/boundary/webmcp";
 
@@ -13,7 +13,7 @@ export function FolioWebMcp({ session }: { session: "alice" | "bob" }) {
     let registration: WebMcpRegistration | undefined;
     let cancelled = false;
     if (!isWebMcpAvailable()) return;
-    const client = createProjectionClient(fetchTransport({ baseUrl: "/api/agent-boundary" }));
+    const client = createSurfaceClient(fetchTransport({ baseUrl: "/api/agent-boundary" }));
     void (async () => {
       try {
         const manifest = await client.inspect();

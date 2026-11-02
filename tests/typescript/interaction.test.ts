@@ -1,18 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type {
-  InteractionDefinition,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-} from "@foxworth/boundary";
+import type { InteractionDefinition } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
 import type { JsonValue } from "@foxworth/boundary/program";
-import {
-  createInvocationState,
-  createProposalInteraction,
-} from "@foxworth/boundary/client";
+import { createInvocationState, createProposalInteraction, createSurfaceClient } from "@foxworth/boundary/client";
 import { RemoteInvocationError } from "@foxworth/boundary/remote";
-import type { ProjectionClient } from "@foxworth/boundary/client";
+import type { SurfaceClient } from "@foxworth/boundary/client";
 import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
-import { createProjectionClient } from "@foxworth/boundary/client";
 import { createAdapterFixture } from "./helpers/adapter";
 
 const DIGEST = `sha256:${"b".repeat(64)}` as const;
@@ -22,21 +15,21 @@ type Definition<Arity extends 0 | 1> = InteractionDefinition<
 
 function handle<const Mode extends "direct" | "request">(
   mode: Mode,
-): ProjectedInteractionHandle<InteractionHandle<Definition<0>>, readonly [Mode]> {
+): SurfaceHandle<InteractionHandle<Definition<0>>, readonly [Mode]> {
   return Object.freeze({
     interactionId: mode === "direct" ? "drafts.save" : "drafts.publish",
     contractDigest: DIGEST,
     inputArity: 0,
     modes: Object.freeze([mode]),
-  }) as ProjectedInteractionHandle<InteractionHandle<Definition<0>>, readonly [Mode]>;
+  }) as SurfaceHandle<InteractionHandle<Definition<0>>, readonly [Mode]>;
 }
 
-function client(calls: string[], outcome: () => Promise<JsonValue>): ProjectionClient {
-  const call: ProjectionClient["call"] = async () => {
+function client(calls: string[], outcome: () => Promise<JsonValue>): SurfaceClient {
+  const call: SurfaceClient["call"] = async () => {
     calls.push("call");
     return (await outcome()) as never;
   };
-  const request: ProjectionClient["request"] = async () => {
+  const request: SurfaceClient["request"] = async () => {
     calls.push("request");
     return (await outcome()) as never;
   };
@@ -259,7 +252,7 @@ describe("framework-neutral interaction interactions", () => {
       context: () => Object.freeze({ role: "owner" as const }),
       path: "/_boundary",
     });
-    const checkedClient = createProjectionClient(fetchTransport({
+    const checkedClient = createSurfaceClient(fetchTransport({
       baseUrl: "https://example.test/_boundary",
       fetch: (input, init) => protocol(new Request(input, init)),
     }));

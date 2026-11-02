@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { createHttpHandler, route } from "@foxworth/boundary/http";
-import { createProjectionHonoMiddleware } from "@foxworth/boundary/frameworks/hono";
+import { createSurfaceHonoMiddleware } from "@foxworth/boundary/frameworks/hono";
 import {
   createTodoHost,
   type TodoCaller,
@@ -55,7 +55,7 @@ export async function createHonoNativeApp() {
 
   // The route parameter and authenticated identity are both application data.
   // They narrow admission; neither creates a route/schema nor grants access.
-  app.get("/boundary/:tenant/todos", createProjectionHonoMiddleware<AppEnvironment, "/boundary/:tenant/todos">(async (context) => {
+  app.get("/boundary/:tenant/todos", createSurfaceHonoMiddleware<AppEnvironment, "/boundary/:tenant/todos">(async (context) => {
     const identity = context.var.identity;
     const host = await hostFor(identity?.tenant ?? "acme");
     const handler = createHttpHandler({
@@ -65,7 +65,7 @@ export async function createHonoNativeApp() {
     });
     return (request) => handler(opsRequest(request));
   }));
-  app.post("/boundary/:tenant/todos", createProjectionHonoMiddleware<AppEnvironment, "/boundary/:tenant/todos">(async (context) => {
+  app.post("/boundary/:tenant/todos", createSurfaceHonoMiddleware<AppEnvironment, "/boundary/:tenant/todos">(async (context) => {
     const identity = context.var.identity;
     const host = await hostFor(identity?.tenant ?? "acme");
     const handler = createHttpHandler({
@@ -75,7 +75,7 @@ export async function createHonoNativeApp() {
     });
     return (request) => handler(opsRequest(request));
   }));
-  app.post("/boundary/:tenant/todos/:id/complete", createProjectionHonoMiddleware<AppEnvironment, "/boundary/:tenant/todos/:id/complete">(async (context) => {
+  app.post("/boundary/:tenant/todos/:id/complete", createSurfaceHonoMiddleware<AppEnvironment, "/boundary/:tenant/todos/:id/complete">(async (context) => {
     const identity = context.var.identity;
     const host = await hostFor(identity?.tenant ?? "acme");
     const handler = createHttpHandler({

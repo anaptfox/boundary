@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { defineInteraction } from '@foxworth/boundary';
 import {
-  bindNativeInteractions, bindProjection, compileInteractions, defineInteraction,
+  bindNativeInteractions, bindSurface, compileInteractions,
   installInteractions, projectInteractions,
-} from '@foxworth/boundary';
+} from '@foxworth/boundary/pipeline';
 import { portableSchema } from '@foxworth/boundary/program';
 import { executeHandoff } from '@foxworth/boundary/handoff';
 import { createControlRequestContributions } from '@foxworth/boundary/host/control';
@@ -39,7 +40,7 @@ const installed = await installInteractions(compiled, {
   realizationIds: { change: { direct: 'inspector:fixture:change', request: 'inspector:fixture:proposal' }, inspect: { direct: 'inspector:fixture:inspect' }, nested: { direct: 'inspector:fixture:nested' }, hidden: { direct: 'inspector:fixture:hidden' } },
 });
 const projection = await projectInteractions(compiled, { change: { interaction: compiled.handles.change, modes: ['direct', 'request'] }, inspect: 'direct', nested: 'direct' });
-const bound = await bindProjection(projection, installed.installation, { admit: () => ({ decision: 'allow' }) });
+const bound = await bindSurface(projection, installed.installation, { admit: () => ({ decision: 'allow' }) });
 assert.equal(bound.status, 'bound');
 const bundle = await readFile(process.argv[2]);
 const server = createServer(async (request, response) => {

@@ -145,11 +145,11 @@ remain trusted type-only build metadata: Boundary cannot prove that a future mod
 at that specifier still exports the same definition record, nor can runtime
 validation prove that TypeScript annotations inside that module honestly
 describe their schemas. Keep source definitions and generated references under
-ordinary source review; `pinProjectionReferences` rejects runtime identity
+ordinary source review; `pinSurfaceReferences` rejects runtime identity
 drift from the live Binding, but it cannot authenticate erased TypeScript types.
 
 An `InstallationManifest` may be rendered only from an actual live
-`InteractionInstallation`. A `ProjectionBindingManifest` may be rendered
+`InteractionInstallation`. A `BindingManifest` may be rendered
 only from an actual successful Binding. The build module does not synthesize
 either from a Program, Catalog, Projection, filename, or deployment config.
 
@@ -191,5 +191,5 @@ destination, Projection selection, and write/check policy explicit.
 For offline generation, replace `binding: agentBinding` in the example with
 `projection: agentProjection` and omit every `requestOutput` member. No
 implementation, Installation, admission policy, or credentials are required.
-After deployment, call `pinProjectionReferences(client, references)` to verify
+After deployment, call `pinSurfaceReferences(client, references)` to verify
 the structural references against the live handshake before invocation.

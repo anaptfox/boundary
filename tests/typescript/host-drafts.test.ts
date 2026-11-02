@@ -1,22 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptDraft,
-  authorProjection,
+  authorSurface,
   draftsInteractions,
   isDraftRejectReason,
   proposeDraft,
-  proposerProjection,
+  proposerSurface,
   rejectDraft,
-  runnerProjection,
+  runnerSurface,
   type DraftDecision,
   type DraftStore,
 } from "../../packages/core/drafts/index";
-import {
-  compileInteractions,
-  DeclaredInteractionError,
-  defineInteraction,
-  InteractionFault,
-} from "../../packages/core/host/index";
+import { compileInteractions } from "../../packages/core/host/pipeline";
+import { DeclaredInteractionError, defineInteraction, InteractionFault } from "../../packages/core/host/index";
 import {
   createDraft,
   digestInteractionContract,
@@ -245,20 +241,20 @@ describe("drafts.reject", () => {
   });
 });
 
-describe("Draft Projection presets", () => {
+describe("Draft CompiledSurface presets", () => {
   it("expose exactly the authority they claim and nothing more", async () => {
     const compiled = await compileInteractions(draftsInteractions);
 
-    const proposer = await proposerProjection(compiled);
+    const proposer = await proposerSurface(compiled);
     expect(Object.keys(proposer.handles)).toEqual(["propose"]);
     expect(proposer.handles.propose.modes).toEqual(["direct"]);
 
-    const author = await authorProjection(compiled);
+    const author = await authorSurface(compiled);
     expect(Object.keys(author.handles).sort()).toEqual(["accept", "reject"]);
     expect(author.handles.accept.modes).toEqual(["request"]);
     expect(author.handles.reject.modes).toEqual(["request"]);
 
-    const runner = await runnerProjection(compiled);
+    const runner = await runnerSurface(compiled);
     expect(Object.keys(runner.handles)).toEqual([]);
     expect(runner.interactions).toEqual([]);
   });

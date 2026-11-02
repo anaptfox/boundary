@@ -1,14 +1,14 @@
-import type { InteractionMode, ProjectionBindingManifest, RawInvocationOutcome, RawInvocationResult } from "@foxworth/boundary/program";
+import type { InteractionMode, BindingManifest, RawInvocationOutcome, RawInvocationResult } from "@foxworth/boundary/program";
 import { type JsonValue } from "@foxworth/boundary/program";
 import { HandoffError, failHandoff } from "./errors";
 import type { CheckedHandoff, HandoffExecutable, HandoffFaultCause, HandoffInvocation, HandoffOutcome, HandoffResult } from "./types";
 import { FAULT_CAUSES, exact, outcomeFailure, pinnedInteraction, snapshot, validatedManifests } from "./checks";
-import { validateProjectionBindingManifest } from "./manifest";
+import { validateBindingManifest } from "./manifest";
 import { validateHandoffInvocation, validateHandoffOutcome, validateHandoffOutcomeAgainstManifest } from "./messages";
 
 function hasImmutableManifest(
   binding: HandoffExecutable,
-  manifest: ProjectionBindingManifest,
+  manifest: BindingManifest,
 ): boolean {
   try {
     const property = Object.getOwnPropertyDescriptor(binding, "manifest");
@@ -53,7 +53,7 @@ function hasImmutableManifest(
 }
 
 function invalidInputOutcome(
-  manifest: ProjectionBindingManifest,
+  manifest: BindingManifest,
   invocation: HandoffInvocation,
   error: HandoffError,
 ): HandoffOutcome {
@@ -75,7 +75,7 @@ function invalidInputOutcome(
 }
 
 function faultOutcome(
-  manifest: ProjectionBindingManifest,
+  manifest: BindingManifest,
   invocation: HandoffInvocation,
   certainty: HandoffOutcome["certainty"],
   cause: HandoffFaultCause,
@@ -105,7 +105,7 @@ function rawResult(result: RawInvocationResult): HandoffResult {
 }
 
 async function outcomeFromRaw(
-  manifest: ProjectionBindingManifest,
+  manifest: BindingManifest,
   invocation: HandoffInvocation,
   rawValue: RawInvocationOutcome,
 ): Promise<HandoffOutcome> {
@@ -164,13 +164,13 @@ export async function executeHandoff<Context>(
   context: Context,
 ): Promise<HandoffOutcome> {
   const invocation = validateHandoffInvocation(invocationValue);
-  const manifest = await validateProjectionBindingManifest(binding.manifest);
+  const manifest = await validateBindingManifest(binding.manifest);
   return executeWithManifest(binding, manifest, invocation, context);
 }
 
 async function executeWithManifest<Context>(
   binding: HandoffExecutable,
-  manifest: ProjectionBindingManifest,
+  manifest: BindingManifest,
   invocation: HandoffInvocation,
   context: Context,
 ): Promise<HandoffOutcome> {
@@ -220,7 +220,7 @@ export async function createHandoffInvocation(
   mode: InteractionMode,
   input: JsonValue,
 ): Promise<HandoffInvocation> {
-  const manifest = await validateProjectionBindingManifest(manifestValue);
+  const manifest = await validateBindingManifest(manifestValue);
   const interaction = validatedManifests.get(manifest)!.interactions.get(interactionId)?.get(mode);
   if (!interaction) {
     failHandoff("MODE_NOT_EXPOSED", "interaction", "Binding does not expose the requested interaction mode");
@@ -246,7 +246,7 @@ export async function createCheckedHandoff<Context>(
   // Prove source stability before validation yields. Mutable or accessor-backed
   // seams still validate their current manifest on every invocation.
   const immutable = hasImmutableManifest(binding, source);
-  const manifest = await validateProjectionBindingManifest(source);
+  const manifest = await validateBindingManifest(source);
   return Object.freeze({
     manifest,
     async invoke(invocation: HandoffInvocation, context: Context) {

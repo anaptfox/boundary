@@ -150,15 +150,14 @@ options. It may also provide `onError` for connection feedback.
 
 <!-- snippet:examples/snippets/typescript/scoped-observations.ts#imports -->
 ```ts
-import { createInvocationState, createProjectionClient, pinProjectionReferences } from "@foxworth/boundary/client";
+import { createInvocationState, createSurfaceClient, pinSurfaceReferences } from "@foxworth/boundary/client";
 import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client/cache";
 import { subscribeToObservations } from "@foxworth/boundary/client/observations";
-import { createCaller } from "@foxworth/boundary/pipeline";
 ```
 
 <!-- snippet:examples/snippets/typescript/scoped-observations.ts#client -->
 ```ts
-const handles = await pinProjectionReferences(screenClient, references);
+const handles = await pinSurfaceReferences(screenClient, references);
 const scope = createInteractionCacheScope();
 const todos = watchInteraction(screenClient, handles.list, { scope });
 const stopRendering = todos.subscribe(() => render(todos.getSnapshot()));

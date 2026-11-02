@@ -1,11 +1,11 @@
-import type { InteractionMode, ProjectionBindingManifest, ProjectionBindingInteraction } from "@foxworth/boundary/program";
+import type { InteractionMode, BindingManifest, BindingInteraction } from "@foxworth/boundary/program";
 import { isInteractionId, isSha256Digest, validateSchemaValue, type JsonValue, type InteractionDescriptor, type SchemaValueIssue } from "@foxworth/boundary/program";
 import { exactObject, snapshotJson } from "#program/internal";
 import { failHandoff, failHandoffWithIssues } from "./errors";
 import type { HandoffFaultCause, HandoffInvocation, HandoffValidationIssue } from "./types";
 
 type ManifestIndex = Readonly<{
-  interactions: ReadonlyMap<string, ReadonlyMap<InteractionMode, ProjectionBindingInteraction>>;
+  interactions: ReadonlyMap<string, ReadonlyMap<InteractionMode, BindingInteraction>>;
   expected: ReadonlyMap<string, InteractionDescriptor>;
   actual: ReadonlyMap<string, InteractionDescriptor>;
 }>;
@@ -146,14 +146,14 @@ export function descriptorById(
   );
 }
 
-export function interactionKey(interaction: ProjectionBindingInteraction): string {
+export function interactionKey(interaction: BindingInteraction): string {
   return `${interaction.interactionId}\u0000${interaction.mode}`;
 }
 
 export function pinnedInteraction(
-  manifest: ProjectionBindingManifest,
+  manifest: BindingManifest,
   invocation: HandoffInvocation,
-): ProjectionBindingInteraction {
+): BindingInteraction {
   if (invocation.bindingDigest !== manifest.bindingDigest) {
     failHandoff("STALE_BINDING", "invocation.bindingDigest", "invocation targets a different Binding");
   }

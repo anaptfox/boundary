@@ -4,7 +4,7 @@ import { bindingDescriptions, normalizeJson, validateSchemaValue, type JsonValue
 import { definitionForDeclaredError, isAuthenticDeclaredError } from "./definitions";
 import { failHost, InteractionFault } from "./errors";
 import { nativeDispatchOutcomeRecord } from "./native-outcome";
-import type { InteractionMode, ProjectionBindingInteraction, RawInvocationOutcome, RequestInvocationPolicy, ResolvedBindingInteraction } from "./types";
+import type { InteractionMode, BindingInteraction, RawInvocationOutcome, RequestInvocationPolicy, ResolvedBindingInteraction } from "./types";
 import { admitted } from "./admission";
 import { BindingMetadata, ModeResolution, bindingMetadata, bindingRevoked, resolvedMetadata } from "./binding-state";
 
@@ -46,7 +46,7 @@ function portableInput(
 
 function outcomeBase(
   metadata: BindingMetadata<any>,
-  manifest: ProjectionBindingInteraction,
+  manifest: BindingInteraction,
 ) {
   return {
     bindingDigest: metadata.manifest.bindingDigest,
@@ -83,7 +83,7 @@ function requestInvocationPolicy<Context>(
 
 function notStartedFault(
   metadata: BindingMetadata<any>,
-  manifest: ProjectionBindingInteraction,
+  manifest: BindingInteraction,
   cause: string,
 ): RawInvocationOutcome {
   return Object.freeze({
@@ -139,7 +139,7 @@ async function rawInvokeUnobserved<Context>(
     return failHost(
       "INVALID_INVOCATION",
       "binding",
-      "an authentic ProjectionBinding is required",
+      "an authentic Binding is required",
     );
   }
   const resolution = modeResolution(metadata, binding, interaction, mode);

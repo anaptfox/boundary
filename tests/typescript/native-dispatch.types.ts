@@ -1,5 +1,5 @@
-import { defineInteraction } from "@foxworth/boundary";
-import { bindNativeInteractions, bindProjection, compileInteractions, installInteractions, projectInteractions, admitAll } from "@foxworth/boundary/pipeline";
+import { defineInteraction, admitAll } from "@foxworth/boundary";
+import { bindNativeInteractions, bindSurface, compileInteractions, installInteractions, projectInteractions } from "@foxworth/boundary/pipeline";
 import { portableSchema } from "@foxworth/boundary/program";
 
 async function authoring() {
@@ -31,7 +31,7 @@ async function authoring() {
   const selected = await projectInteractions(compiled, { get: "direct" });
   // @ts-expect-error omitted handles stay omitted
   selected.handles.ready;
-  const bound = await bindProjection(selected, installation, { admit: admitAll });
+  const bound = await bindSurface(selected, installation, { admit: admitAll });
   if (bound.status === "bound") {
     const n: number = await bound.binding.connect().call(selected.handles.get, "abc");
     // @ts-expect-error preserved input relation

@@ -348,7 +348,7 @@ publisher timeouts and panic policy. Native typed callers can use the validated
 observation artifact in their own host integration; the checked Handoff method
 provides the built-in observation hook.
 
-Offline references and `directRealizationIds` are TypeScript authoring helpers.
+Offline references and `realizationIdsFor` are TypeScript authoring helpers.
 Rust keeps native typed handles and explicitly host-issued `RealizationId`s.
 Changing executable behavior requires fresh host identity in both implementations.
 

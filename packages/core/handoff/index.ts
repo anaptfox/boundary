@@ -1,5 +1,5 @@
 /** `@foxworth/boundary/handoff`: the checked, host-neutral invocation seam. */
-export { validateProjectionBindingManifest } from "./manifest";
+export { validateBindingManifest } from "./manifest";
 export { validateHandoffInvocation, validateHandoffOutcome, validateHandoffOutcomeAgainstManifest, validateHandoffResponse } from "./messages";
 export { executeHandoff, createHandoffInvocation, createCheckedHandoff } from "./execute";
 export { HandoffError, type HandoffDiagnosticCode } from "./errors";
@@ -15,6 +15,6 @@ export type {
   HandoffValidationIssue,
 } from "./types";
 export type {
-  ProjectionBindingManifest,
-  ProjectionBindingInteraction,
+  BindingManifest,
+  BindingInteraction,
 } from "@foxworth/boundary/program";

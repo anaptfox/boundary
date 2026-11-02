@@ -4,22 +4,8 @@ import {
   type JsonValue,
 } from "@foxworth/boundary/program";
 import { z } from "zod";
-import {
-  bindProjection,
-  compileInteractions,
-  composeCompiledInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  isDeclaredInteractionError,
-  projectInteractions,
-  type InteractionHandle,
-  type InteractionInstallation,
-  type ProjectionBinding,
-  type ProjectedInteractionHandle,
-  type RequestInteractionCaller,
-  type SchemaAdapter,
-} from "../../packages/core/host/index";
+import { bindSurface, compileInteractions, composeCompiledInteractions, implementInteractions, installInteractions, projectInteractions, type InteractionHandle, type InteractionInstallation, type Binding, type SurfaceHandle, type RequestInteractionCaller } from "../../packages/core/host/pipeline";
+import { defineInteraction, isDeclaredInteractionError, type SchemaAdapter } from "../../packages/core/host/index";
 
 const zodInteractions = {
   create: defineInteraction({
@@ -88,7 +74,7 @@ async function contextlessLifecycle() {
     echo: { interaction: compiled.handles.echo, modes: ["direct"] },
     version: { interaction: compiled.handles.version, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = await bindSurface(projection, installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (result.status !== "bound") return;
@@ -117,8 +103,8 @@ const invalidNarrowInstallation: typeof narrowInstallation = wideInstallation;
 // @ts-expect-error execution values never carry host revocation authority.
 narrowInstallation.revoke();
 
-declare const narrowBinding: ProjectionBinding<any, { readonly actor: string }>;
-declare const wideBinding: ProjectionBinding<any, {
+declare const narrowBinding: Binding<any, { readonly actor: string }>;
+declare const wideBinding: Binding<any, {
   readonly actor: string;
   readonly credential: string;
 }>;
@@ -173,7 +159,7 @@ void compileInteractions(customSchemaInteractions, {
   schemas: [typedSchemaAdapter],
 });
 
-type TypedRequestHandle = ProjectedInteractionHandle<
+type TypedRequestHandle = SurfaceHandle<
   InteractionHandle<typeof customSchemaInteractions.create>,
   readonly ["request"],
   { readonly proposalId: string }
@@ -195,7 +181,7 @@ async function typedRequestResult() {
 
 void typedRequestResult;
 
-type ZodCreateHandle = ProjectedInteractionHandle<
+type ZodCreateHandle = SurfaceHandle<
   InteractionHandle<typeof zodInteractions.create>,
   readonly ["direct"]
 >;

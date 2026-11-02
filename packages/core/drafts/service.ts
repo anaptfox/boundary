@@ -18,8 +18,7 @@ import {
   type InteractionContract,
   type Sha256Digest,
 } from "@foxworth/boundary/program";
-import { declaredInteractionError } from "@foxworth/boundary";
-import { InteractionFault } from "@foxworth/boundary";
+import { declaredInteractionError, InteractionFault } from "@foxworth/boundary";
 import type { MaybePromise } from "@foxworth/boundary";
 import { draftsAccept, draftsPropose, draftsReject } from "./definitions";
 import {

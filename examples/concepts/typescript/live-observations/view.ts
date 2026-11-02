@@ -1,4 +1,4 @@
-import { createProjectionClient } from "@foxworth/boundary/client";
+import { createSurfaceClient } from "@foxworth/boundary/client";
 import { fetchTransport } from "@foxworth/boundary/http/protocol";
 import { createInteractionCacheScope, mountRead } from "@foxworth/boundary/client/cache";
 import { subscribeToObservations } from "@foxworth/boundary/client/observations";
@@ -6,7 +6,7 @@ import { subscribeToObservations } from "@foxworth/boundary/client/observations"
 /** A mounted human read; the independent agent client performs the mutations. */
 export function createCounterView(baseUrl: string, token: string) {
   const headers = { authorization: `Bearer ${token}` };
-  const client = createProjectionClient(fetchTransport({ baseUrl: `${baseUrl}/boundary`, headers }));
+  const client = createSurfaceClient(fetchTransport({ baseUrl: `${baseUrl}/boundary`, headers }));
   const scope = createInteractionCacheScope();
   let value: unknown;
   let refreshes = 0;
@@ -24,7 +24,7 @@ export function createCounterView(baseUrl: string, token: string) {
 }
 
 export function agentClient(baseUrl: string, token: string, path = "/boundary") {
-  return createProjectionClient(fetchTransport({
+  return createSurfaceClient(fetchTransport({
     baseUrl: `${baseUrl}${path}`, headers: { authorization: `Bearer ${token}` },
   }));
 }

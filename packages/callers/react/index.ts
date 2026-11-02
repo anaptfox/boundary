@@ -5,12 +5,12 @@ export {
 } from "./cache-scope";
 
 export {
-  createProjectionContext,
-  type BoundProjectionView,
-  type ProjectionContext,
-  type ProjectionProviderProps,
-  type ProjectionView,
-  type ProjectionViewProps,
+  createSurfaceContext,
+  type BoundSurfaceView,
+  type SurfaceContext,
+  type SurfaceProviderProps,
+  type SurfaceView,
+  type SurfaceViewProps,
 } from "./provider";
 
 export {

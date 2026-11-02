@@ -14,7 +14,7 @@ import {
 import { controlError } from "./errors";
 import {
   isObject,
-  projectionSourceSnapshot,
+  recordSourceSnapshot,
   requiredString,
   requireExactFields,
   snapshot,
@@ -279,7 +279,7 @@ function proposalShapeIssue(value: unknown): string | undefined {
 function requireProposalProjectionSource<Preview extends JsonValue>(
   value: ProposalRecord<Preview>,
 ): ProposalRecord<Preview> {
-  const proposal = projectionSourceSnapshot(value, "proposal");
+  const proposal = recordSourceSnapshot(value, "proposal");
   if (!isObject(proposal)) {
     throw controlError(
       "CONTROL_INVALID_RECORD",

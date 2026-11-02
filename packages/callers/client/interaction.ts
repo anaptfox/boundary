@@ -1,29 +1,22 @@
-import type {
-  AnyInteractionDefinition,
-  DefinitionArity,
-  DefinitionInput,
-  DefinitionOutput,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-} from "@foxworth/boundary";
-import type { ProjectionClient } from "./client";
-import { AdapterError, type RemoteInteractionError } from "@foxworth/boundary/remote";
+import type { AnyInteractionDefinition, DefinitionArity, DefinitionInput, DefinitionOutput } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
+import type { SurfaceClient } from "./client";
+import { AdapterError, type RemoteInteractionError, snapshotSurfaceHandle, type AnySurfaceHandle } from "@foxworth/boundary/remote";
 import { invalidateReadsForChange, type InteractionCacheScope } from "./cache";
-import { snapshotProjectedHandle, type AnyProjectedInteractionHandle } from "@foxworth/boundary/remote";
 
-type DefinitionOf<Handle> = Handle extends ProjectedInteractionHandle<
+type DefinitionOf<Handle> = Handle extends SurfaceHandle<
   InteractionHandle<infer Definition>,
   any
 > ? Definition : AnyInteractionDefinition;
-type HandleInput<Handle extends AnyProjectedInteractionHandle> = DefinitionInput<DefinitionOf<Handle>>;
-type HandleOutput<Handle extends AnyProjectedInteractionHandle> = DefinitionOutput<DefinitionOf<Handle>>;
-type HandleArity<Handle extends AnyProjectedInteractionHandle> = DefinitionArity<DefinitionOf<Handle>>;
-type InteractionArguments<Handle extends AnyProjectedInteractionHandle> =
+type HandleInput<Handle extends AnySurfaceHandle> = DefinitionInput<DefinitionOf<Handle>>;
+type HandleOutput<Handle extends AnySurfaceHandle> = DefinitionOutput<DefinitionOf<Handle>>;
+type HandleArity<Handle extends AnySurfaceHandle> = DefinitionArity<DefinitionOf<Handle>>;
+type InteractionArguments<Handle extends AnySurfaceHandle> =
   HandleArity<Handle> extends 0 ? readonly [] : readonly [input: HandleInput<Handle>];
-type HandleForMode<Handle extends AnyProjectedInteractionHandle, Mode extends "direct" | "request"> =
+type HandleForMode<Handle extends AnySurfaceHandle, Mode extends "direct" | "request"> =
   Handle & (Mode extends Handle["modes"][number] ? unknown : never);
-type InteractionOutput<Handle extends AnyProjectedInteractionHandle, Mode extends "direct" | "request"> =
-  Mode extends "direct" ? HandleOutput<Handle> : Handle extends ProjectedInteractionHandle<any, any, infer RequestOutput>
+type InteractionOutput<Handle extends AnySurfaceHandle, Mode extends "direct" | "request"> =
+  Mode extends "direct" ? HandleOutput<Handle> : Handle extends SurfaceHandle<any, any, infer RequestOutput>
     ? RequestOutput
     : never;
 
@@ -31,7 +24,7 @@ export type InteractionPhase = "idle" | "pending" | "succeeded" | "failed" | "un
 
 /** Client-local state; it is not an authoritative host lifecycle record. */
 export type InvocationStateSnapshot<
-  Handle extends AnyProjectedInteractionHandle,
+  Handle extends AnySurfaceHandle,
   Mode extends "direct" | "request",
 > = Readonly<{
   /** Latest attempt evidence; connection changes do not overwrite it. */
@@ -54,7 +47,7 @@ export type InvocationStateOptions = Readonly<{
  * create a fresh store around a newly authorized client to continue.
  */
 export type InvocationState<
-  Handle extends AnyProjectedInteractionHandle,
+  Handle extends AnySurfaceHandle,
   Mode extends "direct" | "request",
 > = Readonly<{
   getSnapshot(): InvocationStateSnapshot<Handle, Mode>;
@@ -65,7 +58,7 @@ export type InvocationState<
   dispose(): void;
 }>;
 
-function snapshot<Handle extends AnyProjectedInteractionHandle, Mode extends "direct" | "request">(
+function snapshot<Handle extends AnySurfaceHandle, Mode extends "direct" | "request">(
   phase: InteractionPhase,
   result: InteractionOutput<Handle, Mode> | undefined,
   error: RemoteInteractionError<Handle> | Error | undefined,
@@ -79,15 +72,15 @@ function asError(value: unknown): Error {
 }
 
 export function createInvocationState<
-  Handle extends AnyProjectedInteractionHandle,
+  Handle extends AnySurfaceHandle,
   Mode extends "direct" | "request",
 >(
-  client: ProjectionClient,
+  client: SurfaceClient,
   handleValue: HandleForMode<Handle, Mode>,
   mode: Mode,
   options: InvocationStateOptions = {},
 ): InvocationState<Handle, Mode> {
-  const handle = snapshotProjectedHandle(handleValue, "createInvocationState.handle") as Handle;
+  const handle = snapshotSurfaceHandle(handleValue, "createInvocationState.handle") as Handle;
   if (!handle.modes.includes(mode)) {
     throw new AdapterError("INTERACTION_NOT_EXPOSED", handle.interactionId, `${mode} is absent from the projected handle`);
   }
@@ -175,7 +168,7 @@ export type ProposalStatusSnapshot<Proposal, Status> = Readonly<{
   isPending: boolean;
 }>;
 
-export type ProposalInteraction<Handle extends AnyProjectedInteractionHandle, Status> = Readonly<{
+export type ProposalInteraction<Handle extends AnySurfaceHandle, Status> = Readonly<{
   invocation: InvocationState<Handle, "request">;
   getStatusSnapshot(): ProposalStatusSnapshot<InteractionOutput<Handle, "request">, Status>;
   subscribeStatus(listener: () => void): () => void;
@@ -191,10 +184,10 @@ export type ProposalInteraction<Handle extends AnyProjectedInteractionHandle, St
  * redaction; the host must supply an authenticated public-only reader.
  */
 export function createProposalInteraction<
-  Handle extends AnyProjectedInteractionHandle,
+  Handle extends AnySurfaceHandle,
   Status = unknown,
 >(
-  client: ProjectionClient,
+  client: SurfaceClient,
   handle: HandleForMode<Handle, "request">,
   observeStatus: AuthorizedStatusReader<InteractionOutput<Handle, "request">, Status>,
 ): ProposalInteraction<Handle, Status> {

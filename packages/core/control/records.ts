@@ -2,7 +2,7 @@ import { isInteractionId, isSha256Digest, jsonEquals } from "@foxworth/boundary/
 import { controlError } from "./errors";
 import {
   isObject,
-  projectionSourceSnapshot,
+  recordSourceSnapshot,
   requiredString,
   requireExactFields,
 } from "./record-snapshot";
@@ -180,7 +180,7 @@ export function attemptMatches(
 }
 
 function requireAttemptProjectionSource(value: AttemptRecord): AttemptRecord {
-  const attempt = projectionSourceSnapshot(value, "attempt");
+  const attempt = recordSourceSnapshot(value, "attempt");
   if (!isObject(attempt)) {
     throw controlError(
       "CONTROL_INVALID_RECORD",
@@ -428,7 +428,7 @@ export function snapshotReceiptRecord(
   value: unknown,
   path = "receipt",
 ): ReceiptRecord {
-  const receipt = projectionSourceSnapshot(value, path);
+  const receipt = recordSourceSnapshot(value, path);
   if (!isObject(receipt)) {
     throw controlError(
       "CONTROL_INVALID_RECORD",

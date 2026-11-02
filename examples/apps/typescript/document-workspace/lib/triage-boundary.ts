@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { bindProjection, compileInteractions, declaredInteractionError, defineInteraction, implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary";
+import { declaredInteractionError, defineInteraction } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, createCaller } from "@foxworth/boundary/pipeline";
 import { createNextServerCaller } from "@foxworth/boundary/frameworks/next";
 import {
   type Investigator,
@@ -8,7 +9,6 @@ import {
   type TriageTicket,
   updateTriage,
 } from "./triage-store";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 const Investigator = z.enum(["signal-lens", "runbook-reader"]);
 const conflict = z.strictObject({ actualRevision: z.number().int().positive() });
@@ -292,7 +292,7 @@ export const triageProjection = await projectInteractions(compiled, {
   review: { interaction: compiled.handles.review, modes: ["direct"] },
   resolve: { interaction: compiled.handles.resolve, modes: ["direct"] },
 });
-const bound = await bindProjection(triageProjection, installation, {
+const bound = await bindSurface(triageProjection, installation, {
   admit: ({ context, handle }) => {
     const allowed = (context.actor === "human" &&
       ["triage.tickets.list", "triage.tickets.create"].includes(

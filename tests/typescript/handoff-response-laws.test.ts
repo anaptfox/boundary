@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { createHandoffInvocation, executeHandoff, validateHandoffInvocation, validateHandoffOutcome, validateHandoffResponse, validateProjectionBindingManifest } from "@foxworth/boundary/handoff";
-import { RemoteDomainError } from "@foxworth/boundary/remote";
-import { createProjectionClient } from "@foxworth/boundary/client";
+import { createHandoffInvocation, executeHandoff, validateHandoffInvocation, validateHandoffOutcome, validateHandoffResponse, validateBindingManifest } from "@foxworth/boundary/handoff";
+import { RemoteDomainError, snapshotSurfaceHandle } from "@foxworth/boundary/remote";
+import { createSurfaceClient } from "@foxworth/boundary/client";
 import type { ClientTransport } from "@foxworth/boundary/client";
-import { snapshotProjectedHandle } from "@foxworth/boundary/remote";
 import { registerWebMcpTransport, webMcpTool, type ModelContextTool } from "@foxworth/boundary/webmcp";
 import { createAdapterFixture } from "./helpers/adapter";
 
@@ -64,8 +63,8 @@ function transportLaws(name: string, drive: Driver) {
   });
 }
 
-transportLaws("ProjectionClient transport laws", async (f, transport, title) => {
-  try { return await createProjectionClient(transport).call(f.projection.handles.create, { title }); }
+transportLaws("SurfaceClient transport laws", async (f, transport, title) => {
+  try { return await createSurfaceClient(transport).call(f.projection.handles.create, { title }); }
   catch (error) { return error instanceof RemoteDomainError ? { certainty: "completed", result: error.value } : error; }
 });
 transportLaws("WebMCP transport laws", async (f, transport, title) => {
@@ -89,12 +88,12 @@ describe("owned boundary snapshots", () => {
       (raw: any) => { Object.defineProperty(raw, "bindingDigest", { get() { throw new Error("accessed"); } }); },
     ]) {
       const raw = structuredClone(f.binding.manifest);
-      const owned = await validateProjectionBindingManifest(raw);
+      const owned = await validateBindingManifest(raw);
       expect(owned).not.toBe(raw);
       expect(Object.isFrozen(owned.interactions[0])).toBe(true);
       mutate(raw);
-      await expect(validateProjectionBindingManifest(raw)).rejects.toThrow();
-      expect(await validateProjectionBindingManifest(owned)).toBe(owned);
+      await expect(validateBindingManifest(raw)).rejects.toThrow();
+      expect(await validateBindingManifest(owned)).toBe(owned);
     }
   });
   it("revalidates mutable invocation input and snapshots handle modes", async () => {
@@ -106,10 +105,10 @@ describe("owned boundary snapshots", () => {
     expect(() => validateHandoffInvocation(raw)).toThrow();
     expect(validateHandoffInvocation(owned)).toBe(owned);
     const handle = structuredClone(f.projection.handles.create);
-    const snapshot = snapshotProjectedHandle(handle);
+    const snapshot = snapshotSurfaceHandle(handle);
     (handle.modes as unknown as string[]).push("invalid");
-    expect(() => snapshotProjectedHandle(handle)).toThrow();
-    expect(snapshotProjectedHandle(snapshot)).toBe(snapshot);
+    expect(() => snapshotSurfaceHandle(handle)).toThrow();
+    expect(snapshotSurfaceHandle(snapshot)).toBe(snapshot);
     expect(Object.isFrozen(snapshot.modes)).toBe(true);
   });
 });
@@ -163,9 +162,9 @@ it("revalidates accessor replacement on reused invocation and handle objects", a
   Object.defineProperty(invocation, "mode", { get() { return "invalid"; } });
   expect(() => validateHandoffInvocation(invocation)).toThrow();
   const handle = structuredClone(f.projection.handles.create);
-  snapshotProjectedHandle(handle);
+  snapshotSurfaceHandle(handle);
   Object.defineProperty(handle, "modes", { get() { return ["invalid"]; } });
-  expect(() => snapshotProjectedHandle(handle)).toThrow();
+  expect(() => snapshotSurfaceHandle(handle)).toThrow();
 });
 
 it("rejects changing array accessors before trusting a projected handle", async () => {
@@ -176,7 +175,7 @@ it("rejects changing array accessors before trusting a projected handle", async 
     enumerable: true,
     get() { return ++reads < 3 ? "direct" : "invalid"; },
   });
-  expect(() => snapshotProjectedHandle(handle)).toThrow();
+  expect(() => snapshotSurfaceHandle(handle)).toThrow();
   expect(reads).toBe(0);
 });
 

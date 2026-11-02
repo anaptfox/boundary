@@ -285,7 +285,7 @@ Also prove a direct-only installation graph contains no Control package.
 
 ## Atomic Binding tests
 
-Exercise both branches of `bindProjection`:
+Exercise both branches of `bindSurface`:
 
 - all entries compatible and available yields one Binding;
 - any missing interaction, incompatible contract or arity, or missing direct or

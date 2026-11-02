@@ -33,15 +33,15 @@ export {
 
 export {
   compileBindingResolution,
-  compileProjectionResolution,
+  compileSurfaceResolution,
   modeForHandle,
   interactionKey,
-  snapshotProjectedHandle,
-  type AnyProjectedInteractionHandle,
+  snapshotSurfaceHandle,
+  type AnySurfaceHandle,
   type BindingResolution,
-  type ProjectionResolution,
+  type SurfaceResolution,
   type ResolvedBindingInteraction,
-  type ResolvedProjectionInteraction,
+  type ResolvedSurfaceInteraction,
 } from "./resolution";
 
 export { validatePortableValue } from "./schema";

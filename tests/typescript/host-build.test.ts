@@ -13,14 +13,8 @@ import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { portableSchema } from "@foxworth/boundary/program";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "../../packages/core/host/index";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions } from "../../packages/core/host/pipeline";
+import { defineInteraction } from "../../packages/core/host/index";
 import { createControlRequestContributions } from "../../packages/core/host/request-contributions";
 import {
   checkHostArtifacts,
@@ -77,7 +71,7 @@ describe("@foxworth/boundary/build", () => {
     const projection = await projectInteractions(compiled, {
       ping: { interaction: compiled.handles.ping, modes: ["direct"] },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (bound.status !== "bound") throw new Error("expected bound");
@@ -257,7 +251,7 @@ describe("@foxworth/boundary/build", () => {
     const projection = await projectInteractions(compiled, {
       ["__proto__"]: { interaction: compiled.handles.ping, modes: ["request"] },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (bound.status !== "bound") throw new Error("expected request binding");
@@ -338,10 +332,10 @@ export const interactions = {
       );
       await writeFile(
         join(destination, "clients/consume.ts"),
-        `import type { ProjectionClient } from "@foxworth/boundary/client";
+        `import type { SurfaceClient } from "@foxworth/boundary/client";
 import { requestReferences } from "./request-agent.references.js";
 
-declare const client: ProjectionClient;
+declare const client: SurfaceClient;
 client.request(requestReferences["__proto__"]).then((proposal) => {
   const exact: "proposal-1" = proposal.id;
   return exact;

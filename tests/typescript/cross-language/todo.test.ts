@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createHandoffInvocation, executeHandoff, validateProjectionBindingManifest } from "@foxworth/boundary/handoff";
-import { createProjectionClient } from "@foxworth/boundary/client";
+import { createHandoffInvocation, executeHandoff, validateBindingManifest } from "@foxworth/boundary/handoff";
+import { createSurfaceClient } from "@foxworth/boundary/client";
 import { normalizeJson } from "@foxworth/boundary/program";
 import scenarios from "./scenarios.v1.json";
 import { nativeTodo } from "./native";
@@ -13,10 +13,10 @@ afterEach(async () => { for (const host of processes.splice(0)) await host.close
 describe("current Rust/TypeScript Todo process fixture", () => {
   it("runs the reviewed seven-interaction scenario in both native hosts", async () => {
     const host = rust();
-    const client = createProjectionClient(host.transport);
+    const client = createSurfaceClient(host.transport);
     const manifest = await client.inspect();
     const native = await nativeTodo();
-    const ts = createProjectionClient({ inspect: async () => native.binding.manifest, invoke: (invocation) => executeHandoff(native.binding, invocation, undefined) });
+    const ts = createSurfaceClient({ inspect: async () => native.binding.manifest, invoke: (invocation) => executeHandoff(native.binding, invocation, undefined) });
     expect(manifest.interactions).toHaveLength(7);
     for (const step of scenarios.direct.steps) {
       if (step.kind === "domain-error") {
@@ -35,7 +35,7 @@ describe("current Rust/TypeScript Todo process fixture", () => {
 
   it("rejects invalid input, stale identity, and an unselected interaction before effects", async () => {
     const host = rust();
-    const manifest = await validateProjectionBindingManifest(await host.transport.inspect());
+    const manifest = await validateBindingManifest(await host.transport.inspect());
     const invocation = await createHandoffInvocation(manifest, "todos.create", "direct", { title: "valid" });
     for (const input of [scenarios.boundary.invalidCreateInput, scenarios.boundary.emptyCreateInput]) {
       expect(await host.transport.invoke({ ...invocation, input })).toMatchObject({ certainty: "not-started", result: { kind: "fault", cause: "invalid-input" } });
@@ -53,7 +53,7 @@ describe("current Rust/TypeScript Todo process fixture", () => {
 
   it("shares one declared-error contract and accepts the Rust declared error", async () => {
     const host = rust();
-    const client = createProjectionClient(host.transport);
+    const client = createSurfaceClient(host.transport);
     const manifest = await client.inspect();
     const native = await nativeTodo();
     for (const rustInteraction of manifest.actualProgram.interactions) {

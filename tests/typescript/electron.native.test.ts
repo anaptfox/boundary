@@ -1,18 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { portableSchema } from "@foxworth/boundary/program";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, createCaller } from "@foxworth/boundary/pipeline";
+import { defineInteraction } from "@foxworth/boundary";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import { createHandoffInvocation } from "@foxworth/boundary/handoff";
 import {
   allowElectronSender,
-  createProjectionElectronMain,
+  createSurfaceElectronMain,
   ipcFetchChannel,
   serializeFetchRequest,
   type ElectronIpcInvokeEvent,
@@ -25,7 +19,6 @@ import {
   TEST_DOORS,
   TEST_PROTOCOL_URL,
 } from "./helpers/electron";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 const firstWindowFrame = { url: TEST_PROTOCOL_URL, parent: null, isDestroyed: () => false } as unknown as ElectronIpcSenderFrame;
 const secondWindowFrame = { url: TEST_PROTOCOL_URL, parent: null, isDestroyed: () => false } as unknown as ElectronIpcSenderFrame;
@@ -86,7 +79,7 @@ describe("@foxworth/boundary/electron native trust seam", () => {
     const subscribers = new Map<Context["workspaceId"], Set<(value: unknown) => void>>([
       ["alpha", new Set()], ["beta", new Set()],
     ]);
-    const bound = await bindProjection(projection, installation, {
+    const bound = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
       observation: {
         correlate: (context) => ({ workspaceId: context.workspaceId }),
@@ -117,7 +110,7 @@ describe("@foxworth/boundary/electron native trust seam", () => {
       mainFrame: frames.get(workspaceId),
     } as unknown as ElectronIpcSender]));
     const active = new Map<Context["workspaceId"], boolean>([["alpha", true], ["beta", true]]);
-    const main = await createProjectionElectronMain<Context>({
+    const main = await createSurfaceElectronMain<Context>({
       ...TEST_DOORS, electron: fake.electron, handler, port: false, openWindow: false,
       ipc: {
         validateSender: (event) => [...webContents.entries()].some(([workspaceId, sender]) => active.get(workspaceId as Context["workspaceId"]) && allowElectronSender({ sender, frame: frames.get(workspaceId)!, url: TEST_PROTOCOL_URL })(event)),
@@ -168,7 +161,7 @@ describe("@foxworth/boundary/electron native trust seam", () => {
     const contexts: unknown[] = [];
     let calls = 0;
     let revoked = false;
-    const main = await createProjectionElectronMain({
+    const main = await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler: async () => new Response("trusted"),
@@ -236,7 +229,7 @@ describe("@foxworth/boundary/electron native trust seam", () => {
 
   it("closes the IPC door without creating an HTTP server or window", async () => {
     const fake = fakeElectron();
-    const main = await createProjectionElectronMain({
+    const main = await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler: async () => new Response("ok"),
@@ -265,7 +258,7 @@ describe("@foxworth/boundary/electron native trust seam", () => {
     const fake = fakeElectron();
     let calls = 0;
     liveFirstFrame = firstWindowFrame;
-    const main = await createProjectionElectronMain({
+    const main = await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler: async () => new Response("unused"),

@@ -1,11 +1,5 @@
 import { z } from "zod";
-import {
-  admitWhen,
-  declaredInteractionError,
-  defineInteraction,
-  install,
-  surface,
-} from "@foxworth/boundary";
+import { admitWhen, declaredInteractionError, defineInteraction, install, surface } from "@foxworth/boundary";
 
 export type SceneActor = Readonly<{
   id: string;

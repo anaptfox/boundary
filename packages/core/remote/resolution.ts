@@ -1,44 +1,39 @@
-import type {
-  InteractionMode,
-  ProjectedInteractionHandle,
-  Projection,
-  ProjectionBindingManifest,
-  ProjectionBindingInteraction,
-} from "@foxworth/boundary";
+import type { InteractionMode, BindingManifest, BindingInteraction } from "@foxworth/boundary";
+import type { SurfaceHandle, CompiledSurface } from "@foxworth/boundary/pipeline";
 import { type CheckedHandoff } from "@foxworth/boundary/handoff";
 import { bindingDescriptions, isInteractionId, isSha256Digest, type JsonObject, type InteractionDescriptor } from "@foxworth/boundary/program";
 import { snapshotJson } from "#program/internal";
 import { AdapterError } from "./errors";
 
-export type AnyProjectedInteractionHandle = ProjectedInteractionHandle<any, any, any>;
+export type AnySurfaceHandle = SurfaceHandle<any, any, any>;
 
 export type ResolvedBindingInteraction<
-  Handle extends AnyProjectedInteractionHandle = AnyProjectedInteractionHandle,
+  Handle extends AnySurfaceHandle = AnySurfaceHandle,
 > = Readonly<{
   handle: Handle;
   mode: InteractionMode;
   expected: InteractionDescriptor;
   actual: InteractionDescriptor;
-  binding: ProjectionBindingInteraction;
+  binding: BindingInteraction;
 }>;
 
 export type BindingResolution = Readonly<{
   handoff: CheckedHandoff<any>;
-  manifest: ProjectionBindingManifest;
+  manifest: BindingManifest;
   interactions: ReadonlyMap<string, ResolvedBindingInteraction>;
 }>;
 
-export type ResolvedProjectionInteraction<
-  Handle extends AnyProjectedInteractionHandle = AnyProjectedInteractionHandle,
+export type ResolvedSurfaceInteraction<
+  Handle extends AnySurfaceHandle = AnySurfaceHandle,
 > = Readonly<{
   handle: Handle;
   mode: InteractionMode;
   descriptor: InteractionDescriptor;
 }>;
 
-export type ProjectionResolution = Readonly<{
-  projection: Projection<any>;
-  interactions: ReadonlyMap<string, ResolvedProjectionInteraction>;
+export type SurfaceResolution = Readonly<{
+  projection: CompiledSurface<any>;
+  interactions: ReadonlyMap<string, ResolvedSurfaceInteraction>;
 }>;
 
 function fail(
@@ -56,8 +51,8 @@ export function interactionKey(interactionId: string, mode: InteractionMode): st
 /** Snapshot the public data carried by a projected handle. */
 const projectedHandles = new WeakSet<object>();
 
-export function snapshotProjectedHandle<
-  Handle extends AnyProjectedInteractionHandle,
+export function snapshotSurfaceHandle<
+  Handle extends AnySurfaceHandle,
 >(value: Handle, path = "interaction"): Handle {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return fail("INVALID_DECLARATION", path, "a projected interaction handle is required");
@@ -101,7 +96,7 @@ export function snapshotProjectedHandle<
 }
 
 export function modeForHandle(
-  handle: AnyProjectedInteractionHandle,
+  handle: AnySurfaceHandle,
   requested: InteractionMode | undefined,
   path: string,
 ): InteractionMode {
@@ -120,7 +115,7 @@ export function modeForHandle(
 export async function compileBindingResolution(
   handoff: CheckedHandoff<any>,
   selected: readonly Readonly<{
-    handle: AnyProjectedInteractionHandle;
+    handle: AnySurfaceHandle;
     mode: InteractionMode;
   }>[],
 ): Promise<BindingResolution> {
@@ -128,7 +123,7 @@ export async function compileBindingResolution(
   const descriptions = bindingDescriptions(manifest);
   const interactions = new Map<string, ResolvedBindingInteraction>();
   for (const [index, declaration] of selected.entries()) {
-    const handle = snapshotProjectedHandle(declaration.handle, `interactions[${index}].handle`);
+    const handle = snapshotSurfaceHandle(declaration.handle, `interactions[${index}].handle`);
     if (!handle.modes.includes(declaration.mode)) {
       fail("INTERACTION_NOT_EXPOSED", `interactions[${index}].mode`, "mode is absent from the projected handle");
     }
@@ -160,15 +155,15 @@ export async function compileBindingResolution(
   return Object.freeze({ handoff, manifest, interactions });
 }
 
-export async function compileProjectionResolution(
-  projection: Projection<any>,
+export async function compileSurfaceResolution(
+  projection: CompiledSurface<any>,
   selected: readonly Readonly<{
-    handle: AnyProjectedInteractionHandle;
+    handle: AnySurfaceHandle;
     mode: InteractionMode;
   }>[],
-): Promise<ProjectionResolution> {
+): Promise<SurfaceResolution> {
   if (!projection || typeof projection !== "object" || !projection.manifest) {
-    return fail("INVALID_DECLARATION", "projection", "an authentic Projection is required");
+    return fail("INVALID_DECLARATION", "projection", "an authentic CompiledSurface is required");
   }
   const descriptors = new Map(
     projection.program.interactions.map((descriptor) => [descriptor.contract.id, descriptor]),
@@ -176,9 +171,9 @@ export async function compileProjectionResolution(
   const projectionInteractions = new Map(
     projection.interactions.map((interaction) => [interaction.interactionId, interaction]),
   );
-  const interactions = new Map<string, ResolvedProjectionInteraction>();
+  const interactions = new Map<string, ResolvedSurfaceInteraction>();
   for (const [index, declaration] of selected.entries()) {
-    const handle = snapshotProjectedHandle(declaration.handle, `interactions[${index}].handle`);
+    const handle = snapshotSurfaceHandle(declaration.handle, `interactions[${index}].handle`);
     const interaction = projectionInteractions.get(handle.interactionId);
     const descriptor = descriptors.get(handle.interactionId);
     if (
@@ -188,7 +183,7 @@ export async function compileProjectionResolution(
       interaction.inputArity !== handle.inputArity ||
       !interaction.modes.includes(declaration.mode)
     ) {
-      fail("INTERACTION_NOT_EXPOSED", `interactions[${index}]`, "handle and mode are absent from this Projection");
+      fail("INTERACTION_NOT_EXPOSED", `interactions[${index}]`, "handle and mode are absent from this CompiledSurface");
     }
     const key = interactionKey(handle.interactionId, declaration.mode);
     if (interactions.has(key)) {

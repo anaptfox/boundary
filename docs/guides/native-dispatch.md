@@ -86,7 +86,7 @@ live permission or availability.
 ## Coordinate all invocation routes
 
 Decorating `binding.invoke` does not intercept typed callers. Instead,
-`bindProjection` accepts an optional native `coordinate(invocation, proceed)`
+`bindSurface` accepts an optional native `coordinate(invocation, proceed)`
 function. Typed direct/request calls, raw calls, Binding invocation and checked
 Handoff execution all enter it. `restrictBinding` inherits the required
 coordinator and cannot replace or bypass it.

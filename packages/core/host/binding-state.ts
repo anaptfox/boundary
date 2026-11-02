@@ -1,10 +1,10 @@
 import { type InvocationCoordinator } from "./coordination";
 import { type InvocationObserver } from "./observation";
 import { type InteractionDescriptor } from "@foxworth/boundary/program";
-import type { ActualInteractionResolution, Admission, InteractionInstallation, InteractionMode, ProjectionBindingManifest, ProjectionBindingInteraction, RealizationId, ResolvedBindingInteraction } from "./types";
+import type { ActualInteractionResolution, Admission, InteractionInstallation, InteractionMode, BindingManifest, BindingInteraction, RealizationId, ResolvedBindingInteraction } from "./types";
 
 export type ModeResolution<Context> = Readonly<{
-  manifest: ProjectionBindingInteraction;
+  manifest: BindingInteraction;
   expected: InteractionDescriptor;
   actual: ActualInteractionResolution<Context>;
   sameContract: boolean;
@@ -19,7 +19,7 @@ export type BindingMetadata<Context> = Readonly<{
   projection: object;
   installation: InteractionInstallation<Context>;
   installationState: { revoked: boolean };
-  manifest: ProjectionBindingManifest;
+  manifest: BindingManifest;
   admission: Admission<Context>;
   observer?: InvocationObserver<Context>;
   coordinator?: InvocationCoordinator<Context>;

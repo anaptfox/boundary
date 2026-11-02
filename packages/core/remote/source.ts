@@ -1,20 +1,7 @@
-import type {
-  AnyCaller,
-  AnyInteractionDefinition,
-  CallerCallAliases,
-  CallerDefinitions,
-  CallerProposeAliases,
-  DefinitionArity,
-  DefinitionInput,
-  DefinitionOutput,
-  HandleDefinition,
-  InteractionMode,
-  Projection,
-  ProjectionBindingManifest,
-  ProjectionSelections,
-} from "@foxworth/boundary";
+import type { AnyCaller, AnyInteractionDefinition, CallerCallAliases, CallerDefinitions, CallerProposeAliases, DefinitionArity, DefinitionInput, DefinitionOutput, InteractionMode, BindingManifest } from "@foxworth/boundary";
+import type { HandleDefinition, CompiledSurface, HandleSelections } from "@foxworth/boundary/pipeline";
 import { AdapterError } from "./errors";
-import { snapshotProjectedHandle, type AnyProjectedInteractionHandle } from "./resolution";
+import { snapshotSurfaceHandle, type AnySurfaceHandle } from "./resolution";
 
 /** Method verbs an adapter declaration uses; they map onto the wire modes `direct` and `request`. */
 export type InteractionVerb = "call" | "propose";
@@ -22,17 +9,17 @@ export type InteractionVerb = "call" | "propose";
 /**
  * Where an adapter declaration selects an interaction from: a connected caller
  * (its Binding manifest), a remote Binding manifest a browser client
- * inspected, or, for offline description, a Projection artifact.
+ * inspected, or, for offline description, a CompiledSurface artifact.
  */
-export type InteractionSource = AnyCaller | Projection<any> | ProjectionBindingManifest;
+export type InteractionSource = AnyCaller | CompiledSurface<any> | BindingManifest;
 
-type ProjectionAliases<S> = S extends Projection<infer Selections extends ProjectionSelections>
+type ProjectionAliases<S> = S extends CompiledSurface<infer Selections extends HandleSelections>
   ? keyof Selections & string
   : never;
-type ProjectionDefinition<S, Alias extends string> = S extends Projection<infer Selections extends ProjectionSelections>
+type ProjectionDefinition<S, Alias extends string> = S extends CompiledSurface<infer Selections extends HandleSelections>
   ? Alias extends keyof Selections ? HandleDefinition<Selections[Alias]["interaction"]> : never
   : never;
-type ProjectionVerbs<S, Alias extends string> = S extends Projection<infer Selections extends ProjectionSelections>
+type ProjectionVerbs<S, Alias extends string> = S extends CompiledSurface<infer Selections extends HandleSelections>
   ? Alias extends keyof Selections
     ? Selections[Alias]["modes"][number] extends infer Mode
       ? Mode extends "direct" ? "call" : Mode extends "request" ? "propose" : never
@@ -40,26 +27,26 @@ type ProjectionVerbs<S, Alias extends string> = S extends Projection<infer Selec
     : never
   : never;
 
-type IsManifest<S> = S extends ProjectionBindingManifest ? (S extends AnyCaller ? false : true) : false;
+type IsManifest<S> = S extends BindingManifest ? (S extends AnyCaller ? false : true) : false;
 
 /** Aliases a source can select; a remote manifest knows them only as strings. */
 export type SourceAliases<S> = IsManifest<S> extends true
   ? string
-  : S extends Projection<any>
+  : S extends CompiledSurface<any>
     ? ProjectionAliases<S>
     : CallerCallAliases<S> | CallerProposeAliases<S>;
 
 /** The declaration behind one alias of a source. */
 export type SourceDefinition<S, Alias extends string> = IsManifest<S> extends true
   ? AnyInteractionDefinition
-  : S extends Projection<any>
+  : S extends CompiledSurface<any>
     ? ProjectionDefinition<S, Alias>
     : Alias extends keyof CallerDefinitions<S> ? CallerDefinitions<S>[Alias] : never;
 
 /** The verbs one alias of a source supports. */
 export type SourceVerbs<S, Alias extends string> = IsManifest<S> extends true
   ? InteractionVerb
-  : S extends Projection<any>
+  : S extends CompiledSurface<any>
     ? ProjectionVerbs<S, Alias>
     : (Alias extends CallerCallAliases<S> ? "call" : never) | (Alias extends CallerProposeAliases<S> ? "propose" : never);
 
@@ -69,7 +56,7 @@ export type SourceHasInput<S, Alias extends string> = DefinitionArity<SourceDefi
 
 export type ResolvedSelection = Readonly<{
   alias: string;
-  handle: AnyProjectedInteractionHandle;
+  handle: AnySurfaceHandle;
   mode: InteractionMode;
 }>;
 
@@ -89,22 +76,22 @@ function isCaller(value: unknown): value is AnyCaller {
   return value !== null && typeof value === "object" && "handoff" in value && "manifest" in value;
 }
 
-function isProjection(value: unknown): value is Projection<any> {
+function isProjection(value: unknown): value is CompiledSurface<any> {
   return value !== null && typeof value === "object" && "handles" in value && "projectionDigest" in value;
 }
 
-function isManifest(value: unknown): value is ProjectionBindingManifest {
+function isManifest(value: unknown): value is BindingManifest {
   return value !== null && typeof value === "object" && "bindingDigest" in value && "interactions" in value && !("handoff" in value);
 }
 
-function manifestEntries(source: AnyCaller | ProjectionBindingManifest): ProjectionBindingManifest["interactions"] {
+function manifestEntries(source: AnyCaller | BindingManifest): BindingManifest["interactions"] {
   return isCaller(source) ? source.manifest.interactions : source.interactions;
 }
 
 /**
  * Resolve one alias of a source to the projected-handle snapshot and wire mode
  * an adapter declaration pins. A caller resolves from its Binding manifest; a
- * Projection from its own manifest. The verb is required when the alias was
+ * CompiledSurface from its own manifest. The verb is required when the alias was
  * selected in both modes.
  */
 export function resolveSelection(
@@ -114,7 +101,7 @@ export function resolveSelection(
   path: string,
 ): ResolvedSelection {
   if (typeof alias !== "string" || !alias) {
-    return fail(`${path}.alias`, "expected an interaction alias string; found none; fix: name the alias as selected on the caller or Projection");
+    return fail(`${path}.alias`, "expected an interaction alias string; found none; fix: name the alias as selected on the caller or CompiledSurface");
   }
   if (verb !== undefined && verb !== "call" && verb !== "propose") {
     return fail(`${path}.mode`, `expected mode "call" or "propose"; found ${String(verb)}; fix: use the caller's verbs, not wire modes`);
@@ -140,13 +127,13 @@ export function resolveSelection(
       modes.push(...entry.modes);
     }
   } else {
-    return fail(path, "expected a connected caller, a Binding manifest, or a Projection; found another value; fix: pass the value connect(), inspect(), or projectInteractions() returned");
+    return fail(path, "expected a connected caller, a Binding manifest, or a CompiledSurface; found another value; fix: pass the value connect(), inspect(), or projectInteractions() returned");
   }
   if (interactionId === undefined || contractDigest === undefined || inputArity === undefined || modes.length === 0) {
-    return fail(`${path}.alias`, `expected an alias selected by this ${isCaller(source) ? "caller" : "Projection"}; found "${alias}"; fix: select it on the surface first`);
+    return fail(`${path}.alias`, `expected an alias selected by this ${isCaller(source) ? "caller" : "CompiledSurface"}; found "${alias}"; fix: select it on the surface first`);
   }
-  const handle = snapshotProjectedHandle(
-    { interactionId, contractDigest, inputArity, modes: Object.freeze([...modes].sort()) } as unknown as AnyProjectedInteractionHandle,
+  const handle = snapshotSurfaceHandle(
+    { interactionId, contractDigest, inputArity, modes: Object.freeze([...modes].sort()) } as unknown as AnySurfaceHandle,
     path,
   );
   let mode: InteractionMode;
@@ -177,7 +164,7 @@ export function selectionsOf(source: unknown, path: string): readonly ResolvedSe
       seen.set(entry.alias, [...entry.modes]);
     }
   } else {
-    return fail(path, "expected a connected caller, a Binding manifest, or a Projection; found another value; fix: pass the value connect(), inspect(), or projectInteractions() returned");
+    return fail(path, "expected a connected caller, a Binding manifest, or a CompiledSurface; found another value; fix: pass the value connect(), inspect(), or projectInteractions() returned");
   }
   const result: ResolvedSelection[] = [];
   for (const [alias, modes] of seen) {

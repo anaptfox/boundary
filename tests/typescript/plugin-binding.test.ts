@@ -4,13 +4,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { portableSchema } from "@foxworth/boundary/program";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  installInteractions,
-  projectInteractions,
-} from "../../packages/core/host/index";
+import { bindSurface, compileInteractions, installInteractions, projectInteractions } from "../../packages/core/host/pipeline";
+import { defineInteraction } from "../../packages/core/host/index";
 import {
   HostImports,
   createPluginExecutor,
@@ -133,7 +128,7 @@ describe("plugin Binding", () => {
     const projection = await projectInteractions(compiled, {
       makeThumbnail: { interaction: compiled.handles.makeThumbnail, modes: ["direct"] },
     });
-    const binding = await bindProjection(projection, installation, {
+    const binding = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(binding.status).toBe("bound");

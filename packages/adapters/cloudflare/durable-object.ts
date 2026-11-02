@@ -1,25 +1,25 @@
 import type { HttpHandler } from "@foxworth/boundary/http";
 
-export interface ProjectionDurableObjectInstance {
+export interface SurfaceDurableObjectInstance {
   fetch(request: Request): Promise<Response>;
 }
 
-export type ProjectionDurableObjectClass<State = unknown, Environment = unknown> =
-  new (state: State, environment: Environment) => ProjectionDurableObjectInstance;
+export type SurfaceDurableObjectClass<State = unknown, Environment = unknown> =
+  new (state: State, environment: Environment) => SurfaceDurableObjectInstance;
 
 export type DurableObjectHandlerFactory<State = unknown, Environment = unknown> =
   (state: State, environment: Environment) => HttpHandler;
 
 /**
- * Give each Durable Object instance its own prebuilt Projection HTTP handler.
+ * Give each Durable Object instance its own prebuilt CompiledSurface HTTP handler.
  * State and environment stay in the application-owned factory.
  */
-export function createProjectionDurableObject<
+export function createSurfaceDurableObject<
   State = unknown,
   Environment = unknown,
 >(
   createHandler: DurableObjectHandlerFactory<State, Environment>,
-): ProjectionDurableObjectClass<State, Environment> {
+): SurfaceDurableObjectClass<State, Environment> {
   return class ProjectionDurableObject {
     readonly #handler: HttpHandler;
 

@@ -348,7 +348,6 @@ Together they form one executable example.
 ```ts
 import { createReviewApplication } from "./document-review-host";
 import type { ReviewActor } from "./document-review-store";
-import { admitWhen, install, surface } from "@foxworth/boundary";
 ```
 
 Select the actions each caller needs from the same declarations. A selection

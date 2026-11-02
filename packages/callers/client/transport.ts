@@ -1,4 +1,4 @@
-import type { ProjectionBindingManifest } from "@foxworth/boundary";
+import type { BindingManifest } from "@foxworth/boundary";
 import type { HandoffInvocation, HandoffOutcome } from "@foxworth/boundary/handoff";
 
 export type ClientInvokeFraming = Readonly<{
@@ -6,7 +6,7 @@ export type ClientInvokeFraming = Readonly<{
 }>;
 
 export interface ClientTransport {
-  inspect(): Promise<ProjectionBindingManifest>;
+  inspect(): Promise<BindingManifest>;
   invoke(
     invocation: HandoffInvocation,
     framing?: ClientInvokeFraming,

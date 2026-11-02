@@ -1,4 +1,4 @@
-import type { InteractionMode, ProjectionBindingManifest, ProjectionBindingInteraction } from "@foxworth/boundary/program";
+import type { InteractionMode, BindingManifest, BindingInteraction } from "@foxworth/boundary/program";
 import { contractCompatibility, hashJson, jsonEquals, validateCatalog, validatePortableSchema, validateProgram, type JsonObject, type InteractionDescriptor } from "@foxworth/boundary/program";
 import { compareUtf8 } from "#program/internal";
 import { ALIAS, BINDING_DOMAIN, PROJECTION_DOMAIN, descriptorById, exact, interactionKey, malformed, requireDigest, requireInteractionId, requireMode, requireOpaqueId, requireVersion, snapshot, validatedManifests } from "./checks";
@@ -8,7 +8,7 @@ function validateBindingInteraction(
   index: number,
   expected: ReadonlyMap<string, InteractionDescriptor>,
   actual: ReadonlyMap<string, InteractionDescriptor>,
-): ProjectionBindingInteraction {
+): BindingInteraction {
   const path = `manifest.interactions[${index}]`;
   const raw = exact(
     value,
@@ -56,7 +56,7 @@ function validateBindingInteraction(
       `expected and actual contracts are incompatible: ${compatibility.reason}`,
     );
   }
-  let request: ProjectionBindingInteraction["request"];
+  let request: BindingInteraction["request"];
   if (raw.mode === "request") {
     const requestObject = exact(
       raw.request,
@@ -92,11 +92,11 @@ function validateBindingInteraction(
 }
 
 /** Snapshot and fully validate an untrusted v1 Binding handshake. */
-export async function validateProjectionBindingManifest(
+export async function validateBindingManifest(
   value: unknown,
-): Promise<ProjectionBindingManifest> {
+): Promise<BindingManifest> {
   if (value !== null && typeof value === "object" && validatedManifests.has(value)) {
-    return value as ProjectionBindingManifest;
+    return value as BindingManifest;
   }
   const owned = snapshot(value, "manifest", "manifest");
   requireVersion(
@@ -160,8 +160,8 @@ export async function validateProjectionBindingManifest(
   );
   const keys = new Set<string>();
   const aliases = new Map<string, Readonly<{ interactionId: string; inputArity: 0 | 1 }>>();
-  const modesByAlias = new Map<string, ProjectionBindingInteraction[]>();
-  const modesById = new Map<string, Map<InteractionMode, ProjectionBindingInteraction>>();
+  const modesByAlias = new Map<string, BindingInteraction[]>();
+  const modesById = new Map<string, Map<InteractionMode, BindingInteraction>>();
   for (let index = 0; index < interactions.length; index += 1) {
     const interaction = interactions[index]!;
     const key = interactionKey(interaction);
@@ -185,7 +185,7 @@ export async function validateProjectionBindingManifest(
     aliasModes.push(interaction);
     modesByAlias.set(interaction.alias, aliasModes);
     const idModes = modesById.get(interaction.interactionId) ??
-      new Map<InteractionMode, ProjectionBindingInteraction>();
+      new Map<InteractionMode, BindingInteraction>();
     idModes.set(interaction.mode, interaction);
     modesById.set(interaction.interactionId, idModes);
     const availability = catalogById.get(interaction.interactionId);

@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { compileInteractions, defineInteraction } from "@foxworth/boundary";
+import { compileInteractions } from "@foxworth/boundary/pipeline";
+import { defineInteraction } from "@foxworth/boundary";
 import { canonicalJson, type JsonSchema } from "@foxworth/boundary/program";
 import { compileZodSchema } from "@foxworth/boundary/program/zod";
 import { z } from "zod";

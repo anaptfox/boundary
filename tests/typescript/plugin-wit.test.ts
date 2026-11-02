@@ -14,7 +14,7 @@ import {
   portableSchema,
   type Program,
 } from "@foxworth/boundary/program";
-import { WitProjectionError, projectWit, type WitProjectionOptions } from "../../packages/guests/plugin/index";
+import { WitWorldError, projectWit, type WitWorldOptions } from "../../packages/guests/plugin/index";
 
 type VectorInteraction = {
   readonly id: string;
@@ -63,7 +63,7 @@ type VectorCase = {
 
 type Vector = {
   readonly version: 1;
-  readonly options: WitProjectionOptions;
+  readonly options: WitWorldOptions;
   readonly cases: readonly VectorCase[];
 };
 
@@ -139,8 +139,8 @@ describe("projectWit — reviewed wasm-projection vector", () => {
       } catch (error) {
         thrown = error;
       }
-      expect(thrown).toBeInstanceOf(WitProjectionError);
-      const error = thrown as WitProjectionError;
+      expect(thrown).toBeInstanceOf(WitWorldError);
+      const error = thrown as WitWorldError;
 
       if (expected.status === "collision") {
         expect(error.code).toBe("NAME_COLLISION");
@@ -183,13 +183,13 @@ describe("projectWit — laws beyond the reviewed cases", () => {
       { id: "a.bC", reads: [], changes: [] },
       { id: "a.b-c", reads: [], changes: [] },
     ]);
-    expect(() => projectWit(program)).toThrow(WitProjectionError);
+    expect(() => projectWit(program)).toThrow(WitWorldError);
     try {
       projectWit(program);
       throw new Error("projectWit must refuse a collision");
     } catch (error) {
-      expect(error).toBeInstanceOf(WitProjectionError);
-      const collision = error as WitProjectionError;
+      expect(error).toBeInstanceOf(WitWorldError);
+      const collision = error as WitWorldError;
       expect(collision.code).toBe("NAME_COLLISION");
       // The collision names the exact colliding pair; it never resolves the
       // clash by renaming one of them to something else.

@@ -1,14 +1,7 @@
 import { Readable } from "node:stream";
 import { describe, expect, expectTypeOf, it } from "vitest";
-import {
-  bindProjection,
-  compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, createCaller } from "@foxworth/boundary/pipeline";
+import { declaredInteractionError, defineInteraction } from "@foxworth/boundary";
 import { createControlRequestContributions } from "@foxworth/boundary/host/control";
 import { AdapterError, isDomainErrorFor } from "@foxworth/boundary/remote";
 import { createCompositeHttpHandler, mountHandlers } from "@foxworth/boundary/http/compose";
@@ -16,7 +9,7 @@ import { createHttpHandler, route } from "@foxworth/boundary/http";
 import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
 import type { ClientTransport } from "@foxworth/boundary/client";
 import { openapi } from "@foxworth/boundary/http/openapi";
-import { createProjectionClient, handlesFromBinding, pinProjectionReferences } from "@foxworth/boundary/client";
+import { createSurfaceClient, handlesFromBinding, pinSurfaceReferences } from "@foxworth/boundary/client";
 import {
   createTrpcHandler,
   createTrpcRouter,
@@ -26,7 +19,6 @@ import { toFetchRequest } from "@foxworth/boundary/http/node";
 import {
   portableSchema,
 } from "@foxworth/boundary/program";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 const Todo = portableSchema<Readonly<{ id: string; title: string }>>({
   type: "object",
@@ -168,7 +160,7 @@ async function fixture() {
     find: { interaction: compiled.handles.find, modes: ["direct"] },
     explode: { interaction: compiled.handles.explode, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = await bindSurface(projection, installation, {
     admit({ context, handle, mode }) {
       return context.role === "owner" || (handle.changes.length === 0 && mode === "direct")
         ? { decision: "allow" }
@@ -400,7 +392,7 @@ describe("version 1 projectors", () => {
       },
     });
 
-    const client = createProjectionClient(fetchTransport({
+    const client = createSurfaceClient(fetchTransport({
       baseUrl: "https://example.test/_boundary",
       fetch: (input, init) => protocol(new Request(input, init)),
     }));
@@ -470,7 +462,7 @@ describe("version 1 projectors", () => {
     expect(app.directCreates).toBe(0);
   });
 
-  it("describes only explicit routes from either a durable Projection or a live Binding", async () => {
+  it("describes only explicit routes from either a durable CompiledSurface or a live Binding", async () => {
     const app = await fixture();
     const routes = [
       route(app.caller, "list", { method: "GET", path: "/todos" }),
@@ -620,7 +612,7 @@ describe("version 1 projectors", () => {
         return base.invoke(invocation);
       },
     };
-    const client = createProjectionClient(transport);
+    const client = createSurfaceClient(transport);
     const manifest = await client.inspect();
     expect(manifest.version).toBe(1);
     expect(manifest.bindingDigest).toBe(app.binding.manifest.bindingDigest);
@@ -640,7 +632,7 @@ describe("version 1 projectors", () => {
     expect(app.directContexts.every((received) => received === requestContext)).toBe(true);
     expect(app.requestContexts).toEqual([requestContext]);
 
-    const stale = createProjectionClient({
+    const stale = createSurfaceClient({
       inspect: () => base.inspect(),
       async invoke(invocation) {
         const result = await base.invoke(invocation);
@@ -652,7 +644,7 @@ describe("version 1 projectors", () => {
       certainty: "unknown",
       phase: "response",
     });
-    const dropped = createProjectionClient({
+    const dropped = createSurfaceClient({
       inspect: () => base.inspect(),
       async invoke(invocation) {
         await base.invoke(invocation);
@@ -674,7 +666,7 @@ describe("version 1 projectors", () => {
       context: () => context("server-rejection"),
       path: "/_boundary",
     });
-    const client = createProjectionClient(fetchTransport({
+    const client = createSurfaceClient(fetchTransport({
       baseUrl: "https://example.test/_boundary",
       fetch: async (input, init) => {
         if (String(input).endsWith("/invoke")) {
@@ -698,7 +690,7 @@ describe("version 1 projectors", () => {
       status: 409,
     });
 
-    const rejected400 = createProjectionClient(fetchTransport({
+    const rejected400 = createSurfaceClient(fetchTransport({
       baseUrl: "https://example.test/_boundary",
       fetch: async (input, init) => String(input).endsWith("/invoke")
         ? Response.json({
@@ -720,7 +712,7 @@ describe("version 1 projectors", () => {
         status: 400,
       });
 
-    const unproven = createProjectionClient({
+    const unproven = createSurfaceClient({
       inspect: () => Promise.resolve(app.binding.manifest),
       invoke: async () => {
         throw new AdapterError(
@@ -954,7 +946,7 @@ describe("version 1 projectors", () => {
       context: () => context("domain"),
       path: "/_boundary",
     });
-    const client = createProjectionClient(fetchTransport({
+    const client = createSurfaceClient(fetchTransport({
       baseUrl: "https://example.test/_boundary",
       fetch: (input, init) => protocol(new Request(input, init)),
     }));
@@ -985,7 +977,7 @@ describe("version 1 projectors", () => {
       { path: "/_boundary", fetch: protocol },
     ]);
     expect(paths).toEqual(["/_boundary"]);
-    const client = createProjectionClient(fetchTransport({
+    const client = createSurfaceClient(fetchTransport({
       baseUrl: "https://example.test/_boundary",
       fetch: (input, init) => handler(new Request(input, init)),
     }));
@@ -995,9 +987,9 @@ describe("version 1 projectors", () => {
       app.projection.handles.list.contractDigest,
     );
     expect(handles.create.modes).toEqual(["direct", "request"]);
-    await expect(pinProjectionReferences(client, app.projection.handles)).resolves
+    await expect(pinSurfaceReferences(client, app.projection.handles)).resolves
       .toBe(app.projection.handles);
-    await expect(pinProjectionReferences(client, {
+    await expect(pinSurfaceReferences(client, {
       ...app.projection.handles,
       list: Object.freeze({
         ...app.projection.handles.list,

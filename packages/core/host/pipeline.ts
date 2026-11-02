@@ -3,7 +3,7 @@
  *
  * The root export's `surface`, `install`, and `connect` compose these
  * functions and return their artifacts. Import this subpath when a host needs
- * a step the short path does not take: a Projection it persists or inspects
+ * a step the short path does not take: a CompiledSurface it persists or inspects
  * on its own, explicit realization ids, restriction of a live Binding, native
  * dispatch over its own targets, or inspection of candidate artifacts.
  */
@@ -15,13 +15,13 @@ export {
 export { implementInteractions } from "./implement";
 export { bindNativeInteractions } from "./native-bindings";
 export { installInteractions } from "./install";
-export { pickProjection, projectAllDirect, projectInteractions } from "./projection";
-export { direct, directRealizationIds } from "./direct";
+export { projectInteractions, projectSurface } from "./projection";
+export { realizationIdsFor } from "./realization-ids";
 export { admitAll, admitWhen } from "./admission";
-export { bindProjection, restrictBinding } from "./binding";
+export { bindSurface, restrictBinding } from "./binding";
 export { createCaller } from "./caller";
-export { presentProjection } from "./presentation";
-export { assessProjection, type ProjectionAssessment } from "./assessment";
+export { presentSurface } from "./presentation";
+export { assessSurface, type SurfaceAssessment } from "./assessment";
 export { describeBinding } from "./description";
 export {
   publishExecutionEvidence,
@@ -31,8 +31,7 @@ export {
 
 export type { AnyCaller, Caller, CallerOfBinding, HandoffSeam, NativeDispatchers } from "./facade-types";
 export type { InstallInteractionsOptions } from "./install";
-export type { DirectRealizationIds } from "./direct";
-export type { AliasProjectionSelections, DirectProjectionSelections } from "./projection";
+export type { AliasHandleSelections } from "./projection";
 export type { InvocationObserver } from "./observation";
 export type { InvocationCoordinator, CoordinatedInvocation, InvocationPolicy } from "./coordination";
 export type {
@@ -61,16 +60,16 @@ export type {
   InteractionMode,
   NativeDispatchRequest,
   NativeInteractionBinding,
-  ProjectedHandles,
-  ProjectedInteractionHandle,
-  Projection,
-  ProjectionBinding,
-  ProjectionBindingInteraction,
-  ProjectionBindingManifest,
-  ProjectionInteraction,
-  ProjectionManifest,
-  ProjectionSelection,
-  ProjectionSelections,
+  SurfaceHandles,
+  SurfaceHandle,
+  CompiledSurface,
+  Binding,
+  BindingInteraction,
+  BindingManifest,
+  SurfaceInteraction,
+  SurfaceManifest,
+  HandleSelection,
+  HandleSelections,
   RawInvocationOutcome,
   RawInvocationResult,
   RealizationId,

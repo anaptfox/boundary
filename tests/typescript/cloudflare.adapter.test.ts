@@ -1,6 +1,6 @@
 import {
-  createProjectionDurableObject,
-  createProjectionWorkerFetch,
+  createSurfaceDurableObject,
+  createSurfaceWorkerFetch,
 } from "@foxworth/boundary/cloudflare";
 import { describe, expect, it, vi } from "vitest";
 
@@ -10,7 +10,7 @@ describe("@foxworth/boundary/cloudflare", () => {
       new Response(new URL(request.url).pathname),
     );
     const fallback = vi.fn(async () => new Response("asset"));
-    const fetch = createProjectionWorkerFetch(handler, {
+    const fetch = createSurfaceWorkerFetch(handler, {
       mount: "/api",
       fallback,
     });
@@ -29,7 +29,7 @@ describe("@foxworth/boundary/cloudflare", () => {
     const createHandler = vi.fn((state: { name: string }) =>
       async () => new Response(state.name),
     );
-    const DurableObject = createProjectionDurableObject(createHandler);
+    const DurableObject = createSurfaceDurableObject(createHandler);
     const first = new DurableObject({ name: "first" }, {});
     const second = new DurableObject({ name: "second" }, {});
 
@@ -43,7 +43,7 @@ describe("@foxworth/boundary/cloudflare", () => {
   });
 
   it("does not expose thrown handler errors", async () => {
-    const fetch = createProjectionWorkerFetch(async () => {
+    const fetch = createSurfaceWorkerFetch(async () => {
       throw new Error("private details");
     });
     const response = await fetch(new Request("https://example.test/api"), {}, {});

@@ -1,4 +1,5 @@
-import { defineInteraction, implementInteractions } from "@foxworth/boundary";
+import { defineInteraction } from "@foxworth/boundary";
+import { implementInteractions } from "@foxworth/boundary/pipeline";
 import { portableSchema } from "@foxworth/boundary/program";
 import { observedRead, type ObservationSource } from "@foxworth/boundary/observations";
 

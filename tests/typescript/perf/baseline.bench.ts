@@ -1,10 +1,11 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, it } from "vitest";
-import { bindProjection, compileInteractions, defineInteraction, type AnyInteractionDefinition, direct, directRealizationIds, implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, createCaller, realizationIdsFor } from "@foxworth/boundary/pipeline";
+import { defineInteraction, type AnyInteractionDefinition } from "@foxworth/boundary";
 import {
   createHandoffInvocation,
   executeHandoff,
-  validateProjectionBindingManifest,
+  validateBindingManifest,
 } from "@foxworth/boundary/handoff";
 import { portableSchema, validateSchemaValue } from "@foxworth/boundary/program";
 import {
@@ -17,11 +18,10 @@ import { MemoryJournal } from "@foxworth/boundary/control/testing";
 import { createCompositeHttpHandler } from "@foxworth/boundary/http/compose";
 import { createHttpHandler, route } from "@foxworth/boundary/http";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
-import { createProjectionClient } from "@foxworth/boundary/client";
+import { createSurfaceClient } from "@foxworth/boundary/client";
 import { useInteraction } from "@foxworth/boundary/react";
 import { createAdapterFixture } from "../helpers/adapter";
 import { measure, measureSync, recordCase } from "./measure";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
@@ -71,13 +71,13 @@ async function hostFixture() {
   const { installation } = await installInteractions(compiled, {
     installationId: "installation:bench:1",
     implementations,
-    realizationIds: directRealizationIds(compiled, "v1"),
+    realizationIds: realizationIdsFor(compiled, "v1"),
   });
   const projection = await projectInteractions(compiled, {
-    list: direct(compiled.handles.list),
-    echo: direct(compiled.handles.echo),
+    list: { interaction: compiled.handles.list, modes: ["direct"] },
+    echo: { interaction: compiled.handles.echo, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = await bindSurface(projection, installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (result.status !== "bound") {
@@ -191,10 +191,10 @@ describe("boundary performance baseline", () => {
     const installed = await installInteractions(compiledSmall, {
       installationId: "installation:bench-small:1",
       implementations,
-      realizationIds: directRealizationIds(compiledSmall, "v1"),
+      realizationIds: realizationIdsFor(compiledSmall, "v1"),
     });
     const projection = await projectInteractions(compiledSmall, {
-      list: direct(compiledSmall.handles.list),
+      list: { interaction: compiledSmall.handles.list, modes: ["direct"] },
     });
     recordCase({
       id: "ts.bind.small",
@@ -202,7 +202,7 @@ describe("boundary performance baseline", () => {
       class: "startup",
       ...(await measure(
         () =>
-          bindProjection(projection, installed.installation, {
+          bindSurface(projection, installed.installation, {
             admit: () => ({ decision: "allow" }),
           }),
         { warmup: 3, iters: 20 },
@@ -236,7 +236,7 @@ describe("boundary performance baseline", () => {
       lang: "ts",
       class: "per-call",
       ...(await measure(
-        () => validateProjectionBindingManifest(host.binding.manifest),
+        () => validateBindingManifest(host.binding.manifest),
         { warmup: 5, iters: 40 },
       )),
     });
@@ -261,7 +261,7 @@ describe("boundary performance baseline", () => {
       invoke: async (invocation: Awaited<ReturnType<typeof createHandoffInvocation>>) =>
         executeHandoff(host.binding, invocation, undefined),
     };
-    const client = createProjectionClient(transport);
+    const client = createSurfaceClient(transport);
     await client.inspect();
     recordCase({
       id: "ts.client.call",
@@ -354,7 +354,7 @@ describe("boundary performance baseline", () => {
 
     const adapter = await createAdapterFixture();
     const { binding: adapterBinding, projection: adapterProjection } = await adapter.connect({ call: ["list", "create"] });
-    const adapterClient = createProjectionClient({
+    const adapterClient = createSurfaceClient({
       inspect: async () => adapterBinding.manifest,
       invoke: (invocation) =>
         executeHandoff(adapterBinding, invocation, { role: "owner" }),

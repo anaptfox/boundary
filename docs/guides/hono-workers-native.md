@@ -16,7 +16,7 @@ putting a current request in module state.
 
 ## Hono
 
-`createProjectionHonoMiddleware` receives Hono's typed `Context`. Its generic
+`createSurfaceHonoMiddleware` receives Hono's typed `Context`. Its generic
 type preserves the application's middleware variables, route parameters,
 bindings, and available runtime execution context. The factory returns an
 ordinary `HttpHandler`, normally made with `createHttpHandler` from an already
@@ -31,12 +31,12 @@ composition, native response-header composition, and ordinary routing.
 
 The Hono middleware and routes remain application-owned. The native helper is
 not Hono RPC: it does not infer interaction routes, schemas, status codes, or
-authority from an application route. `mountProjection(handler)` remains the
+authority from an application route. `mountSurface(handler)` remains the
 smaller option when the handler already has its request-context resolver.
 
 ## Cloudflare Workers
 
-`createProjectionWorkerFetchWithContext` calls its factory only for matched
+`createSurfaceWorkerFetchWithContext` calls its factory only for matched
 requests. The factory receives the exact `request`, `environment`, and
 `execution` objects for that invocation. Fallback requests keep the
 application's normal Worker routing and receive those same three values.

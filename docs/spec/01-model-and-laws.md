@@ -15,7 +15,7 @@ identity and portable contract. **CompiledInteractions** derives a handler-free
 set. An **InteractionInstallation** is one live deployment of exact direct and
 optional request realizations. A durable **Projection** selects expected
 interactions and modes without requiring an Installation. A live
-**ProjectionBinding** atomically pins that Projection to one Installation. A
+**Binding** atomically pins that Projection to one Installation. A
 **Handoff** validates and conserves one bound invocation into native dispatch.
 There is no adapter-level subset of a Binding: a tool list presents the whole
 Binding, and a caller that must see less is bound to a narrower Projection.

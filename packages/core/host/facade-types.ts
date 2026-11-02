@@ -18,9 +18,9 @@ import type {
   InteractionInstallation,
   MaybePromise,
   NativeDispatchRequest,
-  ProjectedInteractionHandle,
-  ProjectionBinding,
-  ProjectionBindingManifest,
+  SurfaceHandle,
+  Binding,
+  BindingManifest,
   RawInvocationOutcome,
   ResolvedBindingInteraction,
   SchemaAdapter,
@@ -185,7 +185,7 @@ export type ProposeMethods<
  * no revocation, no broader selection, no second Binding.
  */
 export type HandoffSeam<Context = unknown> = Readonly<{
-  manifest: ProjectionBindingManifest;
+  manifest: BindingManifest;
   resolve(interactionId: string): ResolvedBindingInteraction | undefined;
   invoke(
     invocation: Readonly<{ interaction: ResolvedBindingInteraction; mode: "direct" | "request"; input: unknown }>,
@@ -210,7 +210,7 @@ export type Caller<
   Context = unknown,
 > = CallMethods<Definitions, Call, Context> & Readonly<{
   propose: ProposeMethods<Definitions, Propose, Context>;
-  manifest: ProjectionBindingManifest;
+  manifest: BindingManifest;
   handoff: HandoffSeam<Context>;
   [callerTypes]?: {
     readonly definitions: Definitions;
@@ -223,7 +223,7 @@ export type Caller<
 /** Any caller, for adapters and facade methods that accept every selection. */
 export type AnyCaller<Context = any> = Readonly<{
   propose: object;
-  manifest: ProjectionBindingManifest;
+  manifest: BindingManifest;
   handoff: HandoffSeam<Context>;
 }>;
 
@@ -234,7 +234,7 @@ export type CallerCallAliases<C> = CallerBrand<C> extends { readonly call: infer
 export type CallerProposeAliases<C> = CallerBrand<C> extends { readonly propose: infer A extends string } ? A : never;
 export type CallerContext<C> = CallerBrand<C> extends { readonly context: infer X } ? X : unknown;
 
-type HandleModesOf<Handle> = Handle extends ProjectedInteractionHandle<any, infer Modes, any> ? Modes[number] : never;
+type HandleModesOf<Handle> = Handle extends SurfaceHandle<any, infer Modes, any> ? Modes[number] : never;
 type AliasesInMode<Handles, Mode extends "direct" | "request"> = {
   [Alias in keyof Handles & string]: Mode extends HandleModesOf<Handles[Alias]> ? Alias : never;
 }[keyof Handles & string];
@@ -244,7 +244,7 @@ type DefinitionsOfHandles<Handles> = {
 
 /** The caller `createCaller(binding)` builds from a Binding's projected handles. */
 export type CallerOfBinding<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle>>,
+  Handles extends Readonly<Record<string, SurfaceHandle>>,
   Context,
 > = Caller<
   DefinitionsOfHandles<Handles>,
@@ -303,5 +303,5 @@ export interface Installation<
   /** Revoke one caller's Binding, or with no argument the whole Installation. */
   revoke(caller?: AnyCaller<Context>): boolean;
   /** The real Binding behind a caller, for inspection and Handoff tooling. */
-  binding(caller: AnyCaller<Context>): ProjectionBinding<any, Context>;
+  binding(caller: AnyCaller<Context>): Binding<any, Context>;
 }

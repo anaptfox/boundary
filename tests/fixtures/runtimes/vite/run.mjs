@@ -23,7 +23,8 @@ const fixture = (generation) => `
 import { readFile, writeFile } from "node:fs/promises";
 import { appendFile } from "node:fs/promises";
 import { z } from ${JSON.stringify(join(repoRoot, "node_modules/zod/index.js"))};
-import { admitAll, bindProjection, compileInteractions, defineInteraction, directRealizationIds, implementInteractions, installInteractions, projectInteractions } from ${JSON.stringify(join(repoRoot, "dist/boundary/dist/index.js"))};
+import { admitAll, defineInteraction } from ${JSON.stringify(join(repoRoot, "dist/boundary/dist/index.js"))};
+import { bindSurface, compileInteractions, createCaller, implementInteractions, installInteractions, projectInteractions, realizationIdsFor } from ${JSON.stringify(join(repoRoot, "dist/boundary/dist/pipeline.js"))};
 import { createHttpHandler, route } from ${JSON.stringify(join(repoRoot, "dist/boundary/dist/http.js"))};
 const todo = z.strictObject({ id: z.number().int(), title: z.string(), completed: z.boolean() });
 const interactions = { list: defineInteraction({ id: "vite.todos.list", description: "List persisted Vite-native todos.", output: z.array(todo), reads: ["vite.todos"], changes: [] }), create: defineInteraction({ id: "vite.todos.create", description: "Create a persisted Vite-native todo.", input: z.strictObject({ title: z.string().min(1) }), output: todo, reads: ["vite.todos"], changes: ["vite.todos"] }) };
@@ -34,10 +35,10 @@ async function createHost(path) {
   const compiled = await compileInteractions(interactions);
   const projection = await projectInteractions(compiled, { list: { interaction: compiled.handles.list, modes: ["direct"] }, create: { interaction: compiled.handles.create, modes: ["direct"] } });
   const implementations = implementInteractions(interactions, { list: () => [...todos], async create(input) { const created = { id: nextId++, title: input.title, completed: false }; todos.push(created); await writeFile(path, JSON.stringify(todos), "utf8"); return created; } });
-  const { installation } = await installInteractions(compiled, { installationId: "vite-native:todos:v1", implementations, realizationIds: directRealizationIds(compiled, "vite-native") });
-  const result = await bindProjection(projection, installation, { admit: admitAll });
+  const { installation } = await installInteractions(compiled, { installationId: "vite-native:todos:v1", implementations, realizationIds: realizationIdsFor(compiled, "vite-native") });
+  const result = await bindSurface(projection, installation, { admit: admitAll });
   if (result.status !== "bound") throw new Error("fixture binding was not realized");
-  return createHttpHandler({ binding: result.binding, context: () => undefined, routes: [route(projection.handles.list, { method: "GET", path: "/_boundary/todos" }), route(projection.handles.create, { method: "POST", path: "/_boundary/todos" })] });
+  return createHttpHandler({ caller: createCaller(result.binding), context: () => undefined, routes: [route(projection.handles.list, { method: "GET", path: "/_boundary/todos" }), route(projection.handles.create, { method: "POST", path: "/_boundary/todos" })] });
 }
 export function createCandidate({ cleanupPath }) {
   const hostPromise = createHost(${JSON.stringify(statePath)});
@@ -85,7 +86,7 @@ async function writeConfig() {
 import { pathToFileURL } from "node:url";
 import { writeFileSync } from "node:fs";
 import { defineConfig } from "vite";
-import { mountProjectionLifecycle } from ${JSON.stringify(adapterPath)};
+import { mountSurfaceLifecycle } from ${JSON.stringify(adapterPath)};
 
 const entryPath = ${JSON.stringify(entryPath)};
 const cleanupPath = ${JSON.stringify(cleanupPath)};
@@ -93,7 +94,7 @@ const diagnosticPath = ${JSON.stringify(diagnosticPath)};
 let revision = 0;
 let preparedHandler = globalThis.__boundaryVitePreparedHandler;
 export default defineConfig({
-  plugins: [mountProjectionLifecycle({
+  plugins: [mountSurfaceLifecycle({
     mount: "/_boundary",
     watch: entryPath,
     entry: async ({ signal, mode, loadModule }) => {

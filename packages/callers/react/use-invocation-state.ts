@@ -1,14 +1,8 @@
 "use client";
 
-import type {
-  AnyInteractionDefinition,
-  DefinitionArity,
-  DefinitionInput,
-  DefinitionOutput,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-} from "@foxworth/boundary";
-import type { ProjectionClient } from "@foxworth/boundary/client";
+import type { AnyInteractionDefinition, DefinitionArity, DefinitionInput, DefinitionOutput } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
+import type { SurfaceClient } from "@foxworth/boundary/client";
 import {
   createInvocationState,
   createProposalInteraction,
@@ -19,22 +13,22 @@ import {
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useInteractionCacheScope } from "./cache-scope";
 
-type AnyProjectedInteractionHandle = ProjectedInteractionHandle<any, any, any>;
-type DefinitionOf<Handle> = Handle extends ProjectedInteractionHandle<
+type AnySurfaceHandle = SurfaceHandle<any, any, any>;
+type DefinitionOf<Handle> = Handle extends SurfaceHandle<
   InteractionHandle<infer Definition>,
   any
 > ? Definition : AnyInteractionDefinition;
-type InteractionArguments<Handle extends AnyProjectedInteractionHandle> =
+type InteractionArguments<Handle extends AnySurfaceHandle> =
   DefinitionArity<DefinitionOf<Handle>> extends 0
     ? readonly []
     : readonly [input: DefinitionInput<DefinitionOf<Handle>>];
-type InteractionOutput<Handle extends AnyProjectedInteractionHandle, Mode extends "direct" | "request"> =
+type InteractionOutput<Handle extends AnySurfaceHandle, Mode extends "direct" | "request"> =
   Mode extends "direct"
     ? DefinitionOutput<DefinitionOf<Handle>>
-    : Handle extends ProjectedInteractionHandle<any, any, infer RequestOutput>
+    : Handle extends SurfaceHandle<any, any, infer RequestOutput>
       ? RequestOutput
       : never;
-type HandleForMode<Handle extends AnyProjectedInteractionHandle, Mode extends "direct" | "request"> =
+type HandleForMode<Handle extends AnySurfaceHandle, Mode extends "direct" | "request"> =
   Handle & (Mode extends Handle["modes"][number] ? unknown : never);
 
 function useDeferredDispose(dispose: () => void): void {
@@ -60,7 +54,7 @@ function useDeferredDispose(dispose: () => void): void {
   }, [dispose]);
 }
 
-function keyFor(handle: AnyProjectedInteractionHandle): string {
+function keyFor(handle: AnySurfaceHandle): string {
   return `${handle.interactionId}\n${handle.contractDigest}\n${handle.inputArity}\n${handle.modes.join(",")}`;
 }
 
@@ -69,10 +63,10 @@ function keyFor(handle: AnyProjectedInteractionHandle): string {
  * inert on mount; the application calls `invoke` from its own event handler.
  */
 export function useInvocationState<
-  Handle extends AnyProjectedInteractionHandle,
+  Handle extends AnySurfaceHandle,
   Mode extends "direct" | "request",
 >(
-  client: ProjectionClient,
+  client: SurfaceClient,
   handle: HandleForMode<Handle, Mode>,
   mode: Mode,
 ): InvocationStateSnapshot<Handle, Mode> & Readonly<{
@@ -106,10 +100,10 @@ export function useInvocationState<
  * own; call `observe` explicitly for a returned proposal.
  */
 export function useProposalInteraction<
-  Handle extends AnyProjectedInteractionHandle,
+  Handle extends AnySurfaceHandle,
   Status,
 >(
-  client: ProjectionClient,
+  client: SurfaceClient,
   handle: HandleForMode<Handle, "request">,
   observeStatus: AuthorizedStatusReader<InteractionOutput<Handle, "request">, Status>,
 ): Readonly<{

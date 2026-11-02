@@ -1,26 +1,6 @@
 import type { AnyCaller, InteractionMode } from "@foxworth/boundary";
 import { createCheckedHandoff } from "@foxworth/boundary/handoff";
-import { AdapterError } from "@foxworth/boundary/remote";
-import {
-  compileExposure,
-  invokePreparedInteraction,
-  prepareExposedInteraction,
-  faultResult,
-  sanitizedInternalResult,
-  statusForRemoteResult,
-  type RemoteCallResult,
-} from "@foxworth/boundary/remote";
-import {
-  interactionKey,
-  resolveSelection,
-  seamOf,
-  type AnyProjectedInteractionHandle,
-  type InteractionSource,
-  type SourceAliases,
-  type SourceHasInput,
-  type SourceInput,
-  type SourceVerbs,
-} from "@foxworth/boundary/remote";
+import { AdapterError, compileExposure, invokePreparedInteraction, prepareExposedInteraction, faultResult, sanitizedInternalResult, statusForRemoteResult, type RemoteCallResult, interactionKey, resolveSelection, seamOf, type AnySurfaceHandle, type InteractionSource, type SourceAliases, type SourceHasInput, type SourceInput, type SourceVerbs } from "@foxworth/boundary/remote";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export type HttpHandler = (request: Request) => Promise<Response>;
@@ -52,7 +32,7 @@ export type RouteOptions<S, Alias extends string> =
 
 export type HttpRoute = Readonly<{
   alias: string;
-  handle: AnyProjectedInteractionHandle;
+  handle: AnySurfaceHandle;
   mode: InteractionMode;
   method: HttpMethod;
   path: string;
@@ -62,7 +42,7 @@ export type HttpRoute = Readonly<{
 }>;
 
 type RouteRuntime = Readonly<{
-  handle: AnyProjectedInteractionHandle;
+  handle: AnySurfaceHandle;
   mode: InteractionMode;
   method: HttpMethod;
   path: string;
@@ -118,7 +98,7 @@ function pathPattern(path: string): {
   };
 }
 
-/** Declare one HTTP route over an alias the caller (or, offline, a Projection) selects. */
+/** Declare one HTTP route over an alias the caller (or, offline, a CompiledSurface) selects. */
 export function route<S extends InteractionSource, const Alias extends SourceAliases<S>>(
   source: S,
   alias: Alias,

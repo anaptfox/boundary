@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  compileInteractions,
-  composeCompiledInteractions,
-  declaredInteractionError,
-  type ImplementationMap,
-} from "@foxworth/boundary";
+import { compileInteractions, composeCompiledInteractions, type ImplementationMap } from "@foxworth/boundary/pipeline";
+import { declaredInteractionError } from "@foxworth/boundary";
 import {
   capacityModule,
   createModuleCompositionHost,

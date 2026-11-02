@@ -102,7 +102,7 @@ reimplements Handoff validation.
 ## Remote client and explicit rehandshake
 
 ```ts
-const client = createProjectionClient(
+const client = createSurfaceClient(
   fetchTransport({ baseUrl: "/_boundary" }),
 );
 
@@ -111,8 +111,8 @@ const todos = await client.call(todoReferences.list);
 const proposal = await client.request(todoReferences.remove, { id: 42 });
 ```
 
-`createProjectionClient` validates and pins one
-`ProjectionBindingManifest`, including `bindingDigest`, Projection and
+`createSurfaceClient` validates and pins one
+`BindingManifest`, including `bindingDigest`, Projection and
 Installation identity, expected and actual Programs and contracts, exact mode,
 arity, and `RealizationId`. It sends only version 1 invocations and validates
 that every version 1 outcome echoes those pins.
@@ -131,7 +131,7 @@ belongs to that actual contribution, not to the unrealized Projection alone.
 `handlesFromBinding(client)` hydrates projected handles from that handshake,
 and `client.inspect()` returns the manifest itself, which WebMCP and other
 declarations accept as a source (`webMcpTool(manifest, "get", ...)`).
-`pinProjectionReferences(client, references)` revalidates generated references
+`pinSurfaceReferences(client, references)` revalidates generated references
 against the current handshake before the UI treats one as callable. The browser
 does not compile interactions to call.
 
@@ -264,7 +264,7 @@ and `useProposalInteraction` adapt those stores to React. Status reading is an
 application-supplied authenticated public function, not possession of Control
 administration. See [headless interactions](../guides/headless-interactions.md).
 
-`createProjectionContext<Client>()` returns a typed `Provider`, `useClient`, and
+`createSurfaceContext<Client>()` returns a typed `Provider`, `useClient`, and
 `view(Component)`. Components receive only the client capability.
 
 `InteractionCacheProvider` owns one shared invalidation scope for mounted reads.
@@ -295,14 +295,14 @@ interactions, installs a host, widens a Projection or establishes authority.
 
 `createNextServerCaller({ caller, context })` wraps a connected caller for
 direct server reads and actions without self-HTTP: `read.<alias>(input)`,
-`action.<alias>(input)`, and `action.propose.<alias>(input)`. `createProjectionHonoMiddleware` lets a host derive
+`action.<alias>(input)`, and `action.propose.<alias>(input)`. `createSurfaceHonoMiddleware` lets a host derive
 context from typed Hono middleware and routes. Worker matched invocations can
-use `createProjectionWorkerFetchWithContext` to retain request, environment and
+use `createSurfaceWorkerFetchWithContext` to retain request, environment and
 execution context. Existing generic Hono and Worker mounts keep their raw Fetch
 handler interface. See [Next](../guides/next-native.md) and
 [Hono/Workers](../guides/hono-workers-native.md) for the native paths.
 
-Vite's `createProjectionViteLifecycle` and `mountProjectionLifecycle` manage
+Vite's `createSurfaceViteLifecycle` and `mountSurfaceLifecycle` manage
 explicit candidate publication and disposal, with host-owned generation
 identity. [Vite lifecycle](../guides/vite-native.md) explains failed replacement
 and stale clients. An [application-owned Durable Object](../guides/durable-objects-native.md)
@@ -314,14 +314,14 @@ not window/workspace authority. See [trusted IPC](../guides/electron-native.md).
 
 | Import | Interface | Host-owned choice |
 |---|---|---|
-| `@foxworth/boundary/frameworks/vite` | `mountProjection({ handler, mount })`, `createProjectionMiddleware` | mount path and Vite lifecycle |
-| `@foxworth/boundary/frameworks/next` | `createProjectionHandlers(handler)` | App Router files and segment config |
-| `@foxworth/boundary/frameworks/hono` | `mountProjection(handler)` | route or prefix |
-| `@foxworth/boundary/cloudflare` | `createProjectionWorkerFetch`, `createProjectionDurableObject` | routing, environment, and durable state |
-| `@foxworth/boundary/electron` | `createProjectionElectronMain`, `prepareProjectionElectron`, `createElectronIpcFetch`, `electronIpcTransport` | scheme, port, session, channel, window, and renderer URL |
+| `@foxworth/boundary/frameworks/vite` | `mountSurface({ handler, mount })`, `createSurfaceMiddleware` | mount path and Vite lifecycle |
+| `@foxworth/boundary/frameworks/next` | `createSurfaceHandlers(handler)` | App Router files and segment config |
+| `@foxworth/boundary/frameworks/hono` | `mountSurface(handler)` | route or prefix |
+| `@foxworth/boundary/cloudflare` | `createSurfaceWorkerFetch`, `createSurfaceDurableObject` | routing, environment, and durable state |
+| `@foxworth/boundary/electron` | `createSurfaceElectronMain`, `prepareSurfaceElectron`, `createElectronIpcFetch`, `electronIpcTransport` | scheme, port, session, channel, window, and renderer URL |
 
-`createProjectionElectronMain` mounts one injected handler in the main process.
-`prepareProjectionElectron` registers the supplied scheme before `app.ready`.
+`createSurfaceElectronMain` mounts one injected handler in the main process.
+`prepareSurfaceElectron` registers the supplied scheme before `app.ready`.
 A sandboxed renderer reaches the same Binding through
 `createElectronIpcFetch` or `electronIpcTransport`; it does not gain host or
 Control authority.
@@ -367,7 +367,7 @@ for lifecycle and delivery limits.
 
 Import `electronIpcTransport` from `@foxworth/boundary/electron/ipc` in a renderer bundle.
 This entry excludes the Node HTTP and window adapter; the main process continues
-to import `createProjectionElectronMain` from `@foxworth/boundary/electron`.
+to import `createSurfaceElectronMain` from `@foxworth/boundary/electron`.
 
 ## Read-only CRDT snapshots
 

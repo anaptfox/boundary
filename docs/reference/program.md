@@ -237,7 +237,7 @@ that cannot be represented faithfully.
 ## Version 1 artifacts
 
 Program owns the portable v1 shapes Host produces and Handoff validates:
-`InstallationManifest`, `ProjectionManifest`, `ProjectionBindingManifest`,
+`InstallationManifest`, `SurfaceManifest`, `BindingManifest`,
 and the identity-bearing `RawInvocationOutcome` envelope. They carry Programs,
 Catalogs, and digests only. They do not contain handlers, admission, context,
 or revocation.
@@ -262,9 +262,9 @@ references. Completed invocation evidence does not imply completion of its
 subject. See [causal execution evidence](./execution-evidence.md) for validation,
 host publication, independent Rust support and evidence limits.
 
-`ProjectionPresentation`, `PresentedInteraction`, and
+`SurfacePresentation`, `PresentedInteraction`, and
 `InteractionPresentationOverride` describe handler-free agent presentation data.
-The Host derives this artifact with `presentProjection`; its independent digest
+The Host derives this artifact with `presentSurface`; its independent digest
 records presentation changes without changing Program or Projection identity.
 `bindingDescriptions` joins selected declaration pins from a previously checked
 Binding manifest without authenticating its source. Native integrations use

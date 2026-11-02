@@ -3,12 +3,11 @@
  * A real transport authenticates callers before constructing ReviewActor.
  */
 import { reviewInteractions, reviewRejected, Suggestion } from "./document-review-interactions";
-import { defineInteraction } from "@foxworth/boundary";
+import { defineInteraction, admitWhen, install, surface } from "@foxworth/boundary";
 
 // #region imports
 import { createReviewApplication } from "./document-review-host";
 import type { ReviewActor } from "./document-review-store";
-import { admitWhen, install, surface } from "@foxworth/boundary";
 // #endregion imports
 
 export async function createDocumentReviewExample() {

@@ -18,7 +18,7 @@ The application constructs native request context from its authenticated
 request or RPC boundary. A Projection selects available interactions; it does
 not grant a caller authority.
 
-`createProjectionDurableObject()` remains a valid generic job where an
+`createSurfaceDurableObject()` remains a valid generic job where an
 application wants only a fetch-class mount. A native Durable Object app should
 own its own class and directly hold its prepared handler.
 

@@ -149,7 +149,7 @@ returned by the loader. The application supplies the dispatcher that translates
 plugin replies into native host outcomes:
 
 ```ts
-import { bindProjection, installInteractions, projectInteractions } from "@foxworth/boundary";
+import { bindSurface, installInteractions, projectInteractions } from "@foxworth/boundary";
 
 const { installation } = await installInteractions(compiled, {
   installationId: "images:plugin:thumbnail:1",
@@ -177,7 +177,7 @@ const { installation } = await installInteractions(compiled, {
 const callerProjection = await projectInteractions(compiled, {
   makeThumbnail: { interaction: compiled.handles.makeThumbnail, modes: ["direct"] },
 });
-const bound = await bindProjection(callerProjection, installation, {
+const bound = await bindSurface(callerProjection, installation, {
   admit: () => ({ decision: "allow" }), // the application's admission policy
 });
 if (bound.status !== "bound") throw new Error("thumbnail interaction did not bind");

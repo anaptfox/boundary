@@ -94,8 +94,8 @@ describe("@foxworth/boundary/frameworks/next native server caller", () => {
     const fixture = await createAdapterFixture();
     const { caller, binding, projection } = await fixture.connect({ call: ["list"] });
     const bound = await (async () => {
-      const result = await import("@foxworth/boundary/pipeline").then(({ bindProjection }) =>
-        bindProjection(projection, fixture.installation, { admit: () => ({ decision: "allow" }) }),
+      const result = await import("@foxworth/boundary/pipeline").then(({ bindSurface }) =>
+        bindSurface(projection, fixture.installation, { admit: () => ({ decision: "allow" }) }),
       );
       if (result.status !== "bound") throw new Error("fixture did not bind");
       return result;

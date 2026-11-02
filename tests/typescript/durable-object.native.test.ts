@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { WorkspaceComposition } from "../fixtures/runtimes/durable-object/workspace";
 
 describe("application-owned Durable Object composition", () => {
-  it("keeps the checked Projection handler as ordinary application state", async () => {
+  it("keeps the checked CompiledSurface handler as ordinary application state", async () => {
     const state = { sqlite: "application" };
     const environment = { deployment: "workspace-v1" };
     const createHandler = vi.fn(

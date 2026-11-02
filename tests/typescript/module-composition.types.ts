@@ -1,8 +1,4 @@
-import {
-  compileInteractions,
-  composeCompiledInteractions,
-  implementInteractions,
-} from "@foxworth/boundary";
+import { compileInteractions, composeCompiledInteractions, implementInteractions } from "@foxworth/boundary/pipeline";
 import {
   capacityModule,
   createModuleCompositionHost,

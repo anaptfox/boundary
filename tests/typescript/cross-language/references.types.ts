@@ -1,8 +1,8 @@
-import type { ProjectionClient } from "@foxworth/boundary/client";
+import type { SurfaceClient } from "@foxworth/boundary/client";
 import { references } from "./references";
 
 // Compile-only assertions over types emitted from Rust, never executed.
-export function checkGeneratedTypes(client: ProjectionClient) {
+export function checkGeneratedTypes(client: SurfaceClient) {
   const todo: Promise<{ readonly id: string; readonly title: string; readonly completed: boolean }> = client.call(references.create, { title: "typed" });
   // @ts-expect-error required native input cannot be omitted
   void client.call(references.create);

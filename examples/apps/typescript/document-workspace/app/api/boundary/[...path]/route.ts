@@ -1,4 +1,4 @@
-import { createProjectionHandlers } from "@foxworth/boundary/frameworks/next";
+import { createSurfaceHandlers } from "@foxworth/boundary/frameworks/next";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import { demoContextFromCookie } from "../../../../lib/context";
 import { caller } from "../../../../lib/boundary";
@@ -10,4 +10,4 @@ const handler = createProtocolHandler({
   context: (request) => tracedContext(demoContextFromCookie(request.headers.get("cookie")), "protocol"),
 });
 
-export const { GET, POST } = createProjectionHandlers(handler);
+export const { GET, POST } = createSurfaceHandlers(handler);

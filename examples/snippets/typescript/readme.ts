@@ -4,18 +4,8 @@
  */
 // #region define
 import { z } from "zod";
-import {
-  admitWhen,
-  bindProjection,
-  compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  pickProjection,
-  projectAllDirect,
-} from "@foxworth/boundary";
+import { admitWhen, declaredInteractionError, defineInteraction, surface } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectSurface, realizationIdsFor } from "@foxworth/boundary/pipeline";
 
 const Todo = z.strictObject({ id: z.number().int(), title: z.string(), done: z.boolean() });
 
@@ -42,8 +32,8 @@ export async function runReadmeExample() {
   const compiled = await compileInteractions(interactions);
 
   // The screen may complete and clear. The agent may only complete.
-  const screen = await projectAllDirect(compiled);
-  const agent = await pickProjection(screen, "complete");
+  const screen = await projectSurface(compiled, surface.all(interactions));
+  const agent = await projectSurface(compiled, surface(interactions, { call: ["complete"] }));
   // #endregion project
 
   // #region install
@@ -71,12 +61,12 @@ export async function runReadmeExample() {
   const { installation } = await installInteractions<typeof interactions, Actor>(compiled, {
     installationId: "todos:local:v1",
     implementations,
-    realizationIds: directRealizationIds(compiled, "v1"),
+    realizationIds: realizationIdsFor(compiled, "v1"),
   });
   // #endregion install
 
   // #region call
-  const bound = await bindProjection(agent, installation, {
+  const bound = await bindSurface(agent, installation, {
     admit: admitWhen((actor) => actor.kind === "agent"),
   });
   if (bound.status !== "bound") {

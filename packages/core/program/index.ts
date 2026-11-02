@@ -111,10 +111,10 @@ export type {
   InstallationId,
   InstallationManifest,
   InteractionMode,
-  ProjectionBindingManifest,
-  ProjectionBindingInteraction,
-  ProjectionManifest,
-  ProjectionInteraction,
+  BindingManifest,
+  BindingInteraction,
+  SurfaceManifest,
+  SurfaceInteraction,
   InvocationCertainty,
   RawInvocationOutcome,
   RawInvocationResult,
@@ -133,6 +133,6 @@ export {
   type ExecutionEvidenceDiagnosticCode,
 } from "./evidence";
 
-export type { ProjectionPresentation, PresentedInteraction, InteractionPresentationOverride } from "./presentation";
+export type { SurfacePresentation, PresentedInteraction, InteractionPresentationOverride } from "./presentation";
 export { bindingDescriptions, type BindingInteractionDescription } from "./binding-description";
 export { isInvocationFaultLegal } from "./invocation-fault";

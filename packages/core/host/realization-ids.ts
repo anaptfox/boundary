@@ -1,5 +1,6 @@
+import { metadataForCompiled } from "./compile";
 import { failHost } from "./errors";
-import type { RealizationId, RealizationIds } from "./types";
+import type { CompiledInteractions, InteractionDefinitions, RealizationId, RealizationIds } from "./types";
 
 const TOKEN = /^[A-Za-z0-9][A-Za-z0-9._~:/-]{0,255}$/u;
 const VERSION = /^[A-Za-z0-9][A-Za-z0-9._~:/-]{0,127}$/u;
@@ -29,4 +30,22 @@ export function deriveRealizationIds(
     ids[alias] = Object.freeze(requestAliases.has(alias) ? { direct, request } : { direct });
   }
   return Object.freeze(ids);
+}
+
+/**
+ * Realization ids for a compilation from one host-owned version label:
+ * `<interactionId>:direct:<version>` for every alias and
+ * `<interactionId>:request:<version>` for the aliases in `request`.
+ * The short path derives the same ids from install(..., { version }).
+ */
+export function realizationIdsFor<Definitions extends InteractionDefinitions>(
+  compiled: CompiledInteractions<Definitions>,
+  version: string,
+  options: Readonly<{ request?: readonly (keyof Definitions & string)[] }> = {},
+): RealizationIds {
+  metadataForCompiled(compiled);
+  const ids = Object.fromEntries(
+    Object.entries(compiled.handles).map(([alias, handle]) => [alias, handle.interactionId]),
+  );
+  return deriveRealizationIds(ids, version, new Set(options.request ?? []));
 }

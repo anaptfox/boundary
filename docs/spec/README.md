@@ -36,7 +36,7 @@ Artifact and wire versions are separate:
 
 - interaction-contract, Program, and Draft artifacts use version 1;
 - Installation and Projection artifacts use version 1; and
-- ProjectionBinding manifests, Handoff invocations, Handoff outcomes, and
+- Binding manifests, Handoff invocations, Handoff outcomes, and
   Control durable records use version 1.
 
 Handoff remains transport-neutral. A host MAY carry it over any transport;

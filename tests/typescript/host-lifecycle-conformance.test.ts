@@ -1,24 +1,15 @@
-import { presentProjection } from "../../packages/core/host/index";
+import { presentSurface, bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions } from "../../packages/core/host/pipeline";
+import { defineInteraction, type Admission, type InteractionMode } from "../../packages/core/host/index";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { portableSchema, type JsonSchema } from "@foxworth/boundary/program";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-  type Admission,
-  type InteractionMode,
-} from "../../packages/core/host/index";
 import { createControlRequestContributions } from "../../packages/core/host/control";
 import {
   createCheckedHandoff,
   createHandoffInvocation,
   validateHandoffOutcomeAgainstManifest,
-  validateProjectionBindingManifest,
+  validateBindingManifest,
 } from "../../packages/core/handoff/index";
 
 type OutcomeVector = Readonly<{
@@ -144,7 +135,7 @@ describe("shared Host lifecycle v1 vectors", () => {
     );
   });
 
-  it("keeps the desired Projection durable before any Installation exists", async () => {
+  it("keeps the desired CompiledSurface durable before any Installation exists", async () => {
     const { compiled } = await compiledVector();
     const first = await projectInteractions(compiled, {
       create: {
@@ -237,7 +228,7 @@ describe("shared Host lifecycle v1 vectors", () => {
         create: { direct: vector.installation.realizationIds.direct },
       },
     });
-    const forward = await bindProjection(
+    const forward = await bindSurface(
       expectedProjection,
       actualInstallation,
       { admit: () => ({ decision: "allow" }) },
@@ -273,7 +264,7 @@ describe("shared Host lifecycle v1 vectors", () => {
         create: { direct: vector.installation.realizationIds.direct },
       },
     });
-    const reverse = await bindProjection(
+    const reverse = await bindSurface(
       actualProjection,
       expectedInstallation,
       { admit: () => ({ decision: "allow" }) },
@@ -305,7 +296,7 @@ describe("shared Host lifecycle v1 vectors", () => {
         modes: vector.projection.modes,
       },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
 
@@ -364,7 +355,7 @@ describe("shared Host lifecycle v1 vectors", () => {
     const projection = await projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct", "request"] },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(bound.status).toBe("bound");
@@ -372,7 +363,7 @@ describe("shared Host lifecycle v1 vectors", () => {
     expect(JSON.parse(JSON.stringify(bound.binding.manifest))).toEqual(
       vector.artifacts.binding,
     );
-    await expect(validateProjectionBindingManifest(vector.artifacts.binding))
+    await expect(validateBindingManifest(vector.artifacts.binding))
       .resolves.toEqual(vector.artifacts.binding);
 
     const checked = await createCheckedHandoff(bound.binding);
@@ -455,7 +446,7 @@ describe("shared Host lifecycle v1 vectors", () => {
         outcomeVector.behavior === "deny"
           ? { decision: "deny", reason: "vector denial" }
           : { decision: "allow" };
-      const result = await bindProjection(projection, installation, {
+      const result = await bindSurface(projection, installation, {
         admit: admission,
       });
       expect(result.status, outcomeVector.name).toBe("bound");
@@ -496,5 +487,5 @@ describe("shared Host lifecycle v1 vectors", () => {
   const { compiled } = await compiledVector();
   const projection = await projectInteractions(compiled, { create: { interaction: compiled.handles.create, modes: ["direct", "request"] } });
   const vector = JSON.parse(readFileSync(new URL("../conformance/v1/composition.json", import.meta.url), "utf8"));
-  expect(await presentProjection(projection, { create: { title: "Create todo", description: "Propose or create a todo." } })).toEqual(vector.presentation);
+  expect(await presentSurface(projection, { create: { title: "Create todo", description: "Propose or create a todo." } })).toEqual(vector.presentation);
 });

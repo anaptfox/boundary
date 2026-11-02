@@ -1,8 +1,6 @@
 import { z } from "zod";
-import {
-  bindProjection, compileInteractions, declaredInteractionError, defineInteraction,
-  direct, directRealizationIds, implementInteractions, installInteractions, projectInteractions,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, realizationIdsFor } from "@foxworth/boundary/pipeline";
+import { declaredInteractionError, defineInteraction } from "@foxworth/boundary";
 
 // Independent TypeScript declarations: never imported from Rust metadata.
 export const Todo = z.strictObject({ completed: z.boolean(), id: z.string(), title: z.string() });
@@ -51,15 +49,15 @@ export async function nativeTodo() {
   });
   const { installation } = await installInteractions(compiled, {
     installationId: "fixture/ts-todo/v1", implementations,
-    realizationIds: directRealizationIds(compiled, "v1"),
+    realizationIds: realizationIdsFor(compiled, "v1"),
   });
   const projection = await projectInteractions(compiled, {
-    list: direct(compiled.handles.list), create: direct(compiled.handles.create),
-    rename: direct(compiled.handles.rename), setCompleted: direct(compiled.handles.setCompleted),
-    remove: direct(compiled.handles.remove), setAllCompleted: direct(compiled.handles.setAllCompleted),
-    clearCompleted: direct(compiled.handles.clearCompleted),
+    list: { interaction: compiled.handles.list, modes: ["direct"] }, create: { interaction: compiled.handles.create, modes: ["direct"] },
+    rename: { interaction: compiled.handles.rename, modes: ["direct"] }, setCompleted: { interaction: compiled.handles.setCompleted, modes: ["direct"] },
+    remove: { interaction: compiled.handles.remove, modes: ["direct"] }, setAllCompleted: { interaction: compiled.handles.setAllCompleted, modes: ["direct"] },
+    clearCompleted: { interaction: compiled.handles.clearCompleted, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
+  const result = await bindSurface(projection, installation, { admit: () => ({ decision: "allow" }) });
   if (result.status !== "bound") throw new Error("native fixture did not bind");
   return { compiled, projection, binding: result.binding };
 }

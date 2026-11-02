@@ -84,9 +84,9 @@ async function smokeHono() {
   const file = write(
     "hono-smoke.mjs",
     `import { Hono } from "hono";
-import { mountProjection } from "@foxworth/boundary/frameworks/hono";
+import { mountSurface } from "@foxworth/boundary/frameworks/hono";
 const app = new Hono();
-app.use("/boundary/*", mountProjection(async request =>
+app.use("/boundary/*", mountSurface(async request =>
   Response.json({ path: new URL(request.url).pathname, runtime: "hono" })
 ));
 const response = await app.request("https://example.test/boundary/hello");
@@ -104,15 +104,15 @@ async function smokeCloudflare() {
   const entry = write(
     "cloudflare/worker.mjs",
     `import {
-  createProjectionDurableObject,
-  createProjectionWorkerFetch,
+  createSurfaceDurableObject,
+  createSurfaceWorkerFetch,
 } from "@foxworth/boundary/cloudflare";
 const handler = async request => Response.json({
   path: new URL(request.url).pathname,
   runtime: "workerd",
 });
-const workerFetch = createProjectionWorkerFetch(handler, { mount: "/boundary" });
-export const ProjectionObject = createProjectionDurableObject(() => handler);
+const workerFetch = createSurfaceWorkerFetch(handler, { mount: "/boundary" });
+export const ProjectionObject = createSurfaceDurableObject(() => handler);
 export default {
   async fetch(request, environment, execution) {
     if (new URL(request.url).pathname === "/object") {
@@ -193,10 +193,10 @@ function smokeNextBuild() {
   write("next-app/app/page.tsx", `export default function Page() { return <main>Boundary Next smoke</main>; }\n`);
   write(
     "next-app/app/api/boundary/route.ts",
-    `import { createProjectionHandlers } from "@foxworth/boundary/frameworks/next";
+    `import { createSurfaceHandlers } from "@foxworth/boundary/frameworks/next";
 const handler = async (request: Request) => Response.json({ method: request.method });
 export const { GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS } =
-  createProjectionHandlers(handler);
+  createSurfaceHandlers(handler);
 `,
   );
   execFileSync(
@@ -220,12 +220,12 @@ function smokeViteLive() {
   const file = write(
     "vite-live.mjs",
     `import { createServer } from "vite";
-import { mountProjection } from "@foxworth/boundary/frameworks/vite";
+import { mountSurface } from "@foxworth/boundary/frameworks/vite";
 const server = await createServer({
   configFile: false,
   appType: "custom",
   server: { host: "127.0.0.1", port: 0, strictPort: false },
-  plugins: [mountProjection({
+  plugins: [mountSurface({
     mount: "/boundary",
     handler: async request => Response.json({
       method: request.method,

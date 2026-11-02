@@ -2,7 +2,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ChildProcess } from "node:child_process";
 import { defineConfig, type Plugin } from "vite";
-import { mountProjection } from "@foxworth/boundary/frameworks/vite";
+import { mountSurface } from "@foxworth/boundary/frameworks/vite";
 import { createTodoServing } from "../serve";
 import { launchTodoDesktop } from "../electron/launch.ts";
 import { TODO_UI_PORT } from "../endpoints";
@@ -46,7 +46,7 @@ export default defineConfig(async () => {
   return {
     root: here,
     plugins: [
-      mountProjection({ handler: serving.handler, mount: serving.paths }),
+      mountSurface({ handler: serving.handler, mount: serving.paths }),
       todoDesktopPlugin(),
     ],
     server: {

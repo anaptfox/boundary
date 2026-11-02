@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { join } from "node:path";
 import { contributeControlRequests } from "@foxworth/boundary/control/host";
-import { bindProjection, admitAll, restrictBinding, compileInteractions, declaredInteractionError, defineInteraction, implementInteractions, installInteractions, projectInteractions, type Admission, type InvocationObserver, type InteractionInstallation } from "@foxworth/boundary";
-import { createCaller } from "@foxworth/boundary/pipeline";
+import { admitAll, declaredInteractionError, defineInteraction, type Admission } from "@foxworth/boundary";
+import { bindSurface, restrictBinding, compileInteractions, implementInteractions, installInteractions, projectInteractions, type InvocationObserver, type InteractionInstallation, createCaller } from "@foxworth/boundary/pipeline";
 import { createNextServerCaller } from "@foxworth/boundary/frameworks/next";
 import { DocumentConflictError, readDocument, saveDocument } from "./documents";
 import type { DemoContext } from "./context";
@@ -103,9 +103,9 @@ export const projection = await projectInteractions(compiled, {
   get: { interaction: compiled.handles.get, modes: ["direct"] },
   save: { interaction: compiled.handles.save, modes: ["direct"] },
 });
-// A read-only agent gets its own Projection and a restricted Binding. Narrowing
+// A read-only agent gets its own CompiledSurface and a restricted Binding. Narrowing
 // happens here, where it is enforced, not in a tool list a model happens to
-// receive: an interaction absent from this Projection is absent from the
+// receive: an interaction absent from this CompiledSurface is absent from the
 // Binding and cannot be reached through it at all.
 export const readProjection = await projectInteractions(compiled, {
   publicationStatus: { interaction: compiled.handles.publicationStatus, modes: ["direct"] },
@@ -145,7 +145,7 @@ const bindOptions: Readonly<{
     return reason ? { decision: "deny", reason } : { decision: "allow" };
   },
 };
-const result = await bindProjection(projection, installation, bindOptions);
+const result = await bindSurface(projection, installation, bindOptions);
 if (result.status !== "bound") throw new Error("next-native demo Binding was not realized");
 export const binding = result.binding;
 export const caller = createCaller(binding);

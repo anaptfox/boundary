@@ -16,7 +16,7 @@ export interface InstallationManifest {
   readonly installationDigest: Sha256Digest;
 }
 
-export interface ProjectionInteraction {
+export interface SurfaceInteraction {
   readonly alias: string;
   readonly interactionId: string;
   readonly expectedContractDigest: Sha256Digest;
@@ -25,14 +25,14 @@ export interface ProjectionInteraction {
 }
 
 /** Version 1 desired caller surface. Realizations are not required. */
-export interface ProjectionManifest {
+export interface SurfaceManifest {
   readonly version: 1;
   readonly program: Program;
-  readonly interactions: readonly ProjectionInteraction[];
+  readonly interactions: readonly SurfaceInteraction[];
   readonly projectionDigest: Sha256Digest;
 }
 
-export interface ProjectionBindingInteraction {
+export interface BindingInteraction {
   readonly alias: string;
   readonly interactionId: string;
   readonly expectedContractDigest: Sha256Digest;
@@ -47,7 +47,7 @@ export interface ProjectionBindingInteraction {
 }
 
 /** Version 1 handshake published by one successful Binding. */
-export interface ProjectionBindingManifest {
+export interface BindingManifest {
   readonly version: 1;
   readonly bindingDigest: Sha256Digest;
   readonly projectionDigest: Sha256Digest;
@@ -58,7 +58,7 @@ export interface ProjectionBindingManifest {
   readonly expectedProgram: Program;
   readonly actualProgram: Program;
   readonly actualCatalog: Catalog;
-  readonly interactions: readonly ProjectionBindingInteraction[];
+  readonly interactions: readonly BindingInteraction[];
 }
 
 export type RawInvocationResult =

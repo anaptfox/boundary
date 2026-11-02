@@ -7,14 +7,14 @@ import {
   type Program,
   type InteractionContract,
   type InstallationManifest,
-  type ProjectionManifest,
-  type ProjectionInteraction,
+  type SurfaceManifest,
+  type SurfaceInteraction,
 } from "@foxworth/boundary/program";
 import type { UnrealizedIssue } from "./types";
 
 /** Data-only check shared by live construction and candidate assessment. */
 export function assessInteraction(
-  selection: ProjectionInteraction,
+  selection: SurfaceInteraction,
   expected: InteractionContract,
   actual: Readonly<{
     contract: InteractionContract;
@@ -56,7 +56,7 @@ function validateCandidateProgram(program: Program): void {
   }
 }
 
-export type ProjectionAssessment = Readonly<{
+export type SurfaceAssessment = Readonly<{
   status: "fit" | "mismatch";
   issues: readonly UnrealizedIssue[];
   missingEvidence: readonly ("artifact-authenticity" | "actual-input-arity" | "live-revocation" | "admission")[];
@@ -66,12 +66,12 @@ export type ProjectionAssessment = Readonly<{
  * Compare the declarations and availability claimed by candidate manifests.
  * This does not authenticate artifacts, construct a Binding, or grant a call.
  */
-export function assessProjection(
-  projection: ProjectionManifest,
+export function assessSurface(
+  projection: SurfaceManifest,
   installation: InstallationManifest,
-): ProjectionAssessment {
+): SurfaceAssessment {
   // Own the input before interpreting it; caller mutation/accessors cannot race a check.
-  const desired = normalizeJson(projection) as unknown as ProjectionManifest;
+  const desired = normalizeJson(projection) as unknown as SurfaceManifest;
   const candidate = normalizeJson(installation) as unknown as InstallationManifest;
   if (desired.version !== 1 || candidate.version !== 1 ||
       !isSha256Digest(desired.projectionDigest) || !isSha256Digest(candidate.installationDigest) ||
@@ -92,7 +92,7 @@ export function assessProjection(
         !Array.isArray(selection.modes) || selection.modes.length === 0 ||
         new Set(selection.modes).size !== selection.modes.length ||
         selection.modes.some((mode: unknown) => mode !== "direct" && mode !== "request")) {
-      throw new TypeError("Invalid or duplicate candidate Projection selection");
+      throw new TypeError("Invalid or duplicate candidate CompiledSurface selection");
     }
     aliases.add(selection.alias);
     selectedIds.add(selection.interactionId);
@@ -102,9 +102,9 @@ export function assessProjection(
   const availability = new Map(candidate.catalog.interactions.map((item) => [item.interactionId, item]));
   const issues = desired.interactions.flatMap((selection) => {
     const declared = expected.get(selection.interactionId);
-    if (!declared) throw new TypeError(`Projection has no declaration for ${selection.interactionId}`);
+    if (!declared) throw new TypeError(`CompiledSurface has no declaration for ${selection.interactionId}`);
     if (selection.expectedContractDigest !== declared.contractDigest) {
-      throw new TypeError("Projection selection digest differs from its declaration");
+      throw new TypeError("CompiledSurface selection digest differs from its declaration");
     }
     const realized = actual.get(selection.interactionId);
     const modes = availability.get(selection.interactionId);

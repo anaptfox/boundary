@@ -7,7 +7,7 @@ import {
   deserializeFetchResponse,
   dispatchHandler,
   internalError,
-  projectionRequest,
+  surfaceRequest,
   serializeFetchRequest,
   serializeFetchResponse,
   type SerializedFetchRequest,
@@ -127,7 +127,7 @@ export function createElectronIpcFetch(
 ): typeof fetch {
   const fetchChannel = ipcFetchChannel(options.channel);
   return async (input, init) => {
-    const request = projectionRequest(input, options.baseUrl, init);
+    const request = surfaceRequest(input, options.baseUrl, init);
     const payload = await serializeFetchRequest(request);
     return deserializeFetchResponse(await invoke(fetchChannel, payload));
   };

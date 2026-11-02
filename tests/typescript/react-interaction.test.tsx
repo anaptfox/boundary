@@ -2,9 +2,10 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { StrictMode, type ReactNode } from "react";
-import type { InteractionDefinition, InteractionHandle, ProjectedInteractionHandle } from "@foxworth/boundary";
+import type { InteractionDefinition } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
 import type { JsonValue } from "@foxworth/boundary/program";
-import type { ProjectionClient } from "@foxworth/boundary/client";
+import type { SurfaceClient } from "@foxworth/boundary/client";
 import { RemoteExecutionError, RemoteInvocationError } from "@foxworth/boundary/remote";
 import { describeInteractionError, useInvocationState, useProposalInteraction } from "@foxworth/boundary/react";
 
@@ -16,15 +17,15 @@ function handle<const Mode extends "direct" | "request">(mode: Mode) {
     contractDigest: DIGEST,
     inputArity: 0,
     modes: Object.freeze([mode]),
-  }) as ProjectedInteractionHandle<InteractionHandle<Definition>, readonly [Mode]>;
+  }) as SurfaceHandle<InteractionHandle<Definition>, readonly [Mode]>;
 }
 
-function client(callValue: JsonValue, requestValue: JsonValue, calls: string[]): ProjectionClient {
-  const call: ProjectionClient["call"] = async () => {
+function client(callValue: JsonValue, requestValue: JsonValue, calls: string[]): SurfaceClient {
+  const call: SurfaceClient["call"] = async () => {
     calls.push("call");
     return callValue as never;
   };
-  const request: ProjectionClient["request"] = async () => {
+  const request: SurfaceClient["request"] = async () => {
     calls.push("request");
     return requestValue as never;
   };
@@ -53,7 +54,7 @@ describe("React interaction hooks", () => {
     let reject!: (error: Error) => void;
     const pending = new Promise<JsonValue>((_, no) => { reject = no; });
     const calls: string[] = [];
-    const projectionClient: ProjectionClient = {
+    const projectionClient: SurfaceClient = {
       ...client({}, {}, calls),
       call: async () => { calls.push("call"); return await pending as never; },
     };

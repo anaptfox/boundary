@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createElectronIpcFetch,
-  createProjectionElectronMain,
+  createSurfaceElectronMain,
   deserializeFetchRequest,
   electronIpcTransport,
   ipcFetchChannel,
-  prepareProjectionElectron,
-  projectionRequest,
+  prepareSurfaceElectron,
+  surfaceRequest,
   serializeFetchRequest,
   type SerializedFetchRequest,
 } from "@foxworth/boundary/electron";
@@ -24,7 +24,7 @@ describe("@foxworth/boundary/electron", () => {
   it("can skip TCP and still expose protocol and IPC doors", async () => {
     const fake = fakeElectron();
     const handler = vi.fn(async () => new Response("ok"));
-    const main = await createProjectionElectronMain({
+    const main = await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler,
@@ -57,7 +57,7 @@ describe("@foxworth/boundary/electron", () => {
 
   it("does not expose thrown handler errors on protocol or IPC", async () => {
     const fake = fakeElectron();
-    const main = await createProjectionElectronMain({
+    const main = await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler: async () => {
@@ -87,7 +87,7 @@ describe("@foxworth/boundary/electron", () => {
 
   it("supports bodyless responses and rejects malformed IPC envelopes safely", async () => {
     const fake = fakeElectron();
-    const main = await createProjectionElectronMain({
+    const main = await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler: async () => new Response(null, { status: 204 }),
@@ -121,7 +121,7 @@ describe("@foxworth/boundary/electron", () => {
     });
 
     await expect(
-      createProjectionElectronMain({
+      createSurfaceElectronMain({
         ...TEST_DOORS,
         electron: fake.electron,
         handler: async () => new Response("ok"),
@@ -136,7 +136,7 @@ describe("@foxworth/boundary/electron", () => {
 
   it("restores window bounds through Electron 44 window state when named", async () => {
     const fake = fakeElectron();
-    const main = await createProjectionElectronMain({
+    const main = await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler: async () => new Response("ok"),
@@ -166,8 +166,8 @@ describe("@foxworth/boundary/electron", () => {
 
   it("registers a privileged scheme only before app ready", () => {
     const before = fakeElectron({ ready: false });
-    prepareProjectionElectron(before.electron, { scheme: TEST_SCHEME });
-    prepareProjectionElectron(before.electron, { scheme: TEST_SCHEME });
+    prepareSurfaceElectron(before.electron, { scheme: TEST_SCHEME });
+    prepareSurfaceElectron(before.electron, { scheme: TEST_SCHEME });
     expect(before.schemes).toEqual([
       expect.objectContaining({
         scheme: TEST_SCHEME,
@@ -180,14 +180,14 @@ describe("@foxworth/boundary/electron", () => {
     ]);
 
     const after = fakeElectron({ ready: true });
-    prepareProjectionElectron(after.electron, { scheme: TEST_SCHEME });
+    prepareSurfaceElectron(after.electron, { scheme: TEST_SCHEME });
     expect(after.schemes).toEqual([]);
   });
 
   it("rejects reserved protocol schemes", async () => {
     const fake = fakeElectron();
     await expect(
-      createProjectionElectronMain({
+      createSurfaceElectronMain({
         ...TEST_DOORS,
         electron: fake.electron,
         handler: async () => new Response("ok"),
@@ -212,7 +212,7 @@ describe("@foxworth/boundary/electron", () => {
     expect(restored.headers.get("x-test-actor")).toBe("owner");
     expect(await restored.text()).toBe("{\"ok\":true}");
 
-    const overridden = projectionRequest(
+    const overridden = surfaceRequest(
       new Request(`${TEST_PROTOCOL_URL}/original`),
       TEST_PROTOCOL_URL,
       { method: "POST", body: "override" },
@@ -223,7 +223,7 @@ describe("@foxworth/boundary/electron", () => {
 
   it("builds a protocol client transport over IPC", async () => {
     const fake = fakeElectron();
-    await createProjectionElectronMain({
+    await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler: async (request) => {

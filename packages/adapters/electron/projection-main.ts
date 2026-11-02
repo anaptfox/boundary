@@ -43,14 +43,14 @@ export type ElectronApis = {
   session?: ElectronSessionApi;
 };
 
-export type ProjectionElectronReadyContext = {
+export type SurfaceElectronReadyContext = {
   readonly baseUrl: string;
   readonly protocolUrl: string;
   readonly window: ElectronBrowserWindow | undefined;
   dispatch(request: Request): Promise<Response>;
 };
 
-export type CreateProjectionElectronMainOptions<Context = never> = {
+export type CreateSurfaceElectronMainOptions<Context = never> = {
   readonly electron: ElectronApis;
   /** The HTTP projection created by `createHttpHandler`. */
   readonly handler: HttpHandler;
@@ -87,11 +87,11 @@ export type CreateProjectionElectronMainOptions<Context = never> = {
   readonly windowName?: string;
   readonly persistWindowState?: boolean;
   readonly onReady?: (
-    context: ProjectionElectronReadyContext,
+    context: SurfaceElectronReadyContext,
   ) => void | Promise<void>;
 };
 
-export type ProjectionElectronMain = {
+export type SurfaceElectronMain = {
   readonly baseUrl: string;
   readonly protocolUrl: string;
   readonly window: ElectronBrowserWindow | undefined;
@@ -100,7 +100,7 @@ export type ProjectionElectronMain = {
   close(): Promise<void>;
 };
 
-export type PrepareProjectionElectronOptions = {
+export type PrepareSurfaceElectronOptions = {
   readonly scheme: string | false;
 };
 
@@ -124,11 +124,11 @@ function protocolUrlFor(scheme: string | undefined): string {
 
 /**
  * Register the privileged in-process scheme. Must run before `app.ready`.
- * `createProjectionElectronMain` calls this when the app is not yet ready.
+ * `createSurfaceElectronMain` calls this when the app is not yet ready.
  */
-export function prepareProjectionElectron(
+export function prepareSurfaceElectron(
   electron: Pick<ElectronApis, "app" | "protocol">,
-  options: PrepareProjectionElectronOptions,
+  options: PrepareSurfaceElectronOptions,
 ): void {
   const scheme = schemeName(options.scheme);
   if (!scheme || !electron.protocol || electron.app.isReady()) return;
@@ -202,7 +202,7 @@ async function closeResources(
 }
 
 function windowOptionsFor<Context>(
-  options: CreateProjectionElectronMainOptions<Context>,
+  options: CreateSurfaceElectronMainOptions<Context>,
   partition: string,
 ): BrowserWindowConstructorOptions {
   const persist =
@@ -229,13 +229,13 @@ function windowOptionsFor<Context>(
 }
 
 /**
- * Run one explicit Projection HTTP handler in Electron's main process.
+ * Run one explicit CompiledSurface HTTP handler in Electron's main process.
  * HTTP, a privileged scheme, and IPC are doors to the same handler.
  * Renderer placement and window lifecycle remain application decisions.
  */
-export async function createProjectionElectronMain<Context = never>(
-  options: CreateProjectionElectronMainOptions<Context>,
-): Promise<ProjectionElectronMain> {
+export async function createSurfaceElectronMain<Context = never>(
+  options: CreateSurfaceElectronMainOptions<Context>,
+): Promise<SurfaceElectronMain> {
   const { app: electronApp, BrowserWindow } = options.electron;
   const openWindow = options.openWindow !== false;
   const scheme = schemeName(options.scheme);
@@ -248,7 +248,7 @@ export async function createProjectionElectronMain<Context = never>(
   const dispatch = (request: Request) =>
     dispatchHandler(options.handler, request);
 
-  prepareProjectionElectron(options.electron, { scheme: options.scheme });
+  prepareSurfaceElectron(options.electron, { scheme: options.scheme });
   await electronApp.whenReady();
 
   let server: Server | undefined;

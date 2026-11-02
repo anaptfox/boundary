@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { type InteractionDefinition, type InteractionHandle, type ProjectedInteractionHandle } from "@foxworth/boundary";
+import { type InteractionDefinition } from "@foxworth/boundary";
+import { type InteractionHandle, type SurfaceHandle } from "@foxworth/boundary/pipeline";
 import type { JsonValue } from "@foxworth/boundary/program";
 import {
   createInteractionCacheScope,
@@ -8,7 +9,7 @@ import {
   watchInteraction,
 } from "@foxworth/boundary/client/cache";
 import { createHandoffInvocation } from "@foxworth/boundary/handoff";
-import { createProjectionClient } from "@foxworth/boundary/client";
+import { createSurfaceClient } from "@foxworth/boundary/client";
 import {
   createProtocolHandler,
   fetchTransport,
@@ -44,7 +45,7 @@ function projectedHandle<const Arity extends 0 | 1>(interactionId: string, input
     contractDigest: DIGEST,
     inputArity,
     modes: Object.freeze(["direct"] as const),
-  }) as ProjectedInteractionHandle<InteractionHandle<StubDefinition<Arity>>, readonly ["direct"]>;
+  }) as SurfaceHandle<InteractionHandle<StubDefinition<Arity>>, readonly ["direct"]>;
 }
 
 function readClient(options: Readonly<{
@@ -177,7 +178,7 @@ describe("projector footprint cache", () => {
       context: () => Object.freeze({ role: "owner" as const, marker: {} }),
       path: "/_boundary",
     });
-    const client = createProjectionClient(
+    const client = createSurfaceClient(
       fetchTransport({
         baseUrl: "https://example.test/_boundary",
         fetch: (input, init) => protocol(new Request(input, init)),
@@ -217,7 +218,7 @@ describe("projector footprint cache", () => {
       headers: { "x-host-run": "boot" },
       fetch: (input, init) => protocol(new Request(input, init)),
     });
-    const manifest = await createProjectionClient(transport).inspect();
+    const manifest = await createSurfaceClient(transport).inspect();
     const invocation = await createHandoffInvocation(
       manifest,
       "todos.create",

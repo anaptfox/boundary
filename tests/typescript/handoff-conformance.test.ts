@@ -1,16 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { portableSchema, type JsonValue } from "@foxworth/boundary/program";
-import {
-  bindProjection,
-  compileInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-  type AdmissionDecision,
-  type AdmissionRequest,
-} from "../../packages/core/host/index";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions } from "../../packages/core/host/pipeline";
+import { declaredInteractionError, defineInteraction, type AdmissionDecision, type AdmissionRequest } from "../../packages/core/host/index";
 import { createControlRequestContributions } from "../../packages/core/host/control";
 import {
   createCheckedHandoff,
@@ -19,7 +10,7 @@ import {
   validateHandoffInvocation,
   validateHandoffOutcomeAgainstManifest,
   validateHandoffOutcome,
-  validateProjectionBindingManifest,
+  validateBindingManifest,
   type HandoffInvocation,
 } from "../../packages/core/handoff/index";
 
@@ -156,7 +147,7 @@ async function fixture(
       modes: ["direct", "request"],
     },
   });
-  const bound = await bindProjection(projection, installation, {
+  const bound = await bindSurface(projection, installation, {
     async admit(request) {
       seen.admissions += 1;
       seen.contexts.push(request.context);
@@ -175,7 +166,7 @@ describe("Handoff v1 hostile-boundary conformance", () => {
   it("snapshots and validates one exact immutable Binding handshake", async () => {
     const { binding } = await fixture();
     const forged = copy(binding.manifest);
-    const validated = await validateProjectionBindingManifest(forged);
+    const validated = await validateBindingManifest(forged);
 
     (forged as { installationId: string }).installationId = "installation:mutated";
     expect(validated.installationId).toBe(
@@ -185,25 +176,25 @@ describe("Handoff v1 hostile-boundary conformance", () => {
     expect(Object.isFrozen(validated.interactions)).toBe(true);
 
     await expect(
-      validateProjectionBindingManifest({
+      validateBindingManifest({
         ...copy(binding.manifest),
         version: RETIRED_WIRE_VERSION,
       }),
     ).rejects.toMatchObject({ code: "UNSUPPORTED_VERSION" });
     await expect(
-      validateProjectionBindingManifest({
+      validateBindingManifest({
         ...copy(binding.manifest),
         version: 99,
       }),
     ).rejects.toMatchObject({ code: "UNSUPPORTED_VERSION" });
     await expect(
-      validateProjectionBindingManifest({
+      validateBindingManifest({
         ...copy(binding.manifest),
         installationId: "installation:other",
       }),
     ).rejects.toMatchObject({ code: "INVALID_MANIFEST" });
     await expect(
-      validateProjectionBindingManifest({
+      validateBindingManifest({
         ...copy(binding.manifest),
         extra: true,
       }),
@@ -222,7 +213,7 @@ describe("Handoff v1 hostile-boundary conformance", () => {
       },
     });
     await expect(
-      validateProjectionBindingManifest(manifest),
+      validateBindingManifest(manifest),
     ).rejects.toMatchObject({ code: "INVALID_MANIFEST" });
 
     const invocation = copy(

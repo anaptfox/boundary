@@ -1,4 +1,4 @@
-import { createProjectionWorkerFetchWithContext } from "@foxworth/boundary/cloudflare";
+import { createSurfaceWorkerFetchWithContext } from "@foxworth/boundary/cloudflare";
 import { createHttpHandler, route, type HttpHandler } from "@foxworth/boundary/http";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import {
@@ -83,7 +83,7 @@ export async function createWorkerNativeFetch() {
       return response;
     };
   };
-  const http = createProjectionWorkerFetchWithContext<Environment, Execution>(
+  const http = createSurfaceWorkerFetchWithContext<Environment, Execution>(
     ({ request, environment, execution }) => nativeHandler(request, environment, execution),
     { mount: "/boundary", fallback: (request, environment) => environment.ASSETS.fetch(request) },
   );

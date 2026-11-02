@@ -3,22 +3,22 @@ import { isAbsolute, resolve, win32 } from "node:path";
 import type { HttpHandler } from "@foxworth/boundary/http";
 import { sendFetchResponse, toFetchRequest } from "@foxworth/boundary/http/node";
 import {
-  createProjectionViteLifecycle,
-  type ProjectionViteEntryContext,
-  type ProjectionViteLifecycleOptions,
-  type ProjectionViteMode,
+  createSurfaceViteLifecycle,
+  type SurfaceViteEntryContext,
+  type SurfaceViteLifecycleOptions,
+  type SurfaceViteMode,
 } from "./vite-lifecycle";
-export { createProjectionViteLifecycle } from "./vite-lifecycle";
+export { createSurfaceViteLifecycle } from "./vite-lifecycle";
 export type {
-  ProjectionViteCandidate,
-  ProjectionViteDiagnostic,
-  ProjectionViteEntryContext,
-  ProjectionViteLifecycleOptions,
-  ProjectionViteMode,
-  ProjectionViteStatus,
+  SurfaceViteCandidate,
+  SurfaceViteDiagnostic,
+  SurfaceViteEntryContext,
+  SurfaceViteLifecycleOptions,
+  SurfaceViteMode,
+  SurfaceViteStatus,
 } from "./vite-lifecycle";
 
-export type ProjectionViteOptions = {
+export type SurfaceViteOptions = {
   /** The HTTP projection created by `createHttpHandler`. */
   readonly handler: HttpHandler;
   /**
@@ -33,14 +33,14 @@ export type ProjectionViteOptions = {
   ) => Response | undefined | Promise<Response | undefined>;
 };
 
-export type ProjectionViteLifecyclePluginOptions = ProjectionViteLifecycleOptions &
-  Pick<ProjectionViteOptions, "mount" | "onError"> &
+export type SurfaceViteLifecyclePluginOptions = SurfaceViteLifecycleOptions &
+  Pick<SurfaceViteOptions, "mount" | "onError"> &
   Readonly<{
     /** Explicit entry files Vite should include in its development watcher. */
     readonly watch?: string | readonly string[];
   }>;
 
-function mountPaths(value: ProjectionViteOptions["mount"]): readonly string[] {
+function mountPaths(value: SurfaceViteOptions["mount"]): readonly string[] {
   const paths = typeof value === "string" ? [value] : [...value];
   if (paths.length === 0) {
     throw new TypeError(
@@ -58,7 +58,7 @@ function mountPaths(value: ProjectionViteOptions["mount"]): readonly string[] {
 }
 
 function explicitWatchPaths(
-  value: ProjectionViteLifecyclePluginOptions["watch"],
+  value: SurfaceViteLifecyclePluginOptions["watch"],
   root: string,
 ): readonly string[] {
   const paths = value === undefined ? [] : typeof value === "string" ? [value] : [...value];
@@ -74,10 +74,10 @@ function internalError(): Response {
   });
 }
 
-/** Connect middleware around one explicit Projection HTTP handler. */
-export function createProjectionMiddleware(
+/** Connect middleware around one explicit CompiledSurface HTTP handler. */
+export function createSurfaceMiddleware(
   handler: HttpHandler,
-  options: Pick<ProjectionViteOptions, "onError"> = {},
+  options: Pick<SurfaceViteOptions, "onError"> = {},
 ): Connect.NextHandleFunction {
   return (incoming, outgoing) => {
     const request = toFetchRequest(incoming);
@@ -106,10 +106,10 @@ export function createProjectionMiddleware(
   };
 }
 
-/** Mount one injected Projection HTTP handler in Vite dev and preview. */
-export function mountProjection(options: ProjectionViteOptions): Plugin {
+/** Mount one injected CompiledSurface HTTP handler in Vite dev and preview. */
+export function mountSurface(options: SurfaceViteOptions): Plugin {
   const paths = mountPaths(options.mount);
-  const middleware = createProjectionMiddleware(options.handler, options);
+  const middleware = createSurfaceMiddleware(options.handler, options);
   const install = (server: Connect.Server) => {
     for (const path of paths) server.use(path, middleware);
   };
@@ -126,21 +126,21 @@ export function mountProjection(options: ProjectionViteOptions): Plugin {
 }
 
 /** Mounts an explicit, generation-owned entry with Vite dev/preview lifecycle hooks. */
-export function mountProjectionLifecycle(
-  options: ProjectionViteLifecyclePluginOptions,
+export function mountSurfaceLifecycle(
+  options: SurfaceViteLifecyclePluginOptions,
 ): Plugin {
   const paths = mountPaths(options.mount);
-  const lifecycle = createProjectionViteLifecycle(options);
-  const middleware = createProjectionMiddleware(
+  const lifecycle = createSurfaceViteLifecycle(options);
+  const middleware = createSurfaceMiddleware(
     (request) => lifecycle.dispatch(request),
     options,
   );
   const install = (server: Connect.Server) => {
     for (const path of paths) server.use(path, middleware);
   };
-  const start = (mode: ProjectionViteMode, loadModule?: ProjectionViteEntryContext["loadModule"]) => lifecycle.start(mode, loadModule);
+  const start = (mode: SurfaceViteMode, loadModule?: SurfaceViteEntryContext["loadModule"]) => lifecycle.start(mode, loadModule);
   let watchPaths: readonly string[] = [];
-  let loadModule: ProjectionViteEntryContext["loadModule"];
+  let loadModule: SurfaceViteEntryContext["loadModule"];
   return {
     name: "boundary-projection-lifecycle",
     async configureServer(server) {

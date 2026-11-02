@@ -4,7 +4,7 @@
  *
  * Three ordinary Boundary interactions — `drafts.propose`, `drafts.accept`, and
  * `drafts.reject` — plus a host-supplied {@link DraftStore} port and three
- * Projection presets split by authority. Mirrors `@foxworth/boundary/host/control`:
+ * CompiledSurface presets split by authority. Mirrors `@foxworth/boundary/host/control`:
  * Boundary ships the Draft interactions; the host owns storage and admission.
  */
 export {
@@ -27,9 +27,9 @@ export {
 } from "./service";
 
 export {
-  authorProjection,
-  proposerProjection,
-  runnerProjection,
+  authorSurface,
+  proposerSurface,
+  runnerSurface,
 } from "./projections";
 
 export {

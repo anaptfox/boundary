@@ -1,8 +1,4 @@
-import type {
-  AnyCaller,
-  InteractionMode,
-  ProjectionBindingManifest,
-} from "@foxworth/boundary";
+import type { AnyCaller, InteractionMode, BindingManifest } from "@foxworth/boundary";
 import type { JsonValue } from "@foxworth/boundary/program";
 import {
   createCheckedHandoff,
@@ -21,24 +17,11 @@ import {
   type ScopeChallengeHandler,
   type McpServerOptions,
 } from "@modelcontextprotocol/server";
-import {
-  compileBindingResolution,
-  interactionKey,
-  resolveSelection,
-  seamOf,
-  selectionsOf,
-  verbForMode,
-  type AnyProjectedInteractionHandle,
-  type InteractionSource,
-  type ResolvedBindingInteraction,
-  type SourceAliases,
-  type SourceVerbs,
-} from "@foxworth/boundary/remote";
-import { AdapterError } from "@foxworth/boundary/remote";
+import { compileBindingResolution, interactionKey, resolveSelection, seamOf, selectionsOf, verbForMode, type AnySurfaceHandle, type InteractionSource, type ResolvedBindingInteraction, type SourceAliases, type SourceVerbs, AdapterError } from "@foxworth/boundary/remote";
 
 export type McpTool = Readonly<{
   alias: string;
-  handle: AnyProjectedInteractionHandle;
+  handle: AnySurfaceHandle;
   /** Wire mode; `direct` is the caller's `call`, `request` its `propose`. */
   mode: InteractionMode;
   name: string;
@@ -58,7 +41,7 @@ function detachedJsonSchema(schema: JsonSchemaType): JsonSchemaType {
   return structuredClone(schema) as JsonSchemaType;
 }
 
-/** Declare one MCP tool over an alias the caller (or, offline, a Projection) selects. */
+/** Declare one MCP tool over an alias the caller (or, offline, a CompiledSurface) selects. */
 export function tool<S extends InteractionSource, const Alias extends SourceAliases<S>>(
   source: S,
   alias: Alias,
@@ -145,7 +128,7 @@ function mcpResult(outcome: HandoffOutcome) {
 }
 
 function failureOutcome(
-  manifest: ProjectionBindingManifest,
+  manifest: BindingManifest,
   resolved: ResolvedBindingInteraction,
   certainty: "not-started" | "unknown",
   cause: HandoffFaultCause,

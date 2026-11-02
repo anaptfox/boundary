@@ -2,7 +2,7 @@ import type { InputArity, InteractionMode } from "./artifacts";
 import type { JsonSchema, Sha256Digest } from "./json";
 
 /** An agent-facing view of declared interactions, carrying no availability or authority. */
-export interface ProjectionPresentation {
+export interface SurfacePresentation {
   readonly version: 1;
   readonly projectionDigest: Sha256Digest;
   readonly presentationDigest: Sha256Digest;

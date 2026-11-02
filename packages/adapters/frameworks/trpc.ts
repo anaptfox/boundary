@@ -2,32 +2,14 @@ import type { AnyCaller, InteractionMode } from "@foxworth/boundary";
 import { createCheckedHandoff } from "@foxworth/boundary/handoff";
 import { initTRPC, type AnyRouter } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { AdapterError } from "@foxworth/boundary/remote";
+import { AdapterError, compileExposure, faultResult, invokePreparedInteraction, prepareExposedInteraction, sanitizedInternalResult, type InteractionInput, type RemoteCallResult, interactionKey, resolveSelection, seamOf, type AnySurfaceHandle, type InteractionSource, type SourceAliases, type SourceVerbs } from "@foxworth/boundary/remote";
 import type { HttpHandler } from "@foxworth/boundary/http";
-import {
-  compileExposure,
-  faultResult,
-  invokePreparedInteraction,
-  prepareExposedInteraction,
-  sanitizedInternalResult,
-  type InteractionInput,
-  type RemoteCallResult,
-} from "@foxworth/boundary/remote";
-import {
-  interactionKey,
-  resolveSelection,
-  seamOf,
-  type AnyProjectedInteractionHandle,
-  type InteractionSource,
-  type SourceAliases,
-  type SourceVerbs,
-} from "@foxworth/boundary/remote";
 
 export type TrpcProcedureKind = "query" | "mutation";
 
 export type TrpcProcedure = Readonly<{
   alias: string;
-  handle: AnyProjectedInteractionHandle;
+  handle: AnySurfaceHandle;
   /** Wire mode; `direct` is the caller's `call`, `request` its `propose`. */
   mode: InteractionMode;
   name: string;
@@ -37,7 +19,7 @@ export type TrpcProcedure = Readonly<{
 const procedureDeclarations = new WeakSet<object>();
 const PROCEDURE_NAME = /^[A-Za-z][A-Za-z0-9_-]*(?:\.[A-Za-z][A-Za-z0-9_-]*)*$/u;
 
-/** Declare one tRPC procedure over an alias the caller (or, offline, a Projection) selects. */
+/** Declare one tRPC procedure over an alias the caller (or, offline, a CompiledSurface) selects. */
 export function procedure<S extends InteractionSource, const Alias extends SourceAliases<S>>(
   source: S,
   alias: Alias,
@@ -66,7 +48,7 @@ interface RouterTree {
   [name: string]: RouterTree | RouterLeaf;
 }
 
-function parseProcedureInput(handle: AnyProjectedInteractionHandle, input: unknown): unknown {
+function parseProcedureInput(handle: AnySurfaceHandle, input: unknown): unknown {
   if (handle.inputArity === 0) {
     return input === undefined ? null : input;
   }
@@ -94,19 +76,19 @@ function setLeaf(tree: RouterTree, path: string, leaf: unknown): void {
 }
 
 export type CreateTrpcRouterOptions<
-  ProjectionContext,
+  SurfaceContext,
   TrpcContext extends object,
 > = Readonly<{
-  caller: AnyCaller<ProjectionContext>;
-  context(context: TrpcContext): ProjectionContext | Promise<ProjectionContext>;
+  caller: AnyCaller<SurfaceContext>;
+  context(context: TrpcContext): SurfaceContext | Promise<SurfaceContext>;
   procedures: readonly TrpcProcedure[];
 }>;
 
 /** Create a router containing only explicitly declared procedures over one connected caller. */
 export async function createTrpcRouter<
-  ProjectionContext,
+  SurfaceContext,
   TrpcContext extends object,
->(options: CreateTrpcRouterOptions<ProjectionContext, TrpcContext>): Promise<AnyRouter> {
+>(options: CreateTrpcRouterOptions<SurfaceContext, TrpcContext>): Promise<AnyRouter> {
   if (!options || typeof options.context !== "function") {
     throw new AdapterError("INVALID_DECLARATION", "createTrpcRouter.context", "context must resolve one invocation-scoped host value");
   }
@@ -146,7 +128,7 @@ export async function createTrpcRouter<
     }
     const resolver = async (input: unknown, context: TrpcContext): Promise<RemoteCallResult> => {
       let prepared: Awaited<ReturnType<typeof prepareExposedInteraction>>;
-      let hostContext: ProjectionContext;
+      let hostContext: SurfaceContext;
       try {
         hostContext = await options.context(context);
         prepared = await prepareExposedInteraction({
@@ -185,15 +167,15 @@ export async function createTrpcRouter<
   return build(tree);
 }
 
-export type CreateTrpcHandlerOptions<ProjectionContext> = Readonly<{
-  caller: AnyCaller<ProjectionContext>;
-  context(request: Request): ProjectionContext | Promise<ProjectionContext>;
+export type CreateTrpcHandlerOptions<SurfaceContext> = Readonly<{
+  caller: AnyCaller<SurfaceContext>;
+  context(request: Request): SurfaceContext | Promise<SurfaceContext>;
   procedures: readonly TrpcProcedure[];
   endpoint?: string;
 }>;
 
-export function createTrpcHandler<ProjectionContext>(
-  options: CreateTrpcHandlerOptions<ProjectionContext>,
+export function createTrpcHandler<SurfaceContext>(
+  options: CreateTrpcHandlerOptions<SurfaceContext>,
 ): HttpHandler {
   const endpoint = options.endpoint ?? "/trpc";
   const router = createTrpcRouter({

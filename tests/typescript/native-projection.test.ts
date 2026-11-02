@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary/pipeline";
+import { defineInteraction } from "@foxworth/boundary";
 import { portableSchema } from "@foxworth/boundary/program";
 
 const Empty = portableSchema<Readonly<Record<string, never>>>({
@@ -21,7 +15,7 @@ const Result = portableSchema<Readonly<{ ok: true }>>({
   additionalProperties: false,
 });
 
-describe("native Projection handles", () => {
+describe("native CompiledSurface handles", () => {
   it("keeps zero arity distinct from an explicit empty-object input", async () => {
     const interactions = {
       implicitEmpty: defineInteraction({ id: "arity.implicit", output: Result }),
@@ -51,7 +45,7 @@ describe("native Projection handles", () => {
     });
   });
 
-  it("binds one Projection atomically and preserves exact per-call context", async () => {
+  it("binds one CompiledSurface atomically and preserves exact per-call context", async () => {
     type Context = Readonly<{ marker: object }>;
     const seen: Context[] = [];
     const interactions = {
@@ -72,7 +66,7 @@ describe("native Projection handles", () => {
     const projection = await projectInteractions(compiled, {
       run: { interaction: compiled.handles.run, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (result.status !== "bound") throw new Error("expected bound");

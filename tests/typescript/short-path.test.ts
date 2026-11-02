@@ -1,24 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import {
-  ConnectError,
-  HostError,
-  admitWhen,
-  declaredInteractionError,
-  defineInteraction,
-  install,
-  isDeclaredInteractionError,
-  surface,
-  type AnyCaller,
-} from "@foxworth/boundary";
-import {
-  bindProjection,
-  compileInteractions,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary/pipeline";
+import { ConnectError, HostError, admitWhen, declaredInteractionError, defineInteraction, install, isDeclaredInteractionError, surface, type AnyCaller } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary/pipeline";
 import { createControlRequestContributions } from "@foxworth/boundary/host/control";
 import { createCheckedHandoff, createHandoffInvocation } from "@foxworth/boundary/handoff";
 import { portableSchema, type JsonSchema } from "@foxworth/boundary/program";
@@ -290,7 +274,7 @@ describe("install and connect", () => {
       capture: { interaction: compiled.handles.capture, modes: ["direct"] },
       render: { interaction: compiled.handles.render, modes: ["direct"] },
     });
-    const bound = await bindProjection(projection, installed.installation, { admit: () => ({ decision: "allow" }) });
+    const bound = await bindSurface(projection, installed.installation, { admit: () => ({ decision: "allow" }) });
     if (bound.status !== "bound") throw new Error("explicit pipeline did not bind");
 
     expect(app.program).toEqual(compiled.program);

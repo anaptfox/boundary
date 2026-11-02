@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { admitAll, defineInteraction } from "@foxworth/boundary";
 import {
-  admitAll, bindNativeInteractions, bindProjection, compileInteractions, defineInteraction,
+  bindNativeInteractions, bindSurface, compileInteractions,
   describeBinding, installInteractions, projectInteractions, restrictBinding,
-} from "@foxworth/boundary";
+} from "@foxworth/boundary/pipeline";
 import { portableSchema } from "@foxworth/boundary/program";
 import { createControlRequestContributions } from "@foxworth/boundary/host/control";
 import { createHandoffInvocation, executeHandoff } from "@foxworth/boundary/handoff";
@@ -44,7 +45,7 @@ const explicit = await projectInteractions(compiled, { inspect: { interaction: c
 assert.equal((await projectInteractions(compiled, { inspect: "direct" })).projectionDigest, explicit.projectionDigest);
 let hooks = 0;
 const observations = [];
-const bound = await bindProjection(projection, installed.installation, {
+const bound = await bindSurface(projection, installed.installation, {
   admit: ({ context }) => context.authorized ? { decision: "allow" } : { decision: "deny", reason: "owner required" },
   async coordinate(request, proceed) {
     hooks++;

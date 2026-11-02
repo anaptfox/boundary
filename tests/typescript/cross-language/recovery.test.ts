@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
-import { createProjectionClient } from "@foxworth/boundary/client";
+import { createSurfaceClient } from "@foxworth/boundary/client";
 import { portableSchema } from "@foxworth/boundary/program";
 import { createControlCapabilities, digestControlRealization, targetForControl, type ControlHook } from "@foxworth/boundary/control";
 import { MemoryJournal, TestClock, TestIds } from "@foxworth/boundary/control/testing";
@@ -13,7 +13,7 @@ import type { z } from "zod";
 it("records a lost Rust response as uncertain and reconciles without a second create", async () => {
   const host = startRustTodo();
   try {
-    const client = createProjectionClient(host.transport);
+    const client = createSurfaceClient(host.transport);
     const manifest = await client.inspect();
     const interaction = manifest.interactions.find((entry) => entry.interactionId === "todos.create")!;
     const schema = portableSchema<{ title: string }>({ type: "object", properties: { title: { type: "string", minLength: 1 } }, required: ["title"], additionalProperties: false });

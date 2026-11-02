@@ -1,16 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
-import {
-  admitAll,
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
-import { createCaller } from "@foxworth/boundary/pipeline";
+import { admitAll, defineInteraction } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, createCaller, realizationIdsFor } from "@foxworth/boundary/pipeline";
 import { createHttpHandler, route } from "@foxworth/boundary/http";
 
 const todo = z.strictObject({
@@ -69,9 +60,9 @@ export async function createViteTodoHost(statePath: string) {
   const { installation } = await installInteractions(compiled, {
     installationId: "vite-native:todos:v1",
     implementations,
-    realizationIds: directRealizationIds(compiled, "vite-native"),
+    realizationIds: realizationIdsFor(compiled, "vite-native"),
   });
-  const result = await bindProjection(projection, installation, { admit: admitAll });
+  const result = await bindSurface(projection, installation, { admit: admitAll });
   if (result.status !== "bound") throw new Error("Vite native todo projection did not bind");
   const caller = createCaller(result.binding);
   return {

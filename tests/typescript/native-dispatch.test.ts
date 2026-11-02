@@ -1,11 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { defineInteraction } from "@foxworth/boundary";
-import {
-  admitAll, bindNativeInteractions, bindProjection, compileInteractions,
-  describeBinding, installInteractions, projectInteractions, restrictBinding,
-  type Admission, type InvocationCoordinator, type RawInvocationOutcome,
-} from "@foxworth/boundary/pipeline";
+import { defineInteraction, admitAll, type Admission } from "@foxworth/boundary";
+import { bindNativeInteractions, bindSurface, compileInteractions, describeBinding, installInteractions, projectInteractions, restrictBinding, type InvocationCoordinator, type RawInvocationOutcome } from "@foxworth/boundary/pipeline";
 import { portableSchema, type InvocationObservation } from "@foxworth/boundary/program";
 import { createControlRequestContributions } from "@foxworth/boundary/host/control";
 import { createHandoffInvocation, executeHandoff } from "@foxworth/boundary/handoff";
@@ -38,7 +34,7 @@ async function fixture(coordinate?: InvocationCoordinator<Context>, admit: Admis
   const projection = await projectInteractions(compiled, {
     echo: { interaction: compiled.handles.echo, modes: ["direct", "request"] }, other: "direct",
   });
-  const bound = await bindProjection(projection, installed.installation, { admit, coordinate, observation: { publish(event) { events.push(event); } } });
+  const bound = await bindSurface(projection, installed.installation, { admit, coordinate, observation: { publish(event) { events.push(event); } } });
   if (bound.status !== "bound") throw new Error("fixture not bound");
   return { ...bound, compiled, projection, installed, dispatched, events, requests };
 }
@@ -187,7 +183,7 @@ describe("host invocation coordination", () => {
       realizationIds: { run: { direct: "reentrant:run" } },
     });
     const projection = await projectInteractions(compiled, { run: "direct" });
-    const bound = await bindProjection(projection, installed.installation, { admit: admitAll, coordinate(_request, continuation) { proceed = continuation; return proceed(); } });
+    const bound = await bindSurface(projection, installed.installation, { admit: admitAll, coordinate(_request, continuation) { proceed = continuation; return proceed(); } });
     if (bound.status !== "bound") throw new Error("not bound");
     expect(await bound.binding.connect().call(projection.handles.run)).toBe("once");
     expect((await reentered)?.certainty).toBe("completed");

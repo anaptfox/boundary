@@ -32,7 +32,7 @@ validate realization outcomes and derive its Program and Catalog manifest.
 `projectInteractions` MUST accept explicit authentic handles and mode sets and
 create a portable unrealized Projection. Caller-facing Projection aliases MUST
 be durable and enter Projection identity; definition-record aliases remain
-local and MUST NOT. `bindProjection` MUST construct a root live Binding and
+local and MUST NOT. `bindSurface` MUST construct a root live Binding and
 `restrictBinding` MAY derive a narrower live Binding from an existing one. Both
 MUST obey the atomic Binding laws.
 

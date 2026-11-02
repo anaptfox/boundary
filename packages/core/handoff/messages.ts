@@ -3,7 +3,7 @@ import { isInvocationFaultLegal, validateSchemaValue, type JsonObject } from "@f
 import { HandoffError, failHandoff } from "./errors";
 import type { HandoffFaultCause, HandoffInvocation, HandoffOutcome, HandoffResult, HandoffValidationIssue } from "./types";
 import { FAULT_CAUSES, exact, outcomeFailure, pinnedInteraction, requireDigest, requireInteractionId, requireMode, requireOpaqueId, requireVersion, snapshot, validatedInvocations, validatedManifests } from "./checks";
-import { validateProjectionBindingManifest } from "./manifest";
+import { validateBindingManifest } from "./manifest";
 
 /** Snapshot and validate only the v1 invocation envelope shape. */
 export function validateHandoffInvocation(
@@ -214,7 +214,7 @@ export async function validateHandoffOutcomeAgainstManifest(
   manifestValue: unknown,
   outcomeValue: unknown,
 ): Promise<HandoffOutcome> {
-  const manifest = await validateProjectionBindingManifest(manifestValue);
+  const manifest = await validateBindingManifest(manifestValue);
   const outcome = validateHandoffOutcome(outcomeValue);
   if (outcome.bindingDigest !== manifest.bindingDigest) {
     failHandoff("STALE_BINDING", "outcome.bindingDigest", "outcome targets a different Binding");
@@ -281,7 +281,7 @@ export async function validateHandoffResponse(
   invocationValue: unknown,
   outcomeValue: unknown,
 ): Promise<HandoffOutcome> {
-  const manifest = await validateProjectionBindingManifest(manifestValue);
+  const manifest = await validateBindingManifest(manifestValue);
   const invocation = validateHandoffInvocation(invocationValue);
   const outcome = await validateHandoffOutcomeAgainstManifest(manifest, outcomeValue);
   for (const key of [

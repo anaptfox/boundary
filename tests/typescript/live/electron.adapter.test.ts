@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createElectronIpcFetch,
-  createProjectionElectronMain,
+  createSurfaceElectronMain,
 } from "@foxworth/boundary/electron";
 import {
   fakeElectron,
@@ -21,7 +21,7 @@ describe("Electron localhost transport", () => {
         headers: { "x-door": "ok" },
       });
     });
-    const main = await createProjectionElectronMain({
+    const main = await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler,
@@ -63,7 +63,7 @@ describe("Electron localhost transport", () => {
 
   it("does not expose thrown handler errors over HTTP", async () => {
     const fake = fakeElectron();
-    const main = await createProjectionElectronMain({
+    const main = await createSurfaceElectronMain({
       ...TEST_DOORS,
       electron: fake.electron,
       handler: async () => {

@@ -1,16 +1,7 @@
 import { z } from "zod";
 import { portableSchema } from "@foxworth/boundary/program";
 import { declaredInteractionError, defineInteraction, surface, type Caller, type Surface, type SurfaceAlias } from "@foxworth/boundary";
-import {
-  bindProjection,
-  compileInteractions,
-  createCaller,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-  type Projection,
-  type ProjectionSelections,
-} from "@foxworth/boundary/pipeline";
+import { bindSurface, compileInteractions, createCaller, implementInteractions, installInteractions, projectInteractions, type CompiledSurface, type HandleSelections } from "@foxworth/boundary/pipeline";
 import { createControlRequestContributions } from "@foxworth/boundary/host/control";
 
 export type AdapterContext = Readonly<{
@@ -148,10 +139,10 @@ export async function createAdapterFixture() {
     },
   );
 
-  async function bind<const Selections extends ProjectionSelections>(
-    projection: Projection<Selections>,
+  async function bind<const Selections extends HandleSelections>(
+    projection: CompiledSurface<Selections>,
   ) {
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: ({ context }) =>
         context.role === "owner"
           ? { decision: "allow" }
@@ -182,7 +173,7 @@ export async function createAdapterFixture() {
     const projection = await projectInteractions(compiled, Object.fromEntries(
       Object.entries(modes).map(([alias, selectedModes]) => [alias, { interaction: compiled.handles[alias as keyof typeof interactions], modes: selectedModes }]),
     ));
-    const result = await bindProjection(projection, installation, admit);
+    const result = await bindSurface(projection, installation, admit);
     if (result.status !== "bound") {
       throw new Error("adapter fixture Binding could not be realized");
     }

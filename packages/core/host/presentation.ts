@@ -1,15 +1,15 @@
-import { hashJson, normalizeJson, type JsonObject, type InteractionPresentationOverride, type ProjectionPresentation } from "@foxworth/boundary/program";
+import { hashJson, normalizeJson, type JsonObject, type InteractionPresentationOverride, type SurfacePresentation } from "@foxworth/boundary/program";
 import { compareUtf8 } from "#program/internal";
-import { metadataForProjection } from "./projection";
+import { metadataForCompiledSurface } from "./projection";
 import { failHost } from "./errors";
-import type { Projection, ProjectionSelections } from "./types";
+import type { CompiledSurface, HandleSelections } from "./types";
 
 /** Derive schemas from the selected contract; presentation overrides cannot change execution facts. */
-export async function presentProjection<Selections extends ProjectionSelections>(
-  projection: Projection<Selections>,
+export async function presentSurface<Selections extends HandleSelections>(
+  projection: CompiledSurface<Selections>,
   overrides?: Readonly<Partial<Record<keyof Selections & string, InteractionPresentationOverride>>>,
-): Promise<ProjectionPresentation> {
-  metadataForProjection(projection);
+): Promise<SurfacePresentation> {
+  metadataForCompiledSurface(projection);
   const presentation = normalizeJson(overrides ?? {}, "presentation.overrides") as Record<string, InteractionPresentationOverride>;
   if (!presentation || Array.isArray(presentation) || typeof presentation !== "object") return failHost("INVALID_ARTIFACT", "presentation.overrides", "overrides must be a record");
   for (const [alias, override] of Object.entries(presentation)) {
@@ -33,5 +33,5 @@ export async function presentProjection<Selections extends ProjectionSelections>
   });
   const identity = normalizeJson({ version: 1, projectionDigest: projection.projectionDigest, interactions }) as JsonObject;
   const presentationDigest = await hashJson("boundary.projection-presentation/v1", identity);
-  return Object.freeze({ ...identity, presentationDigest }) as unknown as ProjectionPresentation;
+  return Object.freeze({ ...identity, presentationDigest }) as unknown as SurfacePresentation;
 }

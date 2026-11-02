@@ -35,7 +35,7 @@ export const fixtureModel: LanguageModel = {
 };
 
 export function roomAgent(host: RoomHost, model: LanguageModel = fixtureModel) {
-  // The read handle comes from the Binding's selected Projection. Completion is
+  // The read handle comes from the Binding's selected CompiledSurface. Completion is
   // absent. The second tool only records a host-owned proposal.
   const listHandle = host.readProjection.handles.list;
   return new ToolLoopAgent({ model, maxRetries: 0, stopWhen: stepCountIs(4),

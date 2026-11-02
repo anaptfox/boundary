@@ -5,8 +5,8 @@ import {
   type WebMcpRegistration,
 } from "@foxworth/boundary/webmcp";
 import {
-  createProjectionClient,
-  pinProjectionReferences,
+  createSurfaceClient,
+  pinSurfaceReferences,
 } from "@foxworth/boundary/client";
 import { fetchTransport } from "@foxworth/boundary/http/protocol";
 import { screenReferences } from "../references";
@@ -17,9 +17,9 @@ const AGENT_PROTOCOL = "/_boundary/agent";
 export async function bootTodoUi() {
   const screenTransport = fetchTransport({ baseUrl: SCREEN_PROTOCOL });
   const agentTransport = fetchTransport({ baseUrl: AGENT_PROTOCOL });
-  const screenClient = createProjectionClient(screenTransport);
-  const agentClient = createProjectionClient(agentTransport);
-  const handles = await pinProjectionReferences(screenClient, screenReferences);
+  const screenClient = createSurfaceClient(screenTransport);
+  const agentClient = createSurfaceClient(agentTransport);
+  const handles = await pinSurfaceReferences(screenClient, screenReferences);
   let webmcp: WebMcpRegistration | undefined;
   if (isWebMcpAvailable()) {
     const agentManifest = await agentClient.inspect();

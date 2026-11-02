@@ -1,62 +1,41 @@
-import type {
-  AnyInteractionDefinition,
-  DefinitionArity,
-  DefinitionInput,
-  DefinitionOutput,
-  InputArity,
-  InteractionHandle,
-  InteractionMode,
-  ProjectedInteractionHandle,
-  ProjectionBindingManifest,
-} from "@foxworth/boundary";
+import type { AnyInteractionDefinition, DefinitionArity, DefinitionInput, DefinitionOutput, InputArity, InteractionMode, BindingManifest } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
 import {
   createHandoffInvocation,
   validateHandoffResponse,
-  validateProjectionBindingManifest,
+  validateBindingManifest,
   type HandoffInvocation,
   type HandoffOutcome,
 } from "@foxworth/boundary/handoff";
 import { normalizeJson, type JsonValue } from "@foxworth/boundary/program";
 import type { ClientTransport } from "./transport";
-import {
-  AdapterError,
-  RemoteDomainError,
-  RemoteExecutionError,
-  RemoteInvocationError,
-  RemoteProtocolRejection,
-  RemoteProtocolError,
-} from "@foxworth/boundary/remote";
-import {
-  interactionKey,
-  snapshotProjectedHandle,
-  type AnyProjectedInteractionHandle,
-} from "@foxworth/boundary/remote";
+import { AdapterError, RemoteDomainError, RemoteExecutionError, RemoteInvocationError, RemoteProtocolRejection, RemoteProtocolError, interactionKey, snapshotSurfaceHandle, type AnySurfaceHandle } from "@foxworth/boundary/remote";
 
-type DefinitionOf<Handle> = Handle extends ProjectedInteractionHandle<
+type DefinitionOf<Handle> = Handle extends SurfaceHandle<
   InteractionHandle<infer Definition>,
   any
 > ? Definition : AnyInteractionDefinition;
-type HandleInput<Handle extends AnyProjectedInteractionHandle> = DefinitionInput<DefinitionOf<Handle>>;
-type HandleOutput<Handle extends AnyProjectedInteractionHandle> = DefinitionOutput<DefinitionOf<Handle>>;
-type HandleArity<Handle extends AnyProjectedInteractionHandle> = DefinitionArity<DefinitionOf<Handle>>;
-type HandleModes<Handle extends AnyProjectedInteractionHandle> =
-  Handle extends ProjectedInteractionHandle<any, infer Modes, any>
+type HandleInput<Handle extends AnySurfaceHandle> = DefinitionInput<DefinitionOf<Handle>>;
+type HandleOutput<Handle extends AnySurfaceHandle> = DefinitionOutput<DefinitionOf<Handle>>;
+type HandleArity<Handle extends AnySurfaceHandle> = DefinitionArity<DefinitionOf<Handle>>;
+type HandleModes<Handle extends AnySurfaceHandle> =
+  Handle extends SurfaceHandle<any, infer Modes, any>
     ? Modes[number]
     : never;
-type HandleRequestOutput<Handle extends AnyProjectedInteractionHandle> =
-  Handle extends ProjectedInteractionHandle<any, any, infer RequestOutput>
+type HandleRequestOutput<Handle extends AnySurfaceHandle> =
+  Handle extends SurfaceHandle<any, any, infer RequestOutput>
     ? RequestOutput
     : JsonValue;
-type InvocationArguments<Handle extends AnyProjectedInteractionHandle> =
+type InvocationArguments<Handle extends AnySurfaceHandle> =
   HandleArity<Handle> extends 0 ? readonly [] : readonly [input: HandleInput<Handle>];
 
-export type ProjectionClient = Readonly<{
-  inspect(): Promise<ProjectionBindingManifest>;
-  call<Handle extends AnyProjectedInteractionHandle>(
+export type SurfaceClient = Readonly<{
+  inspect(): Promise<BindingManifest>;
+  call<Handle extends AnySurfaceHandle>(
     handle: Handle & ("direct" extends HandleModes<Handle> ? unknown : never),
     ...args: InvocationArguments<Handle>
   ): Promise<HandleOutput<Handle>>;
-  request<Handle extends AnyProjectedInteractionHandle>(
+  request<Handle extends AnySurfaceHandle>(
     handle: Handle & ("request" extends HandleModes<Handle> ? unknown : never),
     ...args: InvocationArguments<Handle>
   ): Promise<HandleRequestOutput<Handle>>;
@@ -71,7 +50,7 @@ function assertTransport(transport: ClientTransport): void {
     typeof transport.inspect !== "function" ||
     typeof transport.invoke !== "function"
   ) {
-    throw new AdapterError("INVALID_DECLARATION", "createProjectionClient.transport", "transport must provide inspect() and invoke()");
+    throw new AdapterError("INVALID_DECLARATION", "createSurfaceClient.transport", "transport must provide inspect() and invoke()");
   }
 }
 
@@ -92,7 +71,7 @@ function portableInput(interactionId: string, inputArity: 0 | 1, args: readonly 
 
 function throwFailure(
   outcome: HandoffOutcome,
-  expectedContractDigest: ProjectedInteractionHandle["contractDigest"],
+  expectedContractDigest: SurfaceHandle["contractDigest"],
 ): never {
   const result = outcome.result;
   if (result.kind === "declared-error") {
@@ -116,7 +95,7 @@ function throwFailure(
 }
 
 /** Build a client pinned to the first exact version 1 Binding handshake. */
-export function createProjectionClient(transport: ClientTransport): ProjectionClient {
+export function createSurfaceClient(transport: ClientTransport): SurfaceClient {
   assertTransport(transport);
   const handshake = Promise.resolve().then(async () => {
     let value: unknown;
@@ -127,7 +106,7 @@ export function createProjectionClient(transport: ClientTransport): ProjectionCl
       throw new AdapterError("TRANSPORT_FAILURE", "transport.inspect", "the Binding handshake failed", { cause: error });
     }
     try {
-      const manifest = await validateProjectionBindingManifest(value);
+      const manifest = await validateBindingManifest(value);
       const interactions = new Map(
         manifest.interactions.map((interaction) => [
           interactionKey(interaction.interactionId, interaction.mode),
@@ -147,7 +126,7 @@ export function createProjectionClient(transport: ClientTransport): ProjectionCl
     mode: "direct" | "request",
     interactionId: string,
     input: JsonValue,
-    handle?: AnyProjectedInteractionHandle,
+    handle?: AnySurfaceHandle,
   ): Promise<JsonValue> {
     const { manifest, interactions } = await handshake;
     const interaction = interactions.get(interactionKey(interactionId, mode));
@@ -195,19 +174,19 @@ export function createProjectionClient(transport: ClientTransport): ProjectionCl
 
   return Object.freeze({
     inspect: async () => (await handshake).manifest,
-    async call<Handle extends AnyProjectedInteractionHandle>(
+    async call<Handle extends AnySurfaceHandle>(
       handleValue: Handle & ("direct" extends HandleModes<Handle> ? unknown : never),
       ...args: InvocationArguments<Handle>
     ): Promise<HandleOutput<Handle>> {
-      const handle = snapshotProjectedHandle(handleValue, "client.call.handle");
+      const handle = snapshotSurfaceHandle(handleValue, "client.call.handle");
       const input = portableInput(handle.interactionId, handle.inputArity, args);
       return invoke("direct", handle.interactionId, input, handle) as Promise<HandleOutput<Handle>>;
     },
-    async request<Handle extends AnyProjectedInteractionHandle>(
+    async request<Handle extends AnySurfaceHandle>(
       handleValue: Handle & ("request" extends HandleModes<Handle> ? unknown : never),
       ...args: InvocationArguments<Handle>
     ): Promise<HandleRequestOutput<Handle>> {
-      const handle = snapshotProjectedHandle(handleValue, "client.request.handle");
+      const handle = snapshotSurfaceHandle(handleValue, "client.request.handle");
       const input = portableInput(handle.interactionId, handle.inputArity, args);
       return invoke("request", handle.interactionId, input, handle) as Promise<
         HandleRequestOutput<Handle>
@@ -234,7 +213,7 @@ export function createProjectionClient(transport: ClientTransport): ProjectionCl
 
 export type HandlesFromBinding = Readonly<Record<
   string,
-  ProjectedInteractionHandle<InteractionHandle, readonly InteractionMode[]>
+  SurfaceHandle<InteractionHandle, readonly InteractionMode[]>
 >>;
 
 /**
@@ -242,14 +221,14 @@ export type HandlesFromBinding = Readonly<Record<
  * The browser never compiles interactions to call.
  */
 export async function handlesFromBinding(
-  client: ProjectionClient,
+  client: SurfaceClient,
 ): Promise<HandlesFromBinding> {
   const manifest = await client.inspect();
   const byAlias = new Map<
     string,
     {
       interactionId: string;
-      contractDigest: ProjectedInteractionHandle["contractDigest"];
+      contractDigest: SurfaceHandle["contractDigest"];
       inputArity: InputArity;
       modes: InteractionMode[];
     }
@@ -269,7 +248,7 @@ export async function handlesFromBinding(
       existing.modes.push(interaction.mode);
     }
   }
-  const handles: Record<string, ProjectedInteractionHandle> = {};
+  const handles: Record<string, SurfaceHandle> = {};
   for (const [alias, spec] of byAlias) {
     Object.defineProperty(handles, alias, {
       value: Object.freeze({
@@ -290,17 +269,17 @@ export async function handlesFromBinding(
  * Validate generated, digest-pinned references against the remote Binding.
  * The reference value carries its type; callers cannot select a type argument.
  */
-export async function pinProjectionReferences<
-  const References extends Readonly<Record<string, AnyProjectedInteractionHandle>>,
+export async function pinSurfaceReferences<
+  const References extends Readonly<Record<string, AnySurfaceHandle>>,
 >(
-  client: ProjectionClient,
+  client: SurfaceClient,
   references: References,
 ): Promise<References> {
   const manifest = await client.inspect();
   for (const [alias, referenceValue] of Object.entries(references)) {
-    const reference = snapshotProjectedHandle(
+    const reference = snapshotSurfaceHandle(
       referenceValue,
-      `pinProjectionReferences.${alias}`,
+      `pinSurfaceReferences.${alias}`,
     );
     const interactions = manifest.interactions.filter(
       (candidate) => candidate.alias === alias,

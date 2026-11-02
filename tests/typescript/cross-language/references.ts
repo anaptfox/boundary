@@ -1,16 +1,17 @@
 // Generated from the native Rust fixture by tests/typescript/cross-language/generate.mjs.
 // Input/output types only; no declared-error interoperability claim.
-import type { InteractionDefinition, InteractionHandle, ProjectedInteractionHandle } from "@foxworth/boundary";
+import type { InteractionDefinition } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
 import type { JsonValue } from "@foxworth/boundary/program";
 
 export const references: Readonly<{
-  readonly "clearCompleted": ProjectedInteractionHandle<InteractionHandle<InteractionDefinition<"todos.clearCompleted", null, { readonly "count": string }, Record<string, JsonValue>, 0>>, readonly ["direct"]>;
-  readonly "create": ProjectedInteractionHandle<InteractionHandle<InteractionDefinition<"todos.create", { readonly "title": string }, { readonly "completed": boolean; readonly "id": string; readonly "title": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
-  readonly "list": ProjectedInteractionHandle<InteractionHandle<InteractionDefinition<"todos.list", { readonly "filter": "all" | "active" | "completed" }, { readonly "items": ReadonlyArray<{ readonly "completed": boolean; readonly "id": string; readonly "title": string }> }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
-  readonly "remove": ProjectedInteractionHandle<InteractionHandle<InteractionDefinition<"todos.remove", { readonly "id": string }, { readonly "completed": boolean; readonly "id": string; readonly "title": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
-  readonly "rename": ProjectedInteractionHandle<InteractionHandle<InteractionDefinition<"todos.rename", { readonly "id": string; readonly "title": string }, { readonly "completed": boolean; readonly "id": string; readonly "title": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
-  readonly "setAllCompleted": ProjectedInteractionHandle<InteractionHandle<InteractionDefinition<"todos.setAllCompleted", { readonly "completed": boolean }, { readonly "count": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
-  readonly "setCompleted": ProjectedInteractionHandle<InteractionHandle<InteractionDefinition<"todos.setCompleted", { readonly "completed": boolean; readonly "id": string }, { readonly "completed": boolean; readonly "id": string; readonly "title": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
+  readonly "clearCompleted": SurfaceHandle<InteractionHandle<InteractionDefinition<"todos.clearCompleted", null, { readonly "count": string }, Record<string, JsonValue>, 0>>, readonly ["direct"]>;
+  readonly "create": SurfaceHandle<InteractionHandle<InteractionDefinition<"todos.create", { readonly "title": string }, { readonly "completed": boolean; readonly "id": string; readonly "title": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
+  readonly "list": SurfaceHandle<InteractionHandle<InteractionDefinition<"todos.list", { readonly "filter": "all" | "active" | "completed" }, { readonly "items": ReadonlyArray<{ readonly "completed": boolean; readonly "id": string; readonly "title": string }> }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
+  readonly "remove": SurfaceHandle<InteractionHandle<InteractionDefinition<"todos.remove", { readonly "id": string }, { readonly "completed": boolean; readonly "id": string; readonly "title": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
+  readonly "rename": SurfaceHandle<InteractionHandle<InteractionDefinition<"todos.rename", { readonly "id": string; readonly "title": string }, { readonly "completed": boolean; readonly "id": string; readonly "title": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
+  readonly "setAllCompleted": SurfaceHandle<InteractionHandle<InteractionDefinition<"todos.setAllCompleted", { readonly "completed": boolean }, { readonly "count": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
+  readonly "setCompleted": SurfaceHandle<InteractionHandle<InteractionDefinition<"todos.setCompleted", { readonly "completed": boolean; readonly "id": string }, { readonly "completed": boolean; readonly "id": string; readonly "title": string }, Record<string, JsonValue>, 1>>, readonly ["direct"]>;
 }> = Object.freeze({
   "clearCompleted": Object.freeze({ interactionId: "todos.clearCompleted", contractDigest: "sha256:a8402ffaebd4d7e3fcd192c061e42ce4335a89f304983d6936f625a2b3d46952", inputArity: 0, modes: Object.freeze(["direct"] as const) }),
   "create": Object.freeze({ interactionId: "todos.create", contractDigest: "sha256:51fd461bca934b7cf3937cca5eb57e74325c82d2ec60e172bb7ef04f2eecdd6d", inputArity: 1, modes: Object.freeze(["direct"] as const) }),

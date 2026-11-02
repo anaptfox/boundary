@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vitest";
-import {
-  admitAll, bindProjection, compileInteractions, defineInteraction,
-  implementInteractions, installInteractions, projectAllDirect,
-  projectInteractions, restrictBinding,
-} from "@foxworth/boundary";
-import { createInvocationState, createProjectionClient } from "@foxworth/boundary/client";
+import { admitAll, defineInteraction, surface } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, restrictBinding, createCaller, projectSurface } from "@foxworth/boundary/pipeline";
+import { createInvocationState, createSurfaceClient } from "@foxworth/boundary/client";
 import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
 import {
   observedRead, type ObservationSource, type ObservedReadDiagnostic,
 } from "@foxworth/boundary/observations";
 import { portableSchema } from "@foxworth/boundary/program";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 const Input = portableSchema<string>({ type: "string" });
 const Output = portableSchema<string>({ type: "string" });
@@ -30,11 +26,11 @@ describe("integration with main's contract and invocation laws", () => {
     };
     const expectedCompiled = await compileInteractions(expected);
     const actualCompiled = await compileInteractions(actual);
-    const parentProjection = await projectAllDirect(expectedCompiled);
+    const parentProjection = await projectSurface(expectedCompiled, surface.all(expected));
     const childProjection = await projectInteractions(expectedCompiled, {
       lookup: { interaction: expectedCompiled.handles.read, modes: ["direct"] },
     });
-    const actualProjection = await projectAllDirect(actualCompiled);
+    const actualProjection = await projectSurface(actualCompiled, surface.all(actual));
     let value = "first";
     let evaluations = 0;
     let authorizations = 0;
@@ -68,7 +64,7 @@ describe("integration with main's contract and invocation laws", () => {
         }),
       }),
     });
-    const parent = await bindProjection(parentProjection, installation, {
+    const parent = await bindSurface(parentProjection, installation, {
       admit() {
         admissions.push("parent");
         return allowed ? { decision: "allow" } : { decision: "deny", reason: "host policy changed" };
@@ -139,7 +135,7 @@ describe("integration with main's contract and invocation laws", () => {
             output: Output, changes: ["documents"] }),
         };
         const compiled = await compileInteractions(definitions);
-        const parentProjection = await projectAllDirect(compiled);
+        const parentProjection = await projectSurface(compiled, surface.all(definitions));
         const childProjection = await projectInteractions(compiled, {
           write: { interaction: compiled.handles.save, modes: ["direct"] },
         });
@@ -150,7 +146,7 @@ describe("integration with main's contract and invocation laws", () => {
             save() { dispatches++; signalStarted(); return pending; },
           }),
         });
-        const parent = await bindProjection(parentProjection, installation, {
+        const parent = await bindSurface(parentProjection, installation, {
           admit() { admissions.push("parent"); return { decision: "allow" }; },
         });
         if (parent.status !== "bound") throw new Error("parent did not bind");
@@ -160,7 +156,7 @@ describe("integration with main's contract and invocation laws", () => {
         });
         if (child.status !== "bound") throw new Error("child did not bind");
         const protocol = createProtocolHandler({ caller: createCaller(child.binding), context: () => context, path: "/_boundary" });
-        const client = createProjectionClient(fetchTransport({
+        const client = createSurfaceClient(fetchTransport({
           baseUrl: "https://example.test/_boundary",
           fetch: (input, init) => protocol(new Request(input, init)),
         }));

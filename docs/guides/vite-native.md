@@ -7,9 +7,9 @@ description: "Replace a Vite host during development and clean it up when the se
 
 `@foxworth/boundary/frameworks/vite` provides two Vite integrations:
 
-- `mountProjection({ handler, mount })` mounts an already-prepared HTTP
+- `mountSurface({ handler, mount })` mounts an already-prepared HTTP
   projection at explicit Connect paths.
-- `mountProjectionLifecycle({ entry, validate, mount })` adds explicit
+- `mountSurfaceLifecycle({ entry, validate, mount })` adds explicit
   development/preview entry replacement and cleanup around that same HTTP
   seam.
 
@@ -43,7 +43,7 @@ retries an effect after hot replacement.
 Startup and preview use the `entry` supplied by the application. Hot updates
 call the same replacement path. Closing the Vite bundle disposes the current
 generation once. Diagnostics are available through `onDiagnostic` and
-`lifecycle.diagnostic()` when using `createProjectionViteLifecycle` directly;
+`lifecycle.diagnostic()` when using `createSurfaceViteLifecycle` directly;
 they distinguish rejected candidates, stale clients, unavailable startup, and
 cleanup failures.
 

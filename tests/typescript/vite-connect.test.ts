@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { mountProjection, mountProjectionLifecycle } from "@foxworth/boundary/frameworks/vite";
+import { mountSurface, mountSurfaceLifecycle } from "@foxworth/boundary/frameworks/vite";
 
 describe("@foxworth/boundary/frameworks/vite", () => {
   it("mounts one injected handler at explicit Connect paths", () => {
     const handler = vi.fn(async () => new Response(null, { status: 204 }));
-    const plugin = mountProjection({
+    const plugin = mountSurface({
       handler,
       mount: ["/todos", "/openapi.json"],
     });
@@ -21,16 +21,16 @@ describe("@foxworth/boundary/frameworks/vite", () => {
 
   it("rejects implicit or malformed mount declarations", () => {
     const handler = async () => new Response(null, { status: 204 });
-    expect(() => mountProjection({ handler, mount: [] })).toThrow(/at least one/);
-    expect(() => mountProjection({ handler, mount: "todos" })).toThrow(/start with/);
-    expect(() => mountProjection({ handler, mount: "/todos?all" })).toThrow(
+    expect(() => mountSurface({ handler, mount: [] })).toThrow(/at least one/);
+    expect(() => mountSurface({ handler, mount: "todos" })).toThrow(/start with/);
+    expect(() => mountSurface({ handler, mount: "/todos?all" })).toThrow(
       /query\/hash/,
     );
   });
 
   it("normalizes explicit watch files and ignores unrelated hot updates", async () => {
     let entries = 0;
-    const plugin = mountProjectionLifecycle({
+    const plugin = mountSurfaceLifecycle({
       mount: "/_boundary",
       watch: "src/serving.mjs",
       entry: () => ({

@@ -2,14 +2,11 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StrictMode, type ReactNode } from "react";
-import type {
-  InteractionDefinition,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-} from "@foxworth/boundary";
+import type { InteractionDefinition } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
+import { projectInteractions } from "@foxworth/boundary/pipeline";
 import type { JsonValue } from "@foxworth/boundary/program";
-import type { ProjectionClient } from "@foxworth/boundary/client";
-import { projectInteractions } from "@foxworth/boundary";
+import type { SurfaceClient } from "@foxworth/boundary/client";
 import {
   createInteractionCacheScope,
   invalidateReadsForChange,
@@ -58,7 +55,7 @@ function handle<const Arity extends 0 | 1>(interactionId: string, inputArity: Ar
     contractDigest: DIGEST,
     inputArity,
     modes: Object.freeze(["direct"] as const),
-  }) as ProjectedInteractionHandle<
+  }) as SurfaceHandle<
     InteractionHandle<StubDefinition<Arity>>,
     readonly ["direct"]
   >;
@@ -66,7 +63,7 @@ function handle<const Arity extends 0 | 1>(interactionId: string, inputArity: Ar
 
 function stubClient(
   respond: (interactionId: string, input: unknown) => unknown,
-): { client: ProjectionClient; calls: string[] } {
+): { client: SurfaceClient; calls: string[] } {
   const calls: string[] = [];
   const handshake = {
     expectedProgram: {
@@ -85,11 +82,11 @@ function stubClient(
   };
   const client = {
     inspect: () => Promise.resolve(handshake),
-    call: (value: ProjectedInteractionHandle, input?: unknown) => {
+    call: (value: SurfaceHandle, input?: unknown) => {
       calls.push(value.interactionId);
       return Promise.resolve(respond(value.interactionId, input));
     },
-  } as unknown as ProjectionClient;
+  } as unknown as SurfaceClient;
   return { client, calls };
 }
 
@@ -355,7 +352,7 @@ describe("useInteraction declared errors", () => {
           ? Promise.reject(new Error("temporary handshake failure"))
           : client.inspect();
       },
-    } as ProjectionClient;
+    } as SurfaceClient;
 
     const first = renderHook(() =>
       useInteraction(retryingClient, handle("todos.list", 0)),
@@ -407,9 +404,9 @@ describe("useInteraction shares headless mutation semantics", () => {
 
 it("settles queued calls on unmount before inspection completes", async () => {
   const base = stubClient(() => []);
-  let finish!: (value: Awaited<ReturnType<ProjectionClient["inspect"]>>) => void;
-  const pending = new Promise<Awaited<ReturnType<ProjectionClient["inspect"]>>>((resolve) => { finish = resolve; });
-  const client = { ...base.client, inspect: () => pending } as ProjectionClient;
+  let finish!: (value: Awaited<ReturnType<SurfaceClient["inspect"]>>) => void;
+  const pending = new Promise<Awaited<ReturnType<SurfaceClient["inspect"]>>>((resolve) => { finish = resolve; });
+  const client = { ...base.client, inspect: () => pending } as SurfaceClient;
   const hook = renderHook(() => useInteraction(client, handle("todos.create", 1)));
   const queued = hook.result.current.call({ title: "queued" });
   hook.unmount();
@@ -422,9 +419,9 @@ it("settles queued calls on unmount before inspection completes", async () => {
 it("rejects a retired view callback and waits for replacement classification", async () => {
   const first = stubClient(() => []);
   const second = stubClient(() => ({ saved: true }));
-  let finish!: (value: Awaited<ReturnType<ProjectionClient["inspect"]>>) => void;
-  const pending = new Promise<Awaited<ReturnType<ProjectionClient["inspect"]>>>((resolve) => { finish = resolve; });
-  const replacement = { ...second.client, inspect: () => pending } as ProjectionClient;
+  let finish!: (value: Awaited<ReturnType<SurfaceClient["inspect"]>>) => void;
+  const pending = new Promise<Awaited<ReturnType<SurfaceClient["inspect"]>>>((resolve) => { finish = resolve; });
+  const replacement = { ...second.client, inspect: () => pending } as SurfaceClient;
   const hook = renderHook(({ client }) => useInteraction(client, handle("todos.create", 1)), { initialProps: { client: first.client } });
   await waitFor(() => expect(hook.result.current.isPending).toBe(false));
   const retired = hook.result.current.call;

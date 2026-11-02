@@ -1,5 +1,5 @@
 import {
-  createProjectionClient,
+  createSurfaceClient,
   type ClientTransport,
 } from "@foxworth/boundary/client";
 import {
@@ -7,11 +7,8 @@ import {
   type InteractionDeclaredError,
   type RemoteInteractionDomainError,
 } from "@foxworth/boundary/remote";
-import type {
-  InteractionDefinition,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-} from "@foxworth/boundary";
+import type { InteractionDefinition } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
 import type { JsonValue } from "@foxworth/boundary/program";
 
 type Todo = Readonly<{ id: number; title: string }>;
@@ -31,22 +28,22 @@ type CreateDefinition = InteractionDefinition<
 >;
 
 declare const transport: ClientTransport;
-declare const list: ProjectedInteractionHandle<
+declare const list: SurfaceHandle<
   InteractionHandle<ListDefinition>,
   readonly ["direct"]
 >;
-declare const create: ProjectedInteractionHandle<
+declare const create: SurfaceHandle<
   InteractionHandle<CreateDefinition>,
   readonly ["direct", "request"]
 >;
 type CreateProposal = Readonly<{ proposalId: string; title: string }>;
-declare const generatedCreate: ProjectedInteractionHandle<
+declare const generatedCreate: SurfaceHandle<
   InteractionHandle<CreateDefinition>,
   readonly ["request"],
   CreateProposal
 >;
 
-const client = createProjectionClient(transport);
+const client = createSurfaceClient(transport);
 const listed: Promise<readonly Todo[]> = client.call(list);
 const created: Promise<Todo> = client.call(create, { title: "typed" });
 const proposal = client.request(create, { title: "controlled" });

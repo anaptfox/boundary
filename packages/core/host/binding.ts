@@ -5,15 +5,15 @@ import { createCatalog, createProgram, hashJson, type CatalogEntry, type JsonObj
 import { compareUtf8 } from "#program/internal";
 import { failHost } from "./errors";
 import { metadataForInstallation } from "./install";
-import { metadataForProjection } from "./projection";
-import type { Admission, BindResult, BindingController, BindingInvocation, InteractionInstallation, InteractionMode, Projection, ProjectionBinding, ProjectionBindingManifest, ProjectionBindingInteraction, ProjectionSelections, ResolvedBindingMode, ResolvedBindingInteraction, UnrealizedIssue } from "./types";
+import { metadataForCompiledSurface } from "./projection";
+import type { Admission, BindResult, BindingController, BindingInvocation, InteractionInstallation, InteractionMode, CompiledSurface, Binding, BindingManifest, BindingInteraction, HandleSelections, ResolvedBindingMode, ResolvedBindingInteraction, UnrealizedIssue } from "./types";
 import { BindingMetadata, InteractionResolution, ModeEntry, ModeResolution, bindingMetadata, bindingRevoked, resolvedMetadata } from "./binding-state";
 import { createHandleCaller } from "./caller";
 import { rawInvoke } from "./dispatch";
 
 export const PROJECTION_BINDING_DOMAIN = "boundary.projection-binding/v1";
 
-export function assertProjectionBinding(value: unknown): void {
+export function assertBinding(value: unknown): void {
   if (
     value === null ||
     typeof value !== "object" ||
@@ -22,24 +22,24 @@ export function assertProjectionBinding(value: unknown): void {
     failHost(
       "INVALID_ARTIFACT",
       "binding",
-      "an authentic successful ProjectionBinding is required",
+      "an authentic successful Binding is required",
     );
   }
 }
 
-export async function bindProjection<
-  const Selections extends ProjectionSelections,
+export async function bindSurface<
+  const Selections extends HandleSelections,
   Context = void,
 >(
-  projection: Projection<Selections>,
+  projection: CompiledSurface<Selections>,
   installation: InteractionInstallation<Context>,
   options: Readonly<{
     admit: Admission<Context>;
     observation?: InvocationObserver<Context>;
     coordinate?: InvocationCoordinator<Context>;
   }>,
-): Promise<BindResult<Projection<Selections>["handles"], Context>> {
-  const projectionMeta = metadataForProjection(projection);
+): Promise<BindResult<CompiledSurface<Selections>["handles"], Context>> {
+  const projectionMeta = metadataForCompiledSurface(projection);
   const installationMeta = metadataForInstallation(installation);
   const admission = options?.admit;
   const observer = snapshotObserver(options?.observation);
@@ -50,7 +50,7 @@ export async function bindProjection<
   if (typeof admission !== "function") {
     return failHost(
       "INVALID_ADMISSION",
-      "bindProjection.admit",
+      "bindSurface.admit",
       "Binding requires an explicit admission function",
     );
   }
@@ -104,20 +104,20 @@ export async function bindProjection<
 
 /** Derive a caller capability without discarding its inherited admission or revocation. */
 export async function restrictBinding<
-  const Selections extends ProjectionSelections,
+  const Selections extends HandleSelections,
   Context,
 >(
-  parent: ProjectionBinding<any, Context>,
+  parent: Binding<any, Context>,
   options: Readonly<{
-    projection: Projection<Selections>;
+    projection: CompiledSurface<Selections>;
     admit: Admission<Context>;
   }>,
-): Promise<BindResult<Projection<Selections>["handles"], Context>> {
-  assertProjectionBinding(parent);
+): Promise<BindResult<CompiledSurface<Selections>["handles"], Context>> {
+  assertBinding(parent);
   const metadata = bindingMetadata.get(parent)! as BindingMetadata<Context>;
   const projection = options.projection;
   const admission = options.admit;
-  const projectionMeta = metadataForProjection(projection);
+  const projectionMeta = metadataForCompiledSurface(projection);
   if (typeof admission !== "function") {
     return failHost(
       "INVALID_ADMISSION", "restrictBinding.admit",
@@ -188,16 +188,16 @@ export async function restrictBinding<
   );
 }
 
-async function constructBinding<Selections extends ProjectionSelections, Context>(
-  projection: Projection<Selections>,
+async function constructBinding<Selections extends HandleSelections, Context>(
+  projection: CompiledSurface<Selections>,
   installation: InteractionInstallation<Context>,
   admission: Admission<Context>,
   observer: InvocationObserver<Context> | undefined,
   modeEntries: readonly ModeEntry<Context>[],
   parent?: BindingMetadata<Context>,
   coordinator: InvocationCoordinator<Context> | undefined = parent?.coordinator,
-): Promise<BindResult<Projection<Selections>["handles"], Context>> {
-  const projectionMeta = metadataForProjection(projection);
+): Promise<BindResult<CompiledSurface<Selections>["handles"], Context>> {
+  const projectionMeta = metadataForCompiledSurface(projection);
   const installationMeta = metadataForInstallation(installation);
 
   const actualDescriptors = [
@@ -233,7 +233,7 @@ async function constructBinding<Selections extends ProjectionSelections, Context
     });
   }
   const actualCatalog = createCatalog(actualProgram, actualAvailability);
-  const manifestInteractions: ProjectionBindingInteraction[] = modeEntries
+  const manifestInteractions: BindingInteraction[] = modeEntries
     .map((entry) =>
       Object.freeze({
         alias: entry.alias,
@@ -273,7 +273,7 @@ async function constructBinding<Selections extends ProjectionSelections, Context
     PROJECTION_BINDING_DOMAIN,
     identity as unknown as JsonObject,
   );
-  const manifest: ProjectionBindingManifest = Object.freeze({
+  const manifest: BindingManifest = Object.freeze({
     ...identity,
     version: 1,
     bindingDigest,
@@ -299,7 +299,7 @@ async function constructBinding<Selections extends ProjectionSelections, Context
   }
 
   const interactionResolutions = new Map<string, InteractionResolution<Context>>();
-  let binding!: ProjectionBinding<any, Context>;
+  let binding!: Binding<any, Context>;
   const state = { revoked: false };
   binding = Object.freeze({
     manifest,
@@ -329,7 +329,7 @@ async function constructBinding<Selections extends ProjectionSelections, Context
         context as Context,
       );
     },
-  }) as unknown as ProjectionBinding<any, Context>;
+  }) as unknown as Binding<any, Context>;
   const controller: BindingController = Object.freeze({
     get revoked() {
       return state.revoked;

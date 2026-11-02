@@ -1,9 +1,7 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
-import {
-  bindProjection, compileInteractions, defineInteraction, directRealizationIds,
-  implementInteractions, installInteractions, projectAllDirect,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectSurface, realizationIdsFor } from "@foxworth/boundary/pipeline";
+import { defineInteraction, surface } from "@foxworth/boundary";
 import { observedRead, type ObservationSource } from "@foxworth/boundary/observations";
 import { portableSchema, type JsonValue } from "@foxworth/boundary/program";
 import { measure, recordCase } from "./measure";
@@ -32,7 +30,7 @@ async function fixture(policy: Policy, size: number, points: number) {
     input: portableSchema<string>({ type: "string" }),
     output: portableSchema<string>({ type: "string" }), reads: ["values"], changes: [] }) };
   const compiled = await compileInteractions(definitions);
-  const projection = await projectAllDirect(compiled);
+  const projection = await projectSurface(compiled, surface.all(definitions));
   const implementations = implementInteractions<typeof definitions, Context>(definitions, {
     read: observedRead(definitions.read, {
       snapshots: source, scope: ctx => ({ actorId: ctx.actorId }),
@@ -52,9 +50,9 @@ async function fixture(policy: Policy, size: number, points: number) {
   });
   const { installation } = await installInteractions<typeof definitions, Context>(compiled, {
     installationId: `perf:observed:${policy}:${size}:${points}`, implementations,
-    realizationIds: directRealizationIds(compiled, "v1"),
+    realizationIds: realizationIdsFor(compiled, "v1"),
   });
-  const bound = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
+  const bound = await bindSurface(projection, installation, { admit: () => ({ decision: "allow" }) });
   if (bound.status !== "bound") throw new Error("unbound observed fixture");
   const caller = bound.binding.connect();
   const context = { actorId: "benchmark" };

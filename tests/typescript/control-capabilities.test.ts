@@ -1,6 +1,6 @@
 import { compositionTransport } from "./composition-transport";
 import { describe, expect, it } from "vitest";
-import { createProjectionClient } from "../../packages/callers/client/client";
+import { createSurfaceClient } from "../../packages/callers/client/client";
 import { createProtocolHandler } from "../../packages/adapters/http/protocol";
 import {
   createControlCapabilities,
@@ -17,21 +17,14 @@ import {
   contributeControlRequests,
 } from "../../packages/core/control/host";
 import { MemoryJournal, TestClock } from "../../packages/core/control/testing";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-  type InteractionInstallation,
-} from "../../packages/core/host/index";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, type InteractionInstallation } from "../../packages/core/host/pipeline";
+import { defineInteraction } from "../../packages/core/host/index";
+import { createCaller } from "@foxworth/boundary/pipeline";
 import {
   portableSchema,
   type JsonObject,
   type Sha256Digest,
 } from "../../packages/core/program/index";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 const digest = (character: string): Sha256Digest =>
   `sha256:${character.repeat(64)}`;
@@ -386,12 +379,12 @@ describe("Control capabilities", () => {
         modes: ["request"],
       },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (bound.status !== "bound") throw new Error("control fixture did not bind");
     const handler = createProtocolHandler({ caller: createCaller(bound.binding), path: "/boundary", context: () => context });
-    const client = createProjectionClient(await compositionTransport(handler));
+    const client = createSurfaceClient(await compositionTransport(handler));
     expect((await client.inspect()).interactions.map((op) => op.interactionId)).toEqual(["articles.publish"]);
     const proposal = await client.request(
       projection.handles.publish,

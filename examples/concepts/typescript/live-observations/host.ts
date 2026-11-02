@@ -1,11 +1,10 @@
 import { createServer } from "node:http";
 import { once } from "node:events";
 import { portableSchema, type InvocationObservation } from "@foxworth/boundary/program";
-import { bindProjection, compileInteractions, defineInteraction, directRealizationIds,
-  implementInteractions, installInteractions, projectAllDirect } from "@foxworth/boundary";
+import { defineInteraction, surface } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectSurface, realizationIdsFor, createCaller } from "@foxworth/boundary/pipeline";
 import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
 import { createObservationHttpHandler } from "@foxworth/boundary/http/observations";
-import { createCaller } from "@foxworth/boundary/pipeline";
 
 type Tenant = "a" | "b";
 type Context = { tenant: Tenant };
@@ -27,7 +26,7 @@ const definitions = {
   }), output: portableSchema<number>({ type: "number" }), reads: ["counter"], changes: ["counter"] }),
 };
 const compiled = await compileInteractions(definitions);
-const projection = await projectAllDirect(compiled);
+const projection = await projectSurface(compiled, surface.all(definitions));
 const implementations = implementInteractions<typeof definitions, Context>(definitions, {
   read: (context) => state[context.tenant].value,
   increment: (input, context) => {
@@ -51,9 +50,9 @@ const observation = {
 };
 async function protocol(path: string, installationId: string) {
   const { installation } = await installInteractions(compiled, {
-    installationId, implementations, realizationIds: directRealizationIds(compiled, "v1"),
+    installationId, implementations, realizationIds: realizationIdsFor(compiled, "v1"),
   });
-  const result = await bindProjection(projection, installation, {
+  const result = await bindSurface(projection, installation, {
     admit: () => ({ decision: "allow" }), observation,
   });
   if (result.status !== "bound") throw new Error("example could not bind");

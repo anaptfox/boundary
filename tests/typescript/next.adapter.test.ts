@@ -1,4 +1,4 @@
-import { createProjectionHandlers } from "@foxworth/boundary/frameworks/next";
+import { createSurfaceHandlers } from "@foxworth/boundary/frameworks/next";
 import { describe, expect, it, vi } from "vitest";
 
 describe("@foxworth/boundary/frameworks/next", () => {
@@ -6,7 +6,7 @@ describe("@foxworth/boundary/frameworks/next", () => {
     const handler = vi.fn(async (request: Request) =>
       Response.json({ method: request.method }),
     );
-    const methods = createProjectionHandlers(handler);
+    const methods = createSurfaceHandlers(handler);
 
     expect(Object.isFrozen(methods)).toBe(true);
     expect(Object.keys(methods).sort()).toEqual([

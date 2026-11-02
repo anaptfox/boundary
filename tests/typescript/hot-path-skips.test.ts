@@ -1,15 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  bindProjection,
-  compileInteractions,
-  defineInteraction,
-  direct,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
-import { validateProjectionBindingManifest } from "@foxworth/boundary/handoff";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, realizationIdsFor } from "@foxworth/boundary/pipeline";
+import { defineInteraction } from "@foxworth/boundary";
+import { validateBindingManifest } from "@foxworth/boundary/handoff";
 import { portableSchema, validateSchemaValue } from "@foxworth/boundary/program";
 import {
   CONTROL_RECORD_VERSION,
@@ -65,12 +57,12 @@ describe("hot-path skip laws", () => {
       implementations: implementInteractions(interactions, {
         echo: () => ({ n: "bad" as unknown as number }),
       }),
-      realizationIds: directRealizationIds(compiled, "v1"),
+      realizationIds: realizationIdsFor(compiled, "v1"),
     });
     const projection = await projectInteractions(compiled, {
-      echo: direct(compiled.handles.echo),
+      echo: { interaction: compiled.handles.echo, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -112,12 +104,12 @@ describe("hot-path skip laws", () => {
       implementations: implementInteractions(actual, {
         echo: (input) => ({ n: input.n }),
       }),
-      realizationIds: directRealizationIds(actualCompiled, "v1"),
+      realizationIds: realizationIdsFor(actualCompiled, "v1"),
     });
     const projection = await projectInteractions(expectedCompiled, {
-      echo: direct(expectedCompiled.handles.echo),
+      echo: { interaction: expectedCompiled.handles.echo, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -149,22 +141,22 @@ describe("hot-path skip laws", () => {
       implementations: implementInteractions(interactions, {
         echo: (input) => input,
       }),
-      realizationIds: directRealizationIds(compiled, "v1"),
+      realizationIds: realizationIdsFor(compiled, "v1"),
     });
     const projection = await projectInteractions(compiled, {
-      echo: direct(compiled.handles.echo),
+      echo: { interaction: compiled.handles.echo, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
     if (result.status !== "bound") return;
-    const validated = await validateProjectionBindingManifest(result.binding.manifest);
+    const validated = await validateBindingManifest(result.binding.manifest);
     await expect(
-      validateProjectionBindingManifest(validated),
+      validateBindingManifest(validated),
     ).resolves.toBe(validated);
     const tampered = { ...validated, bindingDigest: digest("f") };
-    await expect(validateProjectionBindingManifest(tampered)).rejects.toMatchObject({
+    await expect(validateBindingManifest(tampered)).rejects.toMatchObject({
       code: "INVALID_MANIFEST",
     });
   });

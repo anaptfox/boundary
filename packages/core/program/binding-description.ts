@@ -1,16 +1,16 @@
-import type { ProjectionBindingInteraction, ProjectionBindingManifest } from "./artifacts";
+import type { BindingInteraction, BindingManifest } from "./artifacts";
 import type { InteractionDescriptor } from "./program";
 import { normalizeJson } from "./json";
 
 /** Public selected data. It conveys no liveness, permission, or implementation capability. */
-export interface BindingInteractionDescription extends ProjectionBindingInteraction {
+export interface BindingInteractionDescription extends BindingInteraction {
   readonly expected: InteractionDescriptor;
   readonly actual: InteractionDescriptor;
 }
 
 /** Join declared pins from a checked manifest; this function does not authenticate its source. */
 export function bindingDescriptions(
-  manifest: ProjectionBindingManifest,
+  manifest: BindingManifest,
 ): readonly BindingInteractionDescription[] {
   const expected = new Map(manifest.expectedProgram.interactions.map(entry => [entry.contract.id, entry]));
   const actual = new Map(manifest.actualProgram.interactions.map(entry => [entry.contract.id, entry]));

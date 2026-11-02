@@ -1,8 +1,8 @@
 import { restoreDeclaredInteractionError } from "./definitions";
 import { InteractionFault, failHost } from "./errors";
-import { metadataForProjectedHandle } from "./projection";
+import { metadataForSurfaceHandle } from "./projection";
 import type { CallerOfBinding } from "./facade-types";
-import type { Projection, ProjectedInteractionHandle, ProjectionBinding, RawInvocationOutcome, ResolvedBindingInteraction } from "./types";
+import type { CompiledSurface, SurfaceHandle, Binding, RawInvocationOutcome, ResolvedBindingInteraction } from "./types";
 import { BindingMetadata, bindingMetadata } from "./binding-state";
 import { rawInvoke } from "./dispatch";
 
@@ -47,7 +47,7 @@ function throwTyped(outcome: RawInvocationOutcome): never {
 }
 
 function argsForTyped(
-  handle: ProjectedInteractionHandle,
+  handle: SurfaceHandle,
   args: readonly unknown[],
 ): { input: unknown; context: unknown } {
   if (handle.inputArity === 0) {
@@ -57,16 +57,16 @@ function argsForTyped(
 }
 
 /** The handle-based caller behind `binding.connect()`: `call(handle, ...)` and `request(handle, ...)`. */
-export function createHandleCaller<Context>(binding: ProjectionBinding<any, Context>) {
+export function createHandleCaller<Context>(binding: Binding<any, Context>) {
   const metadata = bindingMetadata.get(binding)! as BindingMetadata<Context>;
   const caller: Record<string, unknown> = {
-    async call(handle: ProjectedInteractionHandle, ...args: readonly unknown[]) {
-      const projected = metadataForProjectedHandle(handle);
+    async call(handle: SurfaceHandle, ...args: readonly unknown[]) {
+      const projected = metadataForSurfaceHandle(handle);
       if (!projected || projected.projection !== metadata.projection) {
         throw new InteractionFault(
           "invalid-invocation",
           "not-started",
-          "caller requires a handle from its Projection",
+          "caller requires a handle from its CompiledSurface",
         );
       }
       const { input, context } = argsForTyped(handle, args);
@@ -102,15 +102,15 @@ export function createHandleCaller<Context>(binding: ProjectionBinding<any, Cont
     )
   ) {
     caller.request = async (
-      handle: ProjectedInteractionHandle,
+      handle: SurfaceHandle,
       ...args: readonly unknown[]
     ) => {
-      const projected = metadataForProjectedHandle(handle);
+      const projected = metadataForSurfaceHandle(handle);
       if (!projected || projected.projection !== metadata.projection) {
         throw new InteractionFault(
           "invalid-invocation",
           "not-started",
-          "caller requires a handle from its Projection",
+          "caller requires a handle from its CompiledSurface",
         );
       }
       const { input, context } = argsForTyped(handle, args);
@@ -145,28 +145,28 @@ function defineOwn(record: object, key: string, value: unknown, enumerable: bool
  * returns exactly this value; pipeline users build it from their own Binding.
  */
 export function createCaller<
-  Handles extends Readonly<Record<string, ProjectedInteractionHandle>>,
+  Handles extends Readonly<Record<string, SurfaceHandle>>,
   Context,
->(binding: ProjectionBinding<Handles, Context>): CallerOfBinding<Handles, Context> {
+>(binding: Binding<Handles, Context>): CallerOfBinding<Handles, Context> {
   const metadata = bindingMetadata.get(binding) as BindingMetadata<Context> | undefined;
   if (metadata === undefined) {
     return failHost("INVALID_ARTIFACT", "createCaller.binding",
-      "expected an authentic bound ProjectionBinding; found another value; fix: pass the binding returned by bindProjection or restrictBinding");
+      "expected an authentic bound Binding; found another value; fix: pass the binding returned by bindSurface or restrictBinding");
   }
   const low = createHandleCaller(binding) as Readonly<{
-    call(handle: ProjectedInteractionHandle, ...args: readonly unknown[]): Promise<unknown>;
-    request?(handle: ProjectedInteractionHandle, ...args: readonly unknown[]): Promise<unknown>;
+    call(handle: SurfaceHandle, ...args: readonly unknown[]): Promise<unknown>;
+    request?(handle: SurfaceHandle, ...args: readonly unknown[]): Promise<unknown>;
   }>;
-  const handles = (metadata.projection as Projection).handles;
+  const handles = (metadata.projection as CompiledSurface).handles;
   const caller = Object.create(null) as Record<string, unknown>;
   const propose = Object.create(null) as Record<string, unknown>;
-  // Methods follow the Projection's declaration order, not the manifest's sorted order.
+  // Methods follow the CompiledSurface's declaration order, not the manifest's sorted order.
   for (const alias of Object.keys(handles)) {
     if (RESERVED_CALLER_KEYS.includes(alias)) {
       return failHost("INVALID_PROJECTION", `createCaller.${alias}`,
-        `expected an alias that can be a caller method; found reserved name "${alias}"; fix: rename the alias in the Projection`);
+        `expected an alias that can be a caller method; found reserved name "${alias}"; fix: rename the alias in the CompiledSurface`);
     }
-    const handle = Object.getOwnPropertyDescriptor(handles, alias)?.value as ProjectedInteractionHandle;
+    const handle = Object.getOwnPropertyDescriptor(handles, alias)?.value as SurfaceHandle;
     for (const interaction of binding.manifest.interactions) {
       if (interaction.alias !== alias) continue;
       if (interaction.mode === "direct") {

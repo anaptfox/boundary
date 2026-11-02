@@ -2,12 +2,12 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { z } from "zod";
+import { admitWhen, defineInteraction, surface } from "@foxworth/boundary";
 import {
-  admitWhen, bindProjection, compileInteractions, defineInteraction,
-  directRealizationIds, implementInteractions, installInteractions,
-  projectAllDirect, publishExecutionEvidence,
-} from "@foxworth/boundary";
-import { createHandoffInvocation, validateHandoffResponse, validateProjectionBindingManifest } from "@foxworth/boundary/handoff";
+  bindSurface, compileInteractions, implementInteractions, installInteractions,
+  projectSurface, publishExecutionEvidence, realizationIdsFor,
+} from "@foxworth/boundary/pipeline";
+import { createHandoffInvocation, validateHandoffResponse, validateBindingManifest } from "@foxworth/boundary/handoff";
 import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
 import { createCaller } from "@foxworth/boundary/pipeline";
 import { toFetchRequest, sendFetchResponse } from "@foxworth/boundary/http/node";
@@ -40,14 +40,14 @@ const interactions = {
 const compiled = await compileInteractions(interactions);
 const installed = await installInteractions(compiled, {
   installationId: "evidence-fixture-owner",
-  realizationIds: directRealizationIds(compiled, "evidence-fixture-v1"),
+  realizationIds: realizationIdsFor(compiled, "evidence-fixture-v1"),
   implementations: implementInteractions(interactions, {
     start() { started += 1; retained.state = "uncertain"; throw new Error("host fixture: external work may have started; response unavailable"); },
     status() { statusReads += 1; return { runId: retained.subjectId, state: retained.state }; },
   }),
 });
-const projection = await projectAllDirect(compiled);
-const bound = await bindProjection(projection, installed.installation, {
+const projection = await projectSurface(compiled, surface.all(interactions));
+const bound = await bindSurface(projection, installed.installation, {
   admit: admitWhen(context => context.principal === "owner", "fixture owner"),
   observation: { publish(observation) { observations.push(observation); } },
 });
@@ -67,7 +67,7 @@ try {
   const address = server.address();
   assert.ok(address && typeof address === "object");
   const transport = fetchTransport({ baseUrl: `http://127.0.0.1:${address.port}/handoff` });
-  const manifest = await validateProjectionBindingManifest(await transport.inspect());
+  const manifest = await validateBindingManifest(await transport.inspect());
   const invoke = async id => {
     const invocation = await createHandoffInvocation(manifest, id, "direct", {});
     return validateHandoffResponse(manifest, invocation, await transport.invoke(invocation));

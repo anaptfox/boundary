@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import {
-  admitAll, bindProjection, compileInteractions, defineInteraction,
-  implementInteractions, installInteractions, pickProjection, projectInteractions,
-  restrictBinding, type Admission, type AdmissionRequest,
-} from "@foxworth/boundary";
+import { admitAll, defineInteraction, type Admission, type AdmissionRequest, surface } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectInteractions, restrictBinding, projectSurface } from "@foxworth/boundary/pipeline";
 import { portableSchema, type InvocationObservation } from "@foxworth/boundary/program";
 import { createControlRequestContributions } from "../../packages/core/host/control";
 
@@ -42,12 +39,12 @@ async function fixture(admit: Admission<Context> = admitAll, events?: Invocation
     get: { interaction: compiled.handles.get, modes: ["direct", "request"] },
     save: { interaction: compiled.handles.save, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = await bindSurface(projection, installation, {
     admit,
     ...(events === undefined ? {} : { observation: { publish(event: InvocationObservation) { events.push(event); }, correlate(context: Context) { return { marker: context.marker === context.marker }; } } }),
   });
   if (result.status !== "bound") throw new Error("fixture did not bind");
-  return { ...result, compiled, projection, installation, installationController, dispatched };
+  return { ...result, compiled, interactions, projection, installation, installationController, dispatched };
 }
 
 function assertBound<T extends { status: string }>(result: T): asserts result is Extract<T, { status: "bound" }> {
@@ -119,7 +116,7 @@ describe("Binding restriction", () => {
     let denied = false;
     const seen: string[] = [];
     const parent = await fixture(() => { seen.push("parent"); return denied ? { decision: "deny", reason: "host policy" } : { decision: "allow" }; });
-    const reads = await pickProjection(parent.projection, "get");
+    const reads = await projectSurface(parent.compiled, surface(parent.interactions, { call: ["get"], propose: ["get"] }));
     const child = await restrictBinding(parent.binding, { projection: reads, admit() { seen.push("child"); return { decision: "allow" }; } });
     assertBound(child);
     const grandchild = await restrictBinding(child.binding, { projection: reads, admit() { seen.push("grandchild"); return { decision: "allow" }; } });
@@ -154,7 +151,7 @@ describe("Binding restriction", () => {
 
   it("child revocation leaves its parent and siblings live; parent revocation reaches descendants", async () => {
     const parent = await fixture();
-    const reads = await pickProjection(parent.projection, "get");
+    const reads = await projectSurface(parent.compiled, surface(parent.interactions, { call: ["get"], propose: ["get"] }));
     const child = await restrictBinding(parent.binding, { projection: reads, admit: admitAll });
     const sibling = await restrictBinding(parent.binding, { projection: reads, admit: admitAll });
     assertBound(child); assertBound(sibling);
@@ -181,7 +178,7 @@ describe("Binding restriction", () => {
     const suspended = new Promise<void>(resolve => { resume = resolve; });
     const pause: Admission<Context> = async () => { started(); await suspended; return { decision: "allow" }; };
     const parent = await fixture(awaiting === "parent" ? pause : admitAll);
-    const reads = await pickProjection(parent.projection, "get");
+    const reads = await projectSurface(parent.compiled, surface(parent.interactions, { call: ["get"], propose: ["get"] }));
     const child = await restrictBinding(parent.binding, { projection: reads, admit: awaiting === "child" ? pause : admitAll });
     assertBound(child);
     const pending = child.binding.connect().call(reads.handles.get, { value: "never" }, { marker: {} });
@@ -211,7 +208,7 @@ describe("Binding restriction", () => {
 
   it("rejects forged bindings, foreign resolved handles, and revoked installation restriction", async () => {
     const parent = await fixture();
-    const reads = await pickProjection(parent.projection, "get");
+    const reads = await projectSurface(parent.compiled, surface(parent.interactions, { call: ["get"], propose: ["get"] }));
     const child = await restrictBinding(parent.binding, { projection: reads, admit: admitAll });
     assertBound(child);
     await expect(restrictBinding({ ...parent.binding }, { projection: reads, admit: admitAll })).rejects.toMatchObject({ code: "INVALID_ARTIFACT" });
@@ -245,14 +242,14 @@ describe("Binding restriction", () => {
     const parent = await fixture();
     const empty = await projectInteractions(parent.compiled, {});
     parent.installationController.revoke();
-    expect(await bindProjection(empty, parent.installation, { admit: admitAll }))
+    expect(await bindSurface(empty, parent.installation, { admit: admitAll }))
       .toMatchObject({ status: "unrealized", report: { issues: [] } });
   });
 
   it("root construction rechecks installation liveness after hashing", async () => {
     const parent = await fixture();
     const empty = await projectInteractions(parent.compiled, {});
-    const pending = bindProjection(empty, parent.installation, { admit: admitAll });
+    const pending = bindSurface(empty, parent.installation, { admit: admitAll });
     parent.installationController.revoke();
     expect(await pending).toMatchObject({ status: "unrealized", report: { issues: [] } });
   });

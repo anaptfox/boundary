@@ -1,4 +1,4 @@
-import { bindProjection } from "./binding";
+import { bindSurface } from "./binding";
 import { createCaller } from "./caller";
 import { compileInteractions } from "./compile";
 import { snapshotDefinitions } from "./definition-snapshot";
@@ -26,8 +26,8 @@ import type {
 import type {
   BindingController,
   InteractionDefinitions,
-  ProjectionBinding,
-  ProjectionSelection,
+  Binding,
+  HandleSelection,
   SchemaAdapter,
   UnrealizedIssue,
   UnrealizedReport,
@@ -202,7 +202,7 @@ export async function install<Definitions extends InteractionDefinitions, Contex
         realizationIds,
       });
 
-  const bindings = new WeakMap<object, Readonly<{ binding: ProjectionBinding<any, Context>; controller: BindingController }>>();
+  const bindings = new WeakMap<object, Readonly<{ binding: Binding<any, Context>; controller: BindingController }>>();
 
   async function tryConnect(
     surfaceValue: unknown,
@@ -214,7 +214,7 @@ export async function install<Definitions extends InteractionDefinitions, Contex
         "expected an admission function; found none; fix: pass { admit: admitWhen((actor) => ..., \"reason\") }; there is no admit-all default");
     }
     const expected = await compiledSurface(selected, schemas);
-    const selection: Record<string, ProjectionSelection> = Object.create(null) as Record<string, ProjectionSelection>;
+    const selection: Record<string, HandleSelection> = Object.create(null) as Record<string, HandleSelection>;
     for (const alias of new Set([...selected.call, ...selected.propose])) {
       const modes: ("direct" | "request")[] = [];
       if (selected.call.includes(alias)) modes.push("direct");
@@ -225,7 +225,7 @@ export async function install<Definitions extends InteractionDefinitions, Contex
       }));
     }
     const projection = await projectInteractions(expected, selection);
-    const bound = await bindProjection(projection, installed.installation, connectOptions);
+    const bound = await bindSurface(projection, installed.installation, connectOptions);
     if (bound.status === "unrealized") {
       return Object.freeze({ status: "unrealized", report: bound.report });
     }

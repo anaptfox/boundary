@@ -13,7 +13,7 @@ export function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-export function projectionSourceSnapshot<T>(value: T, path: string): T {
+export function recordSourceSnapshot<T>(value: T, path: string): T {
   try {
     return snapshot(value, path);
   } catch (error) {

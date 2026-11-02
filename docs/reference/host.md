@@ -27,7 +27,7 @@ CompiledInteractions + implementations --install--> InstalledInteractions
                                                      |          +-- host-only controller
                                                      +-- InteractionInstallation
 
-Projection + InteractionInstallation + admission --bind--> ProjectionBinding
+Projection + InteractionInstallation + admission --bind--> Binding
                                                         +-- host-only controller
                                                         +--connect--> caller
 ```
@@ -44,9 +44,9 @@ The root exports the short path and the values it is made of:
 - `ConnectError`, `HostError`, `InteractionFault`, `DeclaredInteractionError`
 
 The explicit pipeline (`compileInteractions`, `implementInteractions`,
-`installInteractions`, `projectInteractions`, `bindProjection`,
-`restrictBinding`, `bindNativeInteractions`, `direct`, `directRealizationIds`,
-`pickProjection`, `projectAllDirect`, `presentProjection`, `assessProjection`,
+`installInteractions`, `projectInteractions`, `bindSurface`,
+`restrictBinding`, `bindNativeInteractions`, `projectSurface`,
+`realizationIdsFor`, `createCaller`, `presentSurface`, `assessSurface`,
 `describeBinding`) is exported from `@foxworth/boundary/pipeline`. The root
 still re-exports most of it during the migration; that duplication ends when
 the root settles on the short path.
@@ -167,7 +167,7 @@ A caller also carries its read-only `manifest` and a `handoff` seam
 invocations into this exact Binding. It carries no controller: `app.revoke(caller)`
 revokes that caller's Binding and `app.revoke()` revokes the whole
 Installation, and only the host holds `app`. `app.binding(caller)` returns the
-real `ProjectionBinding` for inspection and Handoff tooling; `app.program`,
+real `Binding` for inspection and Handoff tooling; `app.program`,
 `app.compiled`, `app.installation`, and `app.manifest` are the pipeline's own
 artifacts.
 
@@ -285,10 +285,12 @@ TypeScript pairs `CompiledInteractions` with `InteractionImplementations`; frame
 adapters pair native declarations with exact native targets and a dispatcher.
 Both paths produce the same `InteractionInstallation` laws.
 
-`directRealizationIds(compiled, "v1")` builds
-`{ alias: { direct: "<interactionId>:direct:v1" } }` from compiled handles. The
+`realizationIdsFor(compiled, "v1", { request: ["publish"] })` builds
+`{ alias: { direct: "<interactionId>:direct:v1" } }` for every compiled alias
+and adds `request: "<interactionId>:request:v1"` for the aliases listed under
+`request`. It is the same derivation `install(..., { version })` performs. The
 host still passes that record into `installInteractions`. The IDs remain
-host-owned labels, not inferred at dispatch. The second argument is required: supply
+host-owned labels, not inferred at dispatch. The version is required: supply
 a deployment or realization revision and change it whenever executable behavior
 changes. Boundary does not hash function source. New installations still require
 never-reused installation IDs; revised realization IDs provide an additional
@@ -342,7 +344,7 @@ const { installation, controller: installationController } =
   await installInteractions(compiled, {
     installationId,
     implementations,
-    realizationIds: directRealizationIds(compiled, "v1"),
+    realizationIds: realizationIdsFor(compiled, "v1"),
   });
 ```
 
@@ -381,20 +383,19 @@ explicit closed record:
 
 ```ts
 const agent = await projectInteractions(compiled, {
-  create: direct(compiled.handles.create),
-  list: direct(compiled.handles.list),
+  create: { interaction: compiled.handles.create, modes: ["direct"] },
+  list: { interaction: compiled.handles.list, modes: ["direct"] },
 });
 ```
 
-`direct(handle)` is the closed form of `{ interaction: handle, modes: ["direct"] }`.
-Bare handles are not implicit all-modes.
-
-`projectAllDirect(compiled)` selects every compiled handle in direct mode.
-`pickProjection(projection, "list", "complete")` re-projects a named subset
-into a new Projection with its own digest. Keys resolve as aliases first, then
-as interaction ids (`todos.list`). Both lower to `projectInteractions`. A tool
-list that names fewer tools than this Projection hides nothing the Binding
-still carries; `pickProjection` is how a caller is given less.
+Bare handles are not implicit all-modes. `projectSurface(compiled, surface)`
+is the same step driven by a Surface: `projectSurface(compiled, surface.all(docs))`
+selects every alias in direct mode and
+`projectSurface(compiled, surface(docs, { call: ["list"], propose: ["publish"] }))`
+selects by alias. Every selected alias must name the definition this
+compilation compiled; a Surface over another record is refused. A tool list
+that names fewer tools than this selection hides nothing the Binding still
+carries; a narrower Surface is how a caller is given less.
 
 Each selection names one authentic compiled handle and one non-empty set of
 `"direct"` and/or `"request"` modes. Projection aliases are durable
@@ -417,13 +418,13 @@ An unrealized bind report durably retains the attempted Projection manifest,
 the target Installation ID, and every issue. It never returns a partial live
 Binding.
 
-## `bindProjection`
+## `bindSurface`
 
 Binding is the atomic live conjunction of one Projection, one exact
 InteractionInstallation, and one explicit admission interface.
 
 ```ts
-const result = await bindProjection(agent, installation, {
+const result = await bindSurface(agent, installation, {
   admit: admitWhen((ctx) => ctx.kind === "agent", "agent only"),
 });
 
@@ -439,7 +440,7 @@ const created = await caller.call(agent.handles.create, input, context);
 Binding checks the whole Projection before exposing execution. It returns
 exactly one of:
 
-- `bound`, carrying a `ProjectionBinding` plus a host-held
+- `bound`, carrying a `Binding` plus a host-held
   `BindingController`; or
 - `unrealized`, carrying an exhaustive immutable report.
 
@@ -454,7 +455,7 @@ Derive a caller with fewer interactions or modes while retaining the parent's
 admission policy, exact realization pins, observer, and revocation lineage:
 
 ```ts
-const reads = await pickProjection(agent, "list");
+const reads = await projectSurface(compiled, surface(docs, { call: ["list"] }));
 const result = await restrictBinding(parentBinding, {
   projection: reads,
   admit: admitWhen((context) => context.kind === "agent"),
@@ -462,7 +463,7 @@ const result = await restrictBinding(parentBinding, {
 ```
 
 The result has the same complete `bound` or exhaustive `unrealized` shape as
-`bindProjection`. Every selected interaction, expected contract, input arity,
+`bindSurface`. Every selected interaction, expected contract, input arity,
 and mode must already belong to the parent. Aliases may be renamed; an
 installation's unselected capabilities cannot be added through restriction.
 Diagnostics identify `interaction-not-selected`, `contract-not-selected`,
@@ -497,7 +498,7 @@ revocation, checked before admission and immediately before dispatch. The
 Binding passed to adapters has no revocation method. Revocation cannot claim to
 cancel work that already started.
 
-Its `ProjectionBindingManifest` is data only. It pins the Projection,
+Its `BindingManifest` is data only. It pins the Projection,
 Installation, expected and actual selected Programs and contracts, modes,
 arities, realization IDs, and request preview/control identity. It excludes
 admission code, context, native targets, handlers, liveness, and revocation
@@ -531,17 +532,17 @@ Continue with [Host build](./build.md), [Program](./program.md),
 
 ## Empty surfaces, observations, and agent presentation
 
-`projectInteractions(compiled, {})` and `pickProjection(projection)` produce an
-authentic empty Projection. It can bind, handshake, and be revoked, with no
+`projectInteractions(compiled, {})` and `projectSurface(compiled, surface(docs, {}))`
+produce an authentic empty selection. It can bind, handshake, and be revoked, with no
 callable interactions. Every selected interaction still requires at least one mode.
 An empty binding does not grant an observation subscription; the host separately
 chooses who can receive events.
 
-An optional observer on `bindProjection` publishes one validated observation
+An optional observer on `bindSurface` publishes one validated observation
 for each resolved invocation outcome:
 
 ```ts
-const bound = await bindProjection(agentProjection, installation, {
+const bound = await bindSurface(agentProjection, installation, {
   admit,
   observation: {
     correlate: (context) => ({ run: context.runId }),
@@ -564,7 +565,7 @@ and digest. Completed, not-completed, and unknown outcomes may refresh reads;
 not-started outcomes do not. It never retries the mutation. Validate and
 authenticate the host-chosen event channel before delivering events to a UI.
 
-`presentProjection(projection, { alias: { title, description } })` returns an
+`presentSurface(projection, { alias: { title, description } })` returns an
 inspectable agent presentation. Only prose can be overridden. Interaction identity,
 modes, arity, input schema, direct output/error schemas, and footprints come from
 the selected declaration. Request-only selections omit direct output/error
@@ -579,17 +580,17 @@ formatting, model configuration, admission, and execution.
 
 ## Assessing a candidate deployment
 
-`assessProjection(projection.manifest, installation.manifest)` compares the
+`assessSurface(projection.manifest, installation.manifest)` compares the
 contracts and mode availability claimed by two candidate artifacts without
 constructing a Binding. It returns `status: "fit" | "mismatch"`, ordered `issues`,
-and `missingEvidence`. Live `bindProjection` uses the same interaction assessment
+and `missingEvidence`. Live `bindSurface` uses the same interaction assessment
 for contract compatibility and mode availability, then supplies its additional
 native evidence and constructs the Binding atomically.
 
 ```ts
-import { assessProjection } from "@foxworth/boundary";
+import { assessSurface } from "@foxworth/boundary";
 
-const report = assessProjection(projection.manifest, candidateManifest);
+const report = assessSurface(projection.manifest, candidateManifest);
 // report.issues identifies missing interactions, incompatible contracts,
 // and missing direct/request realizations.
 ```
@@ -597,7 +598,7 @@ const report = assessProjection(projection.manifest, candidateManifest);
 `fit` describes declared data only. The report always lists artifact authenticity,
 actual input arity, live revocation, and admission as missing evidence. Candidate
 artifacts do not carry those facts. A host must authenticate candidate artifacts
-through its own distribution process and still call `bindProjection` with a live
+through its own distribution process and still call `bindSurface` with a live
 Installation and explicit admission before invocation. A digest-shaped field in
 candidate input is not proof of authenticity. The function snapshots portable JSON
 before inspection; it does not retain mutable caller data or execute accessors.
@@ -621,8 +622,8 @@ never mutates a live Program, Installation or source file. Declaring the
 accepted contract is the host's ordinary recompilation. A rejection carries one
 of `DRAFT_REJECT_REASONS`.
 
-Three Projection presets split the authority: `proposerProjection` selects
-propose only, `authorProjection` selects accept and reject in request mode,
-and `runnerProjection` selects nothing. No preset grants every Draft
+Three Projection presets split the authority: `proposerSurface` selects
+propose only, `authorSurface` selects accept and reject in request mode,
+and `runnerSurface` selects nothing. No preset grants every Draft
 capability; a host that wants that composes its own Projection from
 `compiled.handles`.

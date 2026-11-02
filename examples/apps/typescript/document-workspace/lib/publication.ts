@@ -5,7 +5,7 @@ import { z } from "zod";
 import { type ControlHook, type ControlPolicy, createControlCapabilities, digestControlRealization } from "@foxworth/boundary/control";
 import { hashJson, jsonEquals } from "@foxworth/boundary/program";
 import { compileZodSchema } from "@foxworth/boundary/program/zod";
-import type { InteractionHandle, InteractionInstallation } from "@foxworth/boundary";
+import type { InteractionHandle, InteractionInstallation } from "@foxworth/boundary/pipeline";
 import type { Document } from "./documents";
 import type { DemoContext } from "./context";
 import { SqliteJournal } from "./publish-journal";

@@ -217,6 +217,8 @@ console.log("Packed plugin worker preserves unknown certainty.");
   writeFileSync(
     path.join(temporaryRoot, "proof-runtime.mjs"),
     `import { portableSchema } from "@foxworth/boundary/program";
+import { surface } from "@foxworth/boundary";
+import * as pipeline from "@foxworth/boundary/pipeline";
 const PingOutput = portableSchema({
   type: "object",
   properties: { ok: { const: true } },
@@ -231,24 +233,24 @@ export async function declarations(host) {
     changes: [],
   });
   const interactions = Object.freeze({ ping });
-  const compiled = await host.compileInteractions(interactions);
-  const projection = await host.projectAllDirect(compiled);
+  const compiled = await pipeline.compileInteractions(interactions);
+  const projection = await pipeline.projectSurface(compiled, surface.all(interactions));
   return { compiled, interactions, projection };
 }
 export async function fixture(host) {
   const { compiled, interactions } = await declarations(host);
-  const implementations = host.implementInteractions(interactions, {
+  const implementations = pipeline.implementInteractions(interactions, {
     ping: () => ({ ok: true }),
   });
-  const { installation } = await host.installInteractions(compiled, {
+  const { installation } = await pipeline.installInteractions(compiled, {
     installationId: "installation:packed:1",
     implementations,
     realizationIds: { ping: { direct: "realization:packed.ping:1" } },
   });
-  const projection = await host.projectInteractions(compiled, {
+  const projection = await pipeline.projectInteractions(compiled, {
     ping: { interaction: compiled.handles.ping, modes: ["direct"] },
   });
-  const result = await host.bindProjection(projection, installation, {
+  const result = await pipeline.bindSurface(projection, installation, {
     admit: host.admitAll,
   });
   if (result.status !== "bound") throw new Error("packed proof did not bind");
@@ -327,10 +329,10 @@ export const interactions = {
   );
   writeFileSync(
     path.join(temporaryRoot, "proof-usage.ts"),
-    `import { createInvocationState, type ProjectionClient } from "@foxworth/boundary/client";
+    `import { createInvocationState, type SurfaceClient } from "@foxworth/boundary/client";
 import { generatedReferences } from "./generated.references.js";
 import { offlineReferences } from "./offline.references.js";
-declare const client: ProjectionClient;
+declare const client: SurfaceClient;
 client.call(offlineReferences.ping).then(value => { const exact: true = value.ok; return exact; });
 // @ts-expect-error offline references preserve zero-arity input checking
 client.call(offlineReferences.ping, {});
@@ -385,19 +387,20 @@ createInvocationState(client, generatedReferences.ping, "request");
   writeFileSync(
     path.join(temporaryRoot, "execute-reference.mjs"),
     `import * as host from "@foxworth/boundary";
-import { createProjectionClient, watchInteraction } from "@foxworth/boundary/client";
+import { createSurfaceClient, watchInteraction } from "@foxworth/boundary/client";
 import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
 import { generatedReferences } from "./proof-dist/generated.references.js";
 import { offlineReferences } from "./proof-dist/offline.references.js";
-import { createInvocationState, pinProjectionReferences } from "@foxworth/boundary/client";
+import { createInvocationState, pinSurfaceReferences } from "@foxworth/boundary/client";
+import { createCaller } from "@foxworth/boundary/pipeline";
 import { fixture } from "./proof-runtime.mjs";
 const { binding } = await fixture(host);
 const protocol = createProtocolHandler({
-  binding,
+  caller: createCaller(binding),
   context: () => undefined,
   path: "/_boundary",
 });
-const client = createProjectionClient(fetchTransport({
+const client = createSurfaceClient(fetchTransport({
   baseUrl: "https://example.test/_boundary",
   fetch: (input, init) => protocol(new Request(input, init)),
 }));
@@ -406,7 +409,7 @@ if (value.ok !== true) throw new Error("generated reference call returned the wr
 const watchedPing = watchInteraction(client, generatedReferences.ping);
 if ((await watchedPing.refresh()).ok !== true) throw new Error("packed watch returned the wrong value");
 watchedPing.dispose();
-const pinned = await pinProjectionReferences(client, offlineReferences);
+const pinned = await pinSurfaceReferences(client, offlineReferences);
 if ((await client.call(pinned.ping)).ok !== true) throw new Error("offline reference call returned the wrong value");
 const interaction = createInvocationState(client, pinned.ping, "direct");
 if (interaction.getSnapshot().phase !== "idle") throw new Error("packed interaction was not inert");
@@ -427,6 +430,7 @@ console.log("packed duplicate-instance binding and offline references executed b
   writeFileSync(path.join(temporaryRoot, "observed-read-proof.mjs"), `
 import assert from "node:assert/strict";
 import * as host from "@foxworth/boundary";
+import * as pipeline from "@foxworth/boundary/pipeline";
 import { observedRead } from "@foxworth/boundary/observations";
 import { portableSchema } from "@foxworth/boundary/program";
 const definitions = {
@@ -460,7 +464,7 @@ const snapshots = {
     });
   },
 };
-const implementations = host.implementInteractions(definitions, {
+const implementations = pipeline.implementInteractions(definitions, {
   get: observedRead(definitions.get, {
     snapshots,
     scope: () => "public-documents",
@@ -474,18 +478,18 @@ const implementations = host.implementInteractions(definitions, {
     diagnostic(event) { events.push(event); },
   }),
 });
-const compiled = await host.compileInteractions(definitions);
-const { installation } = await host.installInteractions(compiled, {
+const compiled = await pipeline.compileInteractions(definitions);
+const { installation } = await pipeline.installInteractions(compiled, {
   installationId: "installation:packed:observed",
   implementations,
   realizationIds: { get: { direct: "realization:packed:observed" } },
 });
-const projection = await host.projectAllDirect(compiled);
-const parent = await host.bindProjection(projection, installation, {
+const projection = await pipeline.projectSurface(compiled, host.surface.all(definitions));
+const parent = await pipeline.bindSurface(projection, installation, {
   admit() { admissions++; return { decision: "allow" }; },
 });
 assert.equal(parent.status, "bound");
-const child = await host.restrictBinding(parent.binding, { projection, admit: host.admitAll });
+const child = await pipeline.restrictBinding(parent.binding, { projection, admit: host.admitAll });
 assert.equal(child.status, "bound");
 assert.equal(child.binding.manifest.bindingDigest, parent.binding.manifest.bindingDigest);
 const caller = child.binding.connect();
@@ -521,6 +525,7 @@ console.log("Packed observed reads validate point evidence, refresh authorizatio
     "@foxworth/boundary/program/zod",
     "@foxworth/boundary/observations",
     "@foxworth/boundary",
+    "@foxworth/boundary/pipeline",
     "@foxworth/boundary/build",
     "@foxworth/boundary/artifact",
     "@foxworth/boundary/handoff",

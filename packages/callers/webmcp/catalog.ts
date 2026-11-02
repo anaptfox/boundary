@@ -1,9 +1,8 @@
-import type { InteractionMode, ProjectionBindingManifest } from "@foxworth/boundary";
-import { createCheckedHandoff, validateProjectionBindingManifest, validateHandoffResponse, type CheckedHandoff, type HandoffInvocation } from "@foxworth/boundary/handoff";
+import type { InteractionMode, BindingManifest } from "@foxworth/boundary";
+import { createCheckedHandoff, validateBindingManifest, validateHandoffResponse, type CheckedHandoff, type HandoffInvocation } from "@foxworth/boundary/handoff";
 import type { ClientInvokeFraming, ClientTransport } from "@foxworth/boundary/client";
-import { RemoteInvocationError } from "@foxworth/boundary/remote";
+import { RemoteInvocationError, compileBindingResolution, interactionKey, seamOf, type ResolvedBindingInteraction } from "@foxworth/boundary/remote";
 import type { JsonValue } from "@foxworth/boundary/program";
-import { compileBindingResolution, interactionKey, seamOf, type ResolvedBindingInteraction } from "@foxworth/boundary/remote";
 import { isObjectInputSchema, overlayInputSchema, stableJson } from "./schema";
 import type { WebMcpBindingSyncOptions, WebMcpSyncOptions, WebMcpToolSummary } from "./types";
 import { TOOL_NAME, fail, inputAnnotations, toolDeclarations } from "./tools";
@@ -24,7 +23,7 @@ export type PreparedTool<Context> = Readonly<{
   identity: string;
   summary: WebMcpToolSummary;
   handoff: CheckedHandoff<Context>;
-  manifest: ProjectionBindingManifest;
+  manifest: BindingManifest;
   resolution: ResolvedBindingInteraction;
 }>;
 
@@ -54,7 +53,7 @@ async function handoffFromTransport(
   } catch {
     fail("INVALID_TOOL", "transport.inspect", "the Binding handshake failed");
   }
-  const manifest = await validateProjectionBindingManifest(inspected);
+  const manifest = await validateBindingManifest(inspected);
   return Object.freeze({
     manifest,
     async invoke(invocation: HandoffInvocation, _context?: unknown, framing?: ClientInvokeFraming) {

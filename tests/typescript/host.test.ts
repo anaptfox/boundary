@@ -7,28 +7,8 @@ import {
 } from "@foxworth/boundary/program";
 import { zodSchemaAdapter } from "@foxworth/boundary/program/zod";
 import { z } from "zod";
-import {
-  admitWhen,
-  bindProjection,
-  compileInteractions,
-  composeCompiledInteractions,
-  declaredInteractionError,
-  defineInteraction,
-  diffCompiledInteractions,
-  direct,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  isDeclaredInteractionError,
-  pickProjection,
-  projectAllDirect,
-  projectInteractions,
-  type AdmissionRequest,
-  type Admission,
-  type SchemaAdapter,
-  type RequestInvocationPolicy,
-  type NativeDispatchRequest,
-} from "../../packages/core/host/index";
+import { admitWhen, declaredInteractionError, defineInteraction, isDeclaredInteractionError, type AdmissionRequest, type Admission, type SchemaAdapter, surface } from "../../packages/core/host/index";
+import { bindSurface, compileInteractions, composeCompiledInteractions, diffCompiledInteractions, implementInteractions, installInteractions, projectInteractions, type RequestInvocationPolicy, type NativeDispatchRequest, projectSurface, realizationIdsFor } from "../../packages/core/host/pipeline";
 import { createControlRequestContributions } from "../../packages/core/host/control";
 
 const CreateInput = portableSchema<{ readonly title: string }>({
@@ -76,11 +56,11 @@ const interactions = {
 describe("@foxworth/boundary lifecycle", () => {
   it("direct selects a handle and directRealizationIds mints host-owned IDs", async () => {
     const compiled = await compileInteractions(interactions);
-    expect(direct(compiled.handles.list)).toEqual({
+    expect({ interaction: compiled.handles.list, modes: ["direct"] }).toEqual({
       interaction: compiled.handles.list,
       modes: ["direct"],
     });
-    expect(directRealizationIds(compiled, "v1")).toEqual({
+    expect(realizationIdsFor(compiled, "v1")).toEqual({
       create: { direct: "todos.create:direct:v1" },
       list: { direct: "todos.list:direct:v1" },
     });
@@ -92,13 +72,13 @@ describe("@foxworth/boundary lifecycle", () => {
     const { installation } = await installInteractions(compiled, {
       installationId: "deploy:direct-helpers:1",
       implementations,
-      realizationIds: directRealizationIds(compiled, "v1"),
+      realizationIds: realizationIdsFor(compiled, "v1"),
     });
     const projection = await projectInteractions(compiled, {
-      list: direct(compiled.handles.list),
-      create: direct(compiled.handles.create),
+      list: { interaction: compiled.handles.list, modes: ["direct"] },
+      create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -107,19 +87,21 @@ describe("@foxworth/boundary lifecycle", () => {
     expect(listed).toEqual([{ id: "todo-1", title: "Ship Boundary" }]);
   });
 
-  it("projectAllDirect, pickProjection, and admitWhen compose a closed surface", async () => {
+  it("projectSurface, surface.all, and admitWhen compose a closed surface", async () => {
     const compiled = await compileInteractions(interactions);
-    const all = await projectAllDirect(compiled);
+    const all = await projectSurface(compiled, surface.all(interactions));
     expect(Object.keys(all.handles).sort()).toEqual(["create", "list"]);
-    const listOnly = await pickProjection(all, "list");
+    const listOnly = await projectSurface(compiled, surface(interactions, { call: ["list"] }));
     expect(Object.keys(listOnly.handles)).toEqual(["list"]);
     expect(listOnly.projectionDigest).not.toBe(all.projectionDigest);
-    const byId = await pickProjection(all, "todos.list");
-    expect(Object.keys(byId.handles)).toEqual(["list"]);
-    expect(byId.projectionDigest).toBe(listOnly.projectionDigest);
-    await expect(pickProjection(all, "list", "todos.list")).rejects.toMatchObject({
-      code: "INVALID_PROJECTION",
-    });
+    const explicit = await projectInteractions(compiled, { list: { interaction: compiled.handles.list, modes: ["direct"] } });
+    expect(explicit.projectionDigest).toBe(listOnly.projectionDigest);
+    expect(() => surface(interactions, { call: ["list", "list"] })).toThrow(expect.objectContaining({ code: "INVALID_SURFACE" }));
+    const foreign = {
+      list: interactions.list,
+      create: defineInteraction({ id: "todos.create", input: interactions.create.input, output: interactions.create.output }),
+    };
+    await expect(projectSurface(compiled, surface(foreign, { call: ["create"] }))).rejects.toMatchObject({ code: "FOREIGN_HANDLE" });
 
     const implementations = implementInteractions(interactions, {
       create: (input) => ({ id: "todo-1", title: input.title }),
@@ -128,9 +110,9 @@ describe("@foxworth/boundary lifecycle", () => {
     const { installation } = await installInteractions(compiled, {
       installationId: "deploy:project-all:1",
       implementations,
-      realizationIds: directRealizationIds(compiled, "v1"),
+      realizationIds: realizationIdsFor(compiled, "v1"),
     });
-    const result = await bindProjection(listOnly, installation, {
+    const result = await bindSurface(listOnly, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -376,7 +358,7 @@ describe("@foxworth/boundary lifecycle", () => {
       list: { interaction: compiled.handles.list, modes: ["direct"] },
     });
     const admissions: AdmissionRequest<Context>[] = [];
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit(request) {
         admissions.push(request);
         return { decision: "allow" };
@@ -527,7 +509,7 @@ describe("@foxworth/boundary lifecycle", () => {
         modes: ["direct", "request"],
       },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -575,7 +557,7 @@ describe("@foxworth/boundary lifecycle", () => {
     });
   });
 
-  it("pins changed request identities in separate Bindings instead of inventing a Projection constraint", async () => {
+  it("pins changed request identities in separate Bindings instead of inventing a CompiledSurface constraint", async () => {
     const compiled = await compileInteractions({ create: interactions.create });
     const implementations = implementInteractions(
       { create: interactions.create },
@@ -618,7 +600,7 @@ describe("@foxworth/boundary lifecycle", () => {
           },
         },
       });
-      return bindProjection(projection, installation, {
+      return bindSurface(projection, installation, {
         admit: () => ({ decision: "allow" }),
       });
     }
@@ -670,7 +652,7 @@ describe("@foxworth/boundary lifecycle", () => {
     const projection = await projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (bound.status !== "bound") throw new Error("expected bound");
@@ -763,7 +745,7 @@ describe("@foxworth/boundary lifecycle", () => {
       },
     };
 
-    const pending = bindProjection(projection, installation, options);
+    const pending = bindSurface(projection, installation, options);
     options.admit = () => {
       replacementCalls += 1;
       return { decision: "deny" as const, reason: "mutated admission" };
@@ -777,7 +759,7 @@ describe("@foxworth/boundary lifecycle", () => {
     expect(originalCalls).toBe(1);
     expect(replacementCalls).toBe(0);
 
-    const failedAdmission = await bindProjection(projection, installation, {
+    const failedAdmission = await bindSurface(projection, installation, {
       admit() {
         throw new Error("private policy failure");
       },
@@ -811,7 +793,7 @@ describe("@foxworth/boundary lifecycle", () => {
     const projection = await projectInteractions(compiled, {
       list: { interaction: compiled.handles.list, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit() {
         controller.revoke();
         return { decision: "allow" };
@@ -828,7 +810,7 @@ describe("@foxworth/boundary lifecycle", () => {
     expect(controller.revoked).toBe(true);
     expect(controller.revoke()).toBe(false);
 
-    const afterRevocation = await bindProjection(projection, installation, {
+    const afterRevocation = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(afterRevocation).toMatchObject({
@@ -850,7 +832,7 @@ describe("@foxworth/boundary lifecycle", () => {
     const projection = await projectInteractions(compiled, {
       list: { interaction: compiled.handles.list, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result).toMatchObject({
@@ -907,7 +889,7 @@ describe("@foxworth/boundary lifecycle", () => {
     const projection = await projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (result.status !== "bound") throw new Error("expected bound");
@@ -937,7 +919,7 @@ describe("@foxworth/boundary lifecycle", () => {
       create: { interaction: compiled.handles.create, modes: ["request"] },
       list: { interaction: compiled.handles.list, modes: ["request"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = await bindSurface(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result).toMatchObject({

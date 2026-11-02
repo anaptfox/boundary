@@ -6,7 +6,7 @@ TypeScript compilation still checks its sources and generated type assertions.
 
 It exercises the current
 `compile_interaction` / Installation / Binding / checked Handoff and TypeScript
-Host / ProjectionClient / Control APIs. The Rust program lives under
+Host / SurfaceClient / Control APIs. The Rust program lives under
 `crates/boundary-core/examples/cross_language_todo` to reuse the crate's existing
 development dependencies. It is test infrastructure, not a recommended public
 application example. Neither production implementation embeds the other.

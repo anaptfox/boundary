@@ -26,7 +26,7 @@ Application or framework
              |
              +------------- bind atomically -------------+
                                                           v
-                                                ProjectionBinding
+                                                Binding
                                                           |
                                                     stateless Caller
                                                           |

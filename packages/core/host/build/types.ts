@@ -4,8 +4,8 @@ import type {
   MaybePromise,
   InteractionDefinitions,
   InteractionInstallation,
-  Projection,
-  ProjectionBinding,
+  CompiledSurface,
+  Binding,
 } from "../types";
 
 export type InteractionModuleLoader = (entry: URL) => MaybePromise<unknown>;
@@ -37,18 +37,18 @@ export interface HostArtifactInteractionSource extends HostArtifactTypeSource {
   readonly compiled: CompiledInteractions<any>;
 }
 
-/** Source/type facts for one durable Projection alias. */
+/** Source/type facts for one durable CompiledSurface alias. */
 export interface HostArtifactReferenceMember {
   /** Member of the exported interaction-definition record. */
   readonly definition: string;
-  /** Full public request result type; required for Binding requests, forbidden for offline Projection requests. */
+  /** Full public request result type; required for Binding requests, forbidden for offline CompiledSurface requests. */
   readonly requestOutput?: HostArtifactTypeSource;
 }
 
 /**
  * Explicit metadata for one structural typed-reference module.
  *
- * Declaration facts come from a Projection; request preview types require a Binding. TypeScript source
+ * Declaration facts come from a CompiledSurface; request preview types require a Binding. TypeScript source
  * locations are supplied by the caller and are never inferred from values.
  */
 export type HostArtifactReferenceModule = {
@@ -58,20 +58,20 @@ export type HostArtifactReferenceModule = {
     Record<string, HostArtifactReferenceMember>
   >;
 } & (
-  | { readonly projection: Projection<any>; readonly binding?: never }
-  | { readonly binding: ProjectionBinding<any, any>; readonly projection?: never }
+  | { readonly projection: CompiledSurface<any>; readonly binding?: never }
+  | { readonly binding: Binding<any, any>; readonly projection?: never }
 );
 
 export interface RenderHostArtifactsOptions {
   readonly program?: NamedHostArtifact<Program>;
   readonly projections?: Readonly<
-    Record<string, NamedHostArtifact<Projection<any>>>
+    Record<string, NamedHostArtifact<CompiledSurface<any>>>
   >;
   readonly installations?: Readonly<
     Record<string, NamedHostArtifact<InteractionInstallation<any>>>
   >;
   readonly bindings?: Readonly<
-    Record<string, NamedHostArtifact<ProjectionBinding<any, any>>>
+    Record<string, NamedHostArtifact<Binding<any, any>>>
   >;
   readonly references?: Readonly<
     Record<string, NamedHostArtifact<HostArtifactReferenceModule>>

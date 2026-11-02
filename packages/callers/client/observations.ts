@@ -1,4 +1,4 @@
-import type { ProjectionClient } from "./client";
+import type { SurfaceClient } from "./client";
 import { invalidateReadsForObservation, refreshReadsForClient, type InteractionCacheScope } from "./cache";
 import { createObservationParser } from "./observation-parser";
 
@@ -22,7 +22,7 @@ export type ObservationClientOptions = Readonly<{
 }>;
 
 /** Subscribe to host-selected observations. Never invokes or retries a change. */
-export function subscribeToObservations(client: ProjectionClient, options: ObservationClientOptions): ObservationSubscription {
+export function subscribeToObservations(client: SurfaceClient, options: ObservationClientOptions): ObservationSubscription {
   const fetcher = options.fetch ?? globalThis.fetch;
   const headers = new Headers(options.headers);
   headers.set("accept", "text/event-stream");

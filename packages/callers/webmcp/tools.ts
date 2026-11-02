@@ -37,7 +37,7 @@ function snapshotExposedTo(
   );
 }
 
-/** Declare one WebMCP tool over an alias the caller (or, offline, a Projection) selects. */
+/** Declare one WebMCP tool over an alias the caller (or, offline, a CompiledSurface) selects. */
 export function webMcpTool<S extends InteractionSource, const Alias extends SourceAliases<S>>(
   source: S,
   alias: Alias,

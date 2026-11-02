@@ -1,14 +1,11 @@
-import type {
-  InteractionDefinition,
-  InteractionHandle,
-  ProjectedInteractionHandle,
-} from "@foxworth/boundary";
+import type { InteractionDefinition } from "@foxworth/boundary";
+import type { InteractionHandle, SurfaceHandle } from "@foxworth/boundary/pipeline";
 import type { JsonValue } from "@foxworth/boundary/program";
 import {
   watchInteraction,
   type InteractionRead,
 } from "@foxworth/boundary/client/cache";
-import type { ProjectionClient } from "@foxworth/boundary/client";
+import type { SurfaceClient } from "@foxworth/boundary/client";
 
 type Definition<Arity extends 0 | 1, Input extends JsonValue = JsonValue> =
   InteractionDefinition<
@@ -20,12 +17,12 @@ type Definition<Arity extends 0 | 1, Input extends JsonValue = JsonValue> =
   >;
 
 type Direct<Arity extends 0 | 1, Input extends JsonValue = JsonValue> =
-  ProjectedInteractionHandle<InteractionHandle<Definition<Arity, Input>>, readonly ["direct"]>;
+  SurfaceHandle<InteractionHandle<Definition<Arity, Input>>, readonly ["direct"]>;
 
-declare const client: ProjectionClient;
+declare const client: SurfaceClient;
 declare const zeroInputRead: Direct<0>;
 declare const pageRead: Direct<1, Readonly<{ page: number }>>;
-declare const requestOnly: ProjectedInteractionHandle<
+declare const requestOnly: SurfaceHandle<
   InteractionHandle<Definition<0>>,
   readonly ["request"]
 >;

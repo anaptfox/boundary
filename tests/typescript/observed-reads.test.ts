@@ -1,9 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import {
-  bindProjection, compileInteractions, defineInteraction, directRealizationIds,
-  implementInteractions, installInteractions, projectAllDirect,
-} from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectSurface, realizationIdsFor } from "@foxworth/boundary/pipeline";
+import { defineInteraction, surface } from "@foxworth/boundary";
 import { canonicalJson, normalizeJson, portableSchema, type JsonSchema, type JsonValue } from "@foxworth/boundary/program";
 import {
   observedRead, type ObservationSource, type ObservationValidation,
@@ -58,7 +56,7 @@ async function host(snapshots: Source, evaluate: (input: JsonValue, view: View) 
   const definitions = { read: defineInteraction({ id: "observed.read", input: portableSchema<JsonValue>({}),
     output: portableSchema<JsonValue>(options.output ?? {}), reads: ["world"], changes: [] }) };
   const compiled = await compileInteractions(definitions);
-  const projection = await projectAllDirect(compiled);
+  const projection = await projectSurface(compiled, surface.all(definitions));
   const implementations = implementInteractions<typeof definitions, Context>(definitions, {
     read: observedRead(definitions.read, {
       snapshots,
@@ -72,8 +70,8 @@ async function host(snapshots: Source, evaluate: (input: JsonValue, view: View) 
   });
   const install = async (revision: string) => {
     const installed = await installInteractions(compiled, { installationId: `observed:${revision}`, implementations,
-      realizationIds: directRealizationIds(compiled, revision) });
-    const bound = await bindProjection(projection, installed.installation, { admit: () => ({ decision: "allow" }) });
+      realizationIds: realizationIdsFor(compiled, revision) });
+    const bound = await bindSurface(projection, installed.installation, { admit: () => ({ decision: "allow" }) });
     if (bound.status !== "bound") throw new Error("expected binding");
     return { ...installed, call: (input: JsonValue, ctx: Context = context) => bound.binding.connect().call(projection.handles.read, input, ctx) };
   };

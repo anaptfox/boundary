@@ -1,15 +1,5 @@
-import {
-  admitWhen,
-  bindProjection,
-  compileInteractions,
-  declaredInteractionError,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  pickProjection,
-  projectAllDirect,
-} from "@foxworth/boundary";
-import { createCaller } from "@foxworth/boundary/pipeline";
+import { admitWhen, declaredInteractionError, surface } from "@foxworth/boundary";
+import { bindSurface, compileInteractions, implementInteractions, installInteractions, projectSurface, realizationIdsFor, createCaller } from "@foxworth/boundary/pipeline";
 import { interactions } from "./interactions";
 import { createTodoStore, type TodoStore } from "./store";
 import { observedRead } from "@foxworth/boundary/observations";
@@ -22,8 +12,8 @@ const agentContext: TodoCaller = { kind: "agent", actorId: "agent-7" };
 
 export async function createTodoHost(store: TodoStore = createTodoStore()) {
   const compiled = await compileInteractions(interactions);
-  const screen = await projectAllDirect(compiled);
-  const agent = await pickProjection(screen, "list", "complete", "reopen");
+  const screen = await projectSurface(compiled, surface.all(interactions));
+  const agent = await projectSurface(compiled, surface(interactions, { call: ["list", "complete", "reopen"] }));
   const readStats = { evaluations: 0, reuses: 0, validations: 0 };
   const implementations = implementInteractions<typeof interactions, TodoCaller>(
     interactions,
@@ -76,14 +66,14 @@ export async function createTodoHost(store: TodoStore = createTodoStore()) {
     {
       installationId: "todos:local:v1",
       implementations,
-      realizationIds: directRealizationIds(compiled, "v1"),
+      realizationIds: realizationIdsFor(compiled, "v1"),
     },
   );
 
-  const screenResult = await bindProjection(screen, installation, {
+  const screenResult = await bindSurface(screen, installation, {
     admit: admitWhen((ctx: TodoCaller) => ctx.kind === "screen", "screen only"),
   });
-  const agentResult = await bindProjection(agent, installation, {
+  const agentResult = await bindSurface(agent, installation, {
     admit: admitWhen((ctx: TodoCaller) => ctx.kind === "agent", "agent only"),
   });
   if (screenResult.status !== "bound" || agentResult.status !== "bound") {

@@ -7,7 +7,7 @@ export type WorkerFetch<Environment = unknown, Execution = unknown> = (
 ) => Response | Promise<Response>;
 
 /** The platform values available while processing one matched Worker request. */
-export type ProjectionWorkerInvocation<Environment = unknown, Execution = unknown> =
+export type SurfaceWorkerInvocation<Environment = unknown, Execution = unknown> =
   Readonly<{
     request: Request;
     environment: Environment;
@@ -15,28 +15,28 @@ export type ProjectionWorkerInvocation<Environment = unknown, Execution = unknow
   }>;
 
 /**
- * Creates the already-checked Projection HTTP handler for one Worker request.
+ * Creates the already-checked CompiledSurface HTTP handler for one Worker request.
  *
  * Keep reusable bindings outside this factory. The application derives
  * invocation-scoped authentication and host context here; environment or a
  * service binding alone is not end-user authority.
  */
-export type ProjectionWorkerHandlerFactory<
+export type SurfaceWorkerHandlerFactory<
   Environment = unknown,
   Execution = unknown,
 > = (
-  invocation: ProjectionWorkerInvocation<Environment, Execution>,
+  invocation: SurfaceWorkerInvocation<Environment, Execution>,
 ) => HttpHandler | Promise<HttpHandler>;
 
-export type ProjectionWorkerOptions<Environment = unknown, Execution = unknown> = {
-  /** Optional framework mount path(s). Omit to send every request to Projection. */
+export type SurfaceWorkerOptions<Environment = unknown, Execution = unknown> = {
+  /** Optional framework mount path(s). Omit to send every request to CompiledSurface. */
   readonly mount?: string | readonly string[];
   /** Called for requests outside `mount`; defaults to a plain 404. */
   readonly fallback?: WorkerFetch<Environment, Execution>;
 };
 
 function mountPaths(
-  value: ProjectionWorkerOptions["mount"],
+  value: SurfaceWorkerOptions["mount"],
 ): readonly string[] | undefined {
   if (value === undefined) return undefined;
   const paths = typeof value === "string" ? [value] : [...value];
@@ -67,13 +67,13 @@ function internalError(): Response {
   return new Response("Internal Server Error", { status: 500 });
 }
 
-/** Adapt one explicit Projection HTTP handler to a Workers module `fetch`. */
-export function createProjectionWorkerFetch<
+/** Adapt one explicit CompiledSurface HTTP handler to a Workers module `fetch`. */
+export function createSurfaceWorkerFetch<
   Environment = unknown,
   Execution = unknown,
 >(
   handler: HttpHandler,
-  options: ProjectionWorkerOptions<Environment, Execution> = {},
+  options: SurfaceWorkerOptions<Environment, Execution> = {},
 ): WorkerFetch<Environment, Execution> {
   const mounts = mountPaths(options.mount);
   return async (request, environment, execution) => {
@@ -95,15 +95,15 @@ export function createProjectionWorkerFetch<
 /**
  * Adapt a native Worker invocation factory to module `fetch`.
  *
- * Only matched requests create a Projection handler. Fallback routing keeps
+ * Only matched requests create a CompiledSurface handler. Fallback routing keeps
  * the application's request, environment, and execution context unchanged.
  */
-export function createProjectionWorkerFetchWithContext<
+export function createSurfaceWorkerFetchWithContext<
   Environment = unknown,
   Execution = unknown,
 >(
-  createHandler: ProjectionWorkerHandlerFactory<Environment, Execution>,
-  options: ProjectionWorkerOptions<Environment, Execution> = {},
+  createHandler: SurfaceWorkerHandlerFactory<Environment, Execution>,
+  options: SurfaceWorkerOptions<Environment, Execution> = {},
 ): WorkerFetch<Environment, Execution> {
   const mounts = mountPaths(options.mount);
   return async (request, environment, execution) => {
