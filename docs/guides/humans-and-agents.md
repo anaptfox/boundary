@@ -40,8 +40,8 @@ the tool and protocol interfaces.
 
 ## Own the UI; import the interaction behavior
 
-Use `@foxworth/boundary/client` for selected remote clients and
-`@foxworth/boundary/client/cache` for framework-neutral reactive reads.
+Use `@foxworth/boundary/client` for selected remote clients and its
+framework-neutral reactive reads.
 `watchInteraction` supplies snapshots, subscription, refresh and disposal.
 `@foxworth/boundary/react` adapts that read store to React and supplies explicit
 interaction calls, pending state and error handling through `useInteraction`.
@@ -103,7 +103,7 @@ establish the displayed state; chat prose does not establish execution truth.
 Reconnecting an observation stream and replacing a stale Binding are different
 actions. A new installation needs a deliberate new connection. Neither action
 authorizes replaying an outstanding effect or moving an old grant to a new
-implementation. See [reactive reads](../reference/adapters.md#reactive-reads-foxworthboundaryclientcache)
+implementation. See [reactive reads](../reference/adapters.md#reactive-reads)
 and [explicit rehandshake](../reference/adapters.md#remote-client-and-explicit-rehandshake).
 
 ## Let the chosen runtime own the bot
@@ -132,7 +132,7 @@ signal)` to select recipients and redact any correlation data. Returning a
 Response from `context` rejects a subscription before attaching it. The stream
 closes a slow subscriber when its bounded buffer fills; it has no replay log.
 
-`subscribeToObservations` from `@foxworth/boundary/client/observations`
+`subscribeToObservations` from `@foxworth/boundary/client`
 connects a pinned client and explicit cache scope to that stream. Its `ready`
 promise resolves after subscription and an authoritative read refresh. Relevant
 observations refresh reads; they never repeat changes. `disconnect()` stops
@@ -150,9 +150,14 @@ options. It may also provide `onError` for connection feedback.
 
 <!-- snippet:examples/snippets/typescript/scoped-observations.ts#imports -->
 ```ts
-import { createInvocationState, createSurfaceClient, pinSurfaceReferences } from "@foxworth/boundary/client";
-import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client/cache";
-import { subscribeToObservations } from "@foxworth/boundary/client/observations";
+import {
+  createInteractionCacheScope,
+  createInvocationState,
+  createSurfaceClient,
+  pinSurfaceReferences,
+  subscribeToObservations,
+  watchInteraction,
+} from "@foxworth/boundary/client";
 ```
 
 <!-- snippet:examples/snippets/typescript/scoped-observations.ts#client -->

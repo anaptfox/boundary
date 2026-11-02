@@ -6,10 +6,13 @@ import { build } from "vite";
 export async function proveBrowserConsumer(consumerRoot) {
   const entry = path.join(consumerRoot, "browser-consumer.mjs");
   writeFileSync(entry, `
-export { createSurfaceClient, createInvocationState, createProposalInteraction }
-  from "@foxworth/boundary/client";
-export { watchInteraction } from "@foxworth/boundary/client/cache";
-export { subscribeToObservations } from "@foxworth/boundary/client/observations";
+export {
+  createSurfaceClient,
+  createInvocationState,
+  createProposalInteraction,
+  subscribeToObservations,
+  watchInteraction,
+} from "@foxworth/boundary/client";
 export { useInvocationState, useProposalInteraction } from "@foxworth/boundary/react";
 `);
   const result = await build({

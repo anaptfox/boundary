@@ -83,7 +83,7 @@ Everything that holds authority stays on `app`, which only the host has.
 The spec carries this mapping table once. Guides and the glossary use the
 API words only; no "aka" tier.
 
-### D1: Surface becomes Surface in the API and prose
+### D1: Projection becomes Surface in the API and prose
 
 `CONTEXT.md` recorded "surface" as an avoided word for Surface, because a
 surface sounds like something that exists while a Surface may stay
@@ -122,8 +122,16 @@ import from it. Nothing in it is a second model: the short path composes it.
 
 ### D4: subpath list
 
-Phase 6 records the final subpath list in the pull request description after
-auditing which subpaths only re-export another.
+Phase 6 audited the api-surface snapshot rather than the index files by eye.
+A subpath is dropped when every export it carries is already exported by its
+parent and the parent loads everywhere the child did. That removed
+`./client/cache` and `./client/observations`, both exact subsets of the
+browser-safe `./client`. `./electron/ipc` stays because `./electron` publishes
+only a `node` condition and the ipc entry is the neutral renderer-bundle entry.
+`./bus` stays because its index re-exports the bus module's own client file,
+not the `./client` subpath, and its exports exist nowhere else. The final list
+of 38 subpaths is recorded in the pull request description and in
+`packages/README.md`.
 
 ## Invariants kept
 

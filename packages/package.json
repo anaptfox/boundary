@@ -24,8 +24,6 @@
     "./build": "./core/host/build/index.ts",
     "./bus": "./discovery/bus/index.ts",
     "./client": "./callers/client/index.ts",
-    "./client/cache": "./callers/client/cache.ts",
-    "./client/observations": "./callers/client/observations.ts",
     "./cloudflare": "./adapters/cloudflare/index.ts",
     "./control": "./core/control/index.ts",
     "./control/host": "./core/control/host.ts",
@@ -134,8 +132,6 @@
         "node": "./dist/bus.js"
       },
       "./client": "./dist/client.js",
-      "./client/cache": "./dist/client/cache.js",
-      "./client/observations": "./dist/client/observations.js",
       "./cloudflare": "./dist/cloudflare.js",
       "./control": "./dist/control.js",
       "./control/host": "./dist/control/host.js",

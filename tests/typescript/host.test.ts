@@ -54,12 +54,8 @@ const interactions = {
 } as const;
 
 describe("@foxworth/boundary lifecycle", () => {
-  it("direct selects a handle and directRealizationIds mints host-owned IDs", async () => {
+  it("realizationIdsFor mints host-owned IDs from the version", async () => {
     const compiled = await compileInteractions(interactions);
-    expect({ interaction: compiled.handles.list, modes: ["direct"] }).toEqual({
-      interaction: compiled.handles.list,
-      modes: ["direct"],
-    });
     expect(realizationIdsFor(compiled, "v1")).toEqual({
       create: { direct: "todos.create:direct:v1" },
       list: { direct: "todos.list:direct:v1" },

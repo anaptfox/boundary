@@ -532,7 +532,6 @@ console.log("Packed observed reads validate point evidence, refresh authorizatio
     "@foxworth/boundary/control",
     "@foxworth/boundary/control/host",
     "@foxworth/boundary/control/testing",
-    "@foxworth/boundary/client/cache",
     "@foxworth/boundary/client",
     "@foxworth/boundary/remote",
     "@foxworth/boundary/http",

@@ -163,31 +163,6 @@
     "subscribeToObservations": "function subscribeToObservations(client:SurfaceClient,options:ObservationClientOptions):ObservationSubscription;",
     "watchInteraction": "function watchInteraction<Handle extends AnySurfaceHandle>(client:SurfaceClient,handleValue:DirectHandle<Handle>,...args:WatchInteractionArguments<Handle>):InteractionRead<Handle>;"
   },
-  "./client/cache": {
-    "FootprintSource": "type FootprintSource=Readonly<{expectedProgram:Readonly<{interactions:readonly Readonly<{contract:Readonly<{id:string;reads:readonly string[];changes:readonly string[];}>;}>[];}>;}>;",
-    "InteractionCacheScope": "type InteractionCacheScope=Readonly<{/** Opaque identity;create scopes with createInteractionCacheScope(). */ readonly kind:\"boundary-interaction-cache-scope\";}>;",
-    "InteractionFootprint": "type InteractionFootprint=Readonly<{reads:readonly string[];changes:readonly string[];}>;",
-    "InteractionRead": "type InteractionRead<Handle extends AnySurfaceHandle>=Readonly<{getSnapshot():InteractionReadSnapshot<Handle>;subscribe(listener:()=>void):()=>void;refresh():Promise<InteractionOutput<Handle>>;dispose():void;}>;",
-    "InteractionReadError": "type InteractionReadError<Handle extends AnySurfaceHandle>=RemoteInteractionError<Handle>|Error;",
-    "InteractionReadSnapshot": "type InteractionReadSnapshot<Handle extends AnySurfaceHandle>=Readonly<{data:InteractionOutput<Handle>|undefined;error:InteractionReadError<Handle>|undefined;isPending:boolean;}>;",
-    "WatchInteractionOptions": "type WatchInteractionOptions=Readonly<{/** Share invalidation only with readers registered in this explicit scope. */ scope?:InteractionCacheScope;}>;",
-    "createInteractionCacheScope": "function createInteractionCacheScope():InteractionCacheScope;",
-    "footprintsFor": "function footprintsFor(client:SurfaceClient):Promise<ReadonlyMap<string,InteractionFootprint>>;",
-    "indexInteractionFootprints": "function indexInteractionFootprints(source:FootprintSource):ReadonlyMap<string,InteractionFootprint>;",
-    "invalidateReadsForChange": "function invalidateReadsForChange(client:SurfaceClient,change:Pick<SurfaceHandle<any,any>,\"interactionId\">,scope?:InteractionCacheScope):Promise<void>;",
-    "invalidateReadsForObservation": "function invalidateReadsForObservation(value:unknown,scope:InteractionCacheScope):Promise<void>;",
-    "isReadInteraction": "function isReadInteraction(footprints:ReadonlyMap<string,InteractionFootprint>,interactionId:string):boolean;",
-    "mountRead": "function mountRead(client:SurfaceClient,interactionId:string,refresh:()=>Promise<void>,scope?:InteractionCacheScope):()=>void;",
-    "peekFootprints": "function peekFootprints(client:SurfaceClient):ReadonlyMap<string,InteractionFootprint>|undefined;",
-    "readInvalidatedBy": "function readInvalidatedBy(footprints:ReadonlyMap<string,InteractionFootprint>,readInteractionId:string,changeInteractionId:string):boolean;",
-    "refreshReadsForClient": "function refreshReadsForClient(client:SurfaceClient,scope:InteractionCacheScope):Promise<void>;",
-    "watchInteraction": "function watchInteraction<Handle extends AnySurfaceHandle>(client:SurfaceClient,handleValue:DirectHandle<Handle>,...args:WatchInteractionArguments<Handle>):InteractionRead<Handle>;"
-  },
-  "./client/observations": {
-    "ObservationClientOptions": "type ObservationClientOptions=Readonly<{url:string;scope:InteractionCacheScope;fetch?:typeof fetch;headers?:HeadersInit;credentials?:RequestCredentials;onError?(error:Error):void;}>;",
-    "ObservationSubscription": "type ObservationSubscription=Readonly<{/** Resolves after subscription and authoritative read refresh. */ ready:Promise<void>;readonly state:\"connecting\"|\"connected\"|\"disconnected\"|\"disposed\";disconnect():void;/** Explicitly reconnects and refreshes reads to cover any delivery gap. */ reconnect():Promise<void>;dispose():void;}>;",
-    "subscribeToObservations": "function subscribeToObservations(client:SurfaceClient,options:ObservationClientOptions):ObservationSubscription;"
-  },
   "./cloudflare": {
     "DurableObjectHandlerFactory": "type DurableObjectHandlerFactory<State=unknown,Environment=unknown>=(state:State,environment:Environment)=>HttpHandler;",
     "SurfaceDurableObjectClass": "type SurfaceDurableObjectClass<State=unknown,Environment=unknown>=new(state:State,environment:Environment)=>SurfaceDurableObjectInstance;",

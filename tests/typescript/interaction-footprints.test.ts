@@ -1,7 +1,7 @@
 import {
   indexInteractionFootprints,
   readInvalidatedBy,
-} from "@foxworth/boundary/client/cache";
+} from "@foxworth/boundary/client";
 import { describe, expect, it } from "vitest";
 
 const footprints = indexInteractionFootprints({

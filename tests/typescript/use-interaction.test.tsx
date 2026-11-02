@@ -10,7 +10,7 @@ import type { SurfaceClient } from "@foxworth/boundary/client";
 import {
   createInteractionCacheScope,
   invalidateReadsForChange,
-} from "@foxworth/boundary/client/cache";
+} from "@foxworth/boundary/client";
 import {
   AdapterError,
   isDomainErrorFor,

@@ -1,7 +1,7 @@
 import type { AnyCaller, CallerCallAliases, CallerDefinitions, CallerProposeAliases, DefinitionArity, DefinitionInput, DefinitionOutput } from "@foxworth/boundary";
 import type { JsonValue } from "@foxworth/boundary/program";
 import { AdapterError } from "@foxworth/boundary/remote";
-import { indexInteractionFootprints, isReadInteraction } from "@foxworth/boundary/client/cache";
+import { indexInteractionFootprints, isReadInteraction } from "@foxworth/boundary/client";
 import type { HttpHandler } from "@foxworth/boundary/http";
 
 type ServerArguments<Definition> = DefinitionArity<Definition> extends 0

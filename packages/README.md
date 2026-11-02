@@ -61,8 +61,6 @@ docs check fails when it drifts.
 | `@foxworth/boundary/build` | `core/host` | `core/host/build/index.ts` |
 | `@foxworth/boundary/bus` | `discovery/bus` | `discovery/bus/index.ts` |
 | `@foxworth/boundary/client` | `callers/client` | `callers/client/index.ts` |
-| `@foxworth/boundary/client/cache` | `callers/client` | `callers/client/cache.ts` |
-| `@foxworth/boundary/client/observations` | `callers/client` | `callers/client/observations.ts` |
 | `@foxworth/boundary/cloudflare` | `adapters/cloudflare` | `adapters/cloudflare/index.ts` |
 | `@foxworth/boundary/control` | `core/control` | `core/control/index.ts` |
 | `@foxworth/boundary/control/host` | `core/control` | `core/control/host.ts` |

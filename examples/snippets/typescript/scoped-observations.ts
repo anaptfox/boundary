@@ -6,9 +6,14 @@ import type { InvocationObservation } from "@foxworth/boundary/program";
 import { createObservationHttpHandler } from "@foxworth/boundary/http/observations";
 import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
 // #region imports
-import { createInvocationState, createSurfaceClient, pinSurfaceReferences } from "@foxworth/boundary/client";
-import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client/cache";
-import { subscribeToObservations } from "@foxworth/boundary/client/observations";
+import {
+  createInteractionCacheScope,
+  createInvocationState,
+  createSurfaceClient,
+  pinSurfaceReferences,
+  subscribeToObservations,
+  watchInteraction,
+} from "@foxworth/boundary/client";
 // #endregion imports
 
 type Todo = Readonly<{ id: number; title: string }>;

@@ -4,12 +4,12 @@ import { type InteractionHandle, type SurfaceHandle } from "@foxworth/boundary/p
 import type { JsonValue } from "@foxworth/boundary/program";
 import {
   createInteractionCacheScope,
+  createSurfaceClient,
   invalidateReadsForChange,
   mountRead,
   watchInteraction,
-} from "@foxworth/boundary/client/cache";
+} from "@foxworth/boundary/client";
 import { createHandoffInvocation } from "@foxworth/boundary/handoff";
-import { createSurfaceClient } from "@foxworth/boundary/client";
 import {
   createProtocolHandler,
   fetchTransport,

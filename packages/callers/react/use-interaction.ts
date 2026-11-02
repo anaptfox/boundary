@@ -25,7 +25,7 @@ import {
   type InteractionRead,
   type InteractionReadError,
   type InteractionReadSnapshot,
-} from "@foxworth/boundary/client/cache";
+} from "@foxworth/boundary/client";
 import { useInteractionCacheScope } from "./cache-scope";
 import { useInvocationState } from "./use-invocation-state";
 

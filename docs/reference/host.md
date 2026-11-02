@@ -559,7 +559,7 @@ excluded; correlation is explicitly host-selected portable JSON. The host owns
 timeouts, delivery, persistence, access control, ordering, and replay. This is
 neither a durable event bus nor an exactly-once delivery guarantee.
 
-`invalidateReadsForObservation(event, scope)` from `@foxworth/boundary/client/cache`
+`invalidateReadsForObservation(event, scope)` from `@foxworth/boundary/client`
 refreshes intersecting mounted reads belonging to the same installation identity
 and digest. Completed, not-completed, and unknown outcomes may refresh reads;
 not-started outcomes do not. It never retries the mutation. Validate and

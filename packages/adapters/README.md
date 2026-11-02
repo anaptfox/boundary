@@ -1,7 +1,7 @@
 # `@foxworth/boundary/http`
 
-Transport-neutral projection clients plus HTTP, OpenAPI, protocol, and
-resolution helpers. `@foxworth/boundary/client/cache` also supplies the
+Transport-neutral Surface clients plus HTTP, OpenAPI, protocol, and
+resolution helpers. `@foxworth/boundary/client` also supplies the
 framework-neutral `watchInteraction` read store and explicit footprint
 invalidation. Framework HTTP mounts live at
 `@foxworth/boundary/frameworks/hono`, `@foxworth/boundary/frameworks/next`, and
