@@ -1,15 +1,47 @@
 # Boundary
 
+Boundary is a programming model for describing application interactions. An
+interaction is a declaration: a name, the input it takes, the output it
+returns, its errors, what it reads, and what it changes. Your own functions do
+the work. Boundary builds a checked interface from those declarations for each
+caller: a UI, a CLI, or an assistant.
+
+Two interactions from a document app, in plain text:
+
+```text
+search
+  takes:    a query
+  returns:  matching documents
+  reads:    documents
+
+delete
+  takes:    a document ID
+  returns:  deletion result
+  changes:  documents
+```
+
+Their last lines connect them:
+
+```text
+delete ── changes ──→ documents ←── reads ── search
+```
+
+Because that relationship is declared, Boundary can refresh a search on
+screen when your application reports a deletion. The same declarations decide
+which actions each caller gets.
+
+Boundary has a TypeScript SDK and an independent native Rust implementation.
+Neither is published yet; see [Install](#install-not-yet-published).
+
+## Why You'd Want It
+
 Suppose you're building a document app. Somewhere inside it is a function:
 
 ```text
 search("spring") → matching documents
 ```
 
-A search box calls it. Results appear. One piece of your application calls
-another.
-
-Your application also knows how to delete a document:
+Your app can also delete a document:
 
 ```text
 your application
@@ -18,12 +50,8 @@ your application
   delete(id)    → deleted
 ```
 
-Now you want to add an assistant that helps people find documents.
-
-It needs search. Giving it access to deletion would add something its job
-doesn't require.
-
-So draw a box around search:
+Now you add an assistant that helps people find documents. It needs search.
+Its job doesn't need delete, so don't give it delete. Draw a box around search:
 
 ```text
 your application
@@ -41,10 +69,8 @@ your application
 
 **Boundary makes that box an explicit part of your program.**
 
-To build it, describe the actions your application offers. Each description
-gives an action a name, says what input it accepts, and says what a caller can
-expect back. Boundary calls this an **interaction**.
-
+You describe each action your application offers: its name, the input it
+accepts, and what a caller gets back. Boundary calls this an **interaction**.
 Your ordinary functions supply the implementations:
 
 ```text
@@ -55,8 +81,8 @@ search(query) → matches ──────────── searchDocuments(q
 delete(id) → deleted ─────────────── deleteDocument(id)
 ```
 
-With those descriptions available, you can select search for the assistant's
-interface, and search plus delete for the editor's interface:
+From those declarations, you select search for the assistant's interface, and
+search plus delete for the editor's:
 
 ```text
 assistant's interface               your application
@@ -71,16 +97,12 @@ editor's interface               │  └─────────────
 └──────────────┘
 ```
 
-Boundary checks that the selected interface can be fulfilled before
-connecting it to the application.
+Boundary checks that a selected interface can be fulfilled before connecting
+it. The connection lets a caller request an action. Your application still
+decides whether each request is allowed: search might touch private documents,
+and deletion might require ownership. Those rules stay yours.
 
-That connection lets a caller request an action. Your application still
-decides whether a particular request is allowed. Search might involve private
-documents; deletion might require ownership. Your application supplies those
-rules and applies them when requests arrive.
-
-So far, we've connected callers to actions. Now watch what happens when an
-action changes something.
+### Keep Views Current
 
 Someone has these search results open:
 
@@ -92,34 +114,12 @@ search("spring")
   spring-notes.md
 ```
 
-They delete `spring-budget.md` through the editor.
+They delete `spring-budget.md` in the editor. The deletion succeeds, but the
+results still show the document.
 
-The deletion succeeds. But the search results still show the document.
-
-To update the screen, we need to connect **what deletion changes** to **what
-search depends on**. We can put that information in the interaction
-declarations:
-
-```text
-search
-  takes:    a query
-  returns:  matching documents
-  reads:    documents
-
-delete
-  takes:    a document ID
-  returns:  deletion result
-  changes:  documents
-```
-
-Look at the relationship those last lines reveal:
-
-```text
-delete ── changes ──→ documents ←── reads ── search
-```
-
-Once the application delivers an observation of the deletion, Boundary's read
-machinery can use that relationship to refresh the mounted search:
+The `reads` and `changes` lines at the top of this page connect the two. Once
+the application delivers an observation of the deletion, Boundary's read
+machinery uses that relationship to refresh the mounted search:
 
 ```text
 delete completes
@@ -140,17 +140,12 @@ the screen shows the current results
 The deletion could come from the editor or a command-line tool. The
 relationship stays the same.
 
-**The interaction declarations are now something other parts of the
-application can build on.** Caller interfaces select from them. Connections
-check them. Read machinery uses their declared dependencies. Your application
-supplies the implementations and delivers the observations.
+### Propose Instead of Act
 
-Now suppose you want the assistant to help clean up old documents. It should
-be able to propose a deletion for review.
-
-You expand its interface to include **requesting** deletion. When you wire
-deletion through Boundary's optional controlled path, calling and requesting
-have distinct meanings:
+Now you want the assistant to help clean up old documents by proposing
+deletions for review. You add **requesting** deletion to its interface. When
+you wire deletion through Boundary's optional controlled path, calling and
+requesting mean different things:
 
 ```text
 call delete       → perform the deletion, if admitted
@@ -158,7 +153,7 @@ call delete       → perform the deletion, if admitted
 request delete    → prepare a proposal for review
 ```
 
-The assistant's request produces something the application can retain and
+The assistant's request produces something the application can keep and
 someone can inspect:
 
 ```text
@@ -179,24 +174,19 @@ request deletion ────────→ prepare proposal
                           verify the result
 ```
 
-The application owns the review rules, storage, and execution. The assistant's
-ability to request a deletion gives it a way to participate without giving it
-the authority to approve or execute that proposal.
+The application owns the review rules, storage, and execution. The assistant
+can take part without the authority to approve or carry out the deletion.
 
-There is another detail hiding at the end of that diagram.
+### Say Uncertain When You Don't Know
 
-Suppose deletion starts, then the connection disappears. The document might
-already be gone. Reporting failure could encourage someone to repeat the
-action; reporting success would claim something we haven't established.
+Suppose a deletion starts, then the connection drops. The document might
+already be gone. Reporting failure could invite someone to repeat the action.
+Reporting success would claim something nobody has established.
 
-Boundary can preserve that outcome as **uncertain**. The application then
-checks reality to determine what happened.
+Boundary can keep that outcome as **uncertain**. The application then checks
+reality to find out what happened.
 
-We now have a model that reaches from an available action to a particular
-request, through the application's decision, and into evidence about its
-outcome.
-
-Pull back:
+### The Whole Model
 
 ```text
                  declared interactions
@@ -214,37 +204,36 @@ Pull back:
       application implementations
 ```
 
-The collection of interaction declarations is what Boundary calls a
-**Program**. You can inspect it, combine declarations from different modules,
-and select caller interfaces from it before connecting any implementations.
+The collection of interaction declarations is a **Program**. You can inspect
+it, combine declarations from different modules, and select caller interfaces
+from it before connecting any implementations.
 
-**Boundary is a programming model for describing application interactions and
-building around those descriptions.**
-
-You decide what the actions mean and supply the code that performs them.
+You decide what the actions mean and write the code that performs them.
 Boundary gives callers, adapters, and supporting machinery a shared
-description to work from.
+description to work from. A new UI, CLI, or assistant can then join the
+application's existing model of work: request its actions, pass through its
+decisions, and observe the consequences.
 
-A new UI, CLI, or assistant can then participate in the application's existing
-model of work: requesting its actions, passing through its decisions, and
-observing the consequences.
+## Try the Model in TypeScript
 
-## Try the model in TypeScript
+This walkthrough adds document review: read a document, suggest a change, and
+accept a suggestion. The excerpts form one executable
+example; see [Run the Example](#run-the-example).
 
-The executable walkthrough below adds document review: read a document,
-suggest a change, and accept a suggestion. It uses ordinary application review
-rules. For the optional proposal, grant, and recovery lifecycle, see
-[controlled effects](./docs/guides/controlled-effects.md); for observation
-delivery and read refresh, see [shared updates](./docs/guides/humans-and-agents.md#make-shared-updates-truthful).
+Other starting points:
 
-For a shorter native TypeScript setup with named callers, see the
-[concise authoring guide](./docs/guides/concise-authoring.md).
+- For a shorter native TypeScript setup with named callers, see the
+  [concise authoring guide](./docs/guides/concise-authoring.md).
+- For the optional proposal, grant, and recovery lifecycle, see
+  [controlled effects](./docs/guides/controlled-effects.md).
+- For observation delivery and read refresh, see
+  [shared updates](./docs/guides/humans-and-agents.md#make-shared-updates-truthful).
+- The optional [Yjs and Automerge snapshot adapters](./docs/guides/crdt-snapshots.md)
+  are **experimental**. Their APIs may change incompatibly, and they have no
+  production support commitment. See
+  [availability and support](./docs/concepts/current-status.md).
 
-The optional [Yjs and Automerge snapshot adapters](./docs/guides/crdt-snapshots.md)
-are **experimental**: their APIs may change incompatibly and have no production
-support commitment. See [availability and support](./docs/concepts/current-status.md).
-
-### Start with reading
+### Start With Reading
 
 The editor needs to read the document. Start with that one interaction:
 
@@ -262,11 +251,11 @@ const readDocument = defineInteraction({
 });
 ```
 
-This says what a caller can expect: the document's text and revision. The
-revision identifies which version someone read. The code that fetches it will
-come later; this is just the agreement between that code and its callers.
+A caller gets the document's text and its revision, which identifies the
+version they read. The code that fetches it comes later. This is only the
+agreement between that code and its callers.
 
-### Now let someone suggest a change
+### Let Someone Suggest a Change
 
 The assistant reads “Launch on Friday.” and suggests “Launch on Tuesday.”
 What should the document say now?
@@ -278,11 +267,11 @@ Launch on Friday.       Launch on Friday.            Launch on Tuesday.
                         suggestion: Tuesday         suggestion accepted
 ```
 
-It still says Friday. Suggesting adds a review item; accepting changes the
-document. Let's make that distinction explicit, one piece at a time.
+It still says Friday. Suggesting adds a review item. Accepting changes the
+document. Make that explicit, one piece at a time.
 
-A suggestion needs an ID, proposed text, and the document revision it was based
-on. A rejection carries the application's reason—for example, that the
+A suggestion needs an ID, proposed text, and the document revision it was
+based on. A rejection carries the application's reason, for example that the
 reviewed document has since changed:
 
 <!-- snippet:examples/snippets/typescript/document-review-interactions.ts#review-data -->
@@ -295,8 +284,8 @@ export const Suggestion = z.strictObject({
 export const reviewRejected = z.strictObject({ reason: z.string() });
 ```
 
-Now declare the action. Notice `changes`: it names suggestions, not the
-document.
+Now declare the action. Note that `changes` names suggestions, not the
+document:
 
 <!-- snippet:examples/snippets/typescript/document-review-interactions.ts#suggest -->
 ```ts
@@ -326,13 +315,13 @@ const acceptSuggestion = defineInteraction({
 ```
 
 The [application's ordinary functions](./examples/snippets/typescript/document-review-store.ts)
-store suggestions and enforce revision and review rules. Boundary doesn't invent
-those rules or supply the document store.
+store suggestions and enforce revision and review rules. Boundary doesn't
+invent those rules or supply the document store.
 
-### Connect the callers
+### Connect the Callers
 
-Put the three interactions in a record. They now form the shared vocabulary for
-the editor, CLI, and assistant:
+Put the three interactions in a record. They're now the shared vocabulary for
+the editor, the CLI, and the assistant:
 
 <!-- snippet:examples/snippets/typescript/document-review-interactions.ts#interactions -->
 ```ts
@@ -343,9 +332,8 @@ export const reviewInteractions = {
 };
 ```
 
-The following excerpts connect these declarations to the
+The excerpts below connect these declarations to the
 [application's handlers](./examples/snippets/typescript/document-review-host.ts).
-Together they form one executable example.
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#imports -->
 ```ts
@@ -358,8 +346,8 @@ import {
 ```
 
 Select the actions each caller needs from the same declarations. A selected
-interface is a **Projection**. The CLI and assistant can share one because
-both need to read and suggest; the editor also needs to accept.
+interface is a **Projection**. The CLI and the assistant can share one,
+because both read and suggest. The editor also needs to accept.
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#surfaces -->
 ```ts
@@ -414,8 +402,10 @@ const editor = editorResult.binding.connect();
 const contributor = contributorResult.binding.connect();
 ```
 
+A Projection is the selected caller interface; a Binding is its checked attachment to an Installation, and `connect()` comes after a successful bind.
+
 These fixture identities stand in for authenticated callers. In a remote app,
-the server constructs them from trusted authentication; caller-supplied labels
+the server builds them from trusted authentication. Labels a caller supplies
 are not permission.
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#actors -->
@@ -426,7 +416,7 @@ const scriptActor: ReviewActor = { id: "review-cli", kind: "script" };
 const assistantActor: ReviewActor = { id: "assistant", kind: "assistant" };
 ```
 
-Now let the CLI and assistant suggest different dates. The editor chooses one:
+Now the CLI and the assistant suggest different dates. The editor picks one:
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#review -->
 ```ts
@@ -445,95 +435,117 @@ const accepted = await editor.call(editorSurface.handles.accept, {
 // accepted: { text: "Launch on Tuesday.", revision: 1 }
 ```
 
-Can the assistant call `accept`? Its connection has no such interaction. Even
-passing it an editor's handle doesn't expand the connection. Calling through
-the editor's connection with an assistant identity also fails admission.
+Can the assistant call `accept`? Its connection has no such interaction.
+Passing it an editor's handle doesn't expand the connection. Calling through
+the editor's connection with an assistant identity fails admission.
 
-The application separately checks that an editor cannot accept their own
-suggestion, or accept one based on an old document revision. Selection,
-admission, and domain rules each do a different job.
+The application separately checks that an editor can't accept their own
+suggestion, or accept one based on an old revision. Selection, admission, and
+domain rules each do a different job.
 
-### Change one thing. Predict what still works.
+### Change One Thing. Predict What Still Works.
 
 Suppose you replace the implementation. The selected interactions still mean
-read, suggest, and accept, with the same declared contracts. You can explicitly
-bind the existing caller interface to the new installation. Existing
-connections remain attached to the original installation.
+read, suggest, and accept, with the same declared contracts. You can
+explicitly bind the existing caller interface to the new installation.
+Existing connections stay attached to the original installation.
 
 Now suppose a replacement declares that `suggest` also changes the document.
-Its name, inputs, and outputs are unchanged. Should the assistant's existing
+Its name, input, and output are unchanged. Should the assistant's existing
 interface still connect?
 
 ```text
-caller expects suggest to change       installation declares it changes
+caller expects          installation declares       bind result
 
-suggestions                     ✓      suggestions
-suggestions                     X      suggestions + document
+suggestions             suggestions                 bound
+suggestions             suggestions + document      unrealized: incompatible-contract
 ```
 
-Boundary refuses the second connection before running any interaction. The expected
-write footprint changed. Checking only the function's name and data shapes
-would miss that difference.
+Boundary refuses the second binding before running any interaction. The
+expected write footprint changed. A check of only the function's name and data
+shapes would miss that.
 
-This checks declared agreement. It cannot prove an implementation obeys its
-declared footprint or that a suggestion improves the writing.
+This checks declared agreement. It can't prove an implementation obeys its
+declared footprint, or that a suggestion improves the writing.
 
 The [complete example](./examples/snippets/typescript/document-review.ts) and
-[its tests](./tests/typescript/document-review-docs.test.ts) exercise the review,
-refusals, and explicit replacement. They use local calls and in-memory state.
-The [caller guide](./docs/guides/adding-a-caller.md) explains the additional
-transport step for a real CLI, browser, or agent connection.
+[its tests](./tests/typescript/document-review-docs.test.ts) exercise the
+review, the refusals, and the explicit replacement. They use local calls and
+in-memory state. The [caller guide](./docs/guides/adding-a-caller.md) explains
+the extra transport step for a real CLI, browser, or agent connection.
 
-## Where it earns its place
+## When to Use It
 
 Use Boundary when an application's actions need to survive changes in caller,
-implementation, or deployment. An editor, developer tool, framework, or service
-can keep its own model while giving each caller a checked interface to it.
-A private helper whose callers and implementation always change together can
-remain an ordinary function.
+implementation, or deployment. An editor, developer tool, framework, or
+service can keep its own model while giving each caller a checked interface to
+it. A private helper whose callers and implementation always change together
+can stay an ordinary function.
 
-Other examples show different reasons to make that agreement explicit:
+Other reasons to make the agreement explicit:
 
-- [Investigate a support ticket, then review its resolution](./docs/guides/next-domains.md#triage) — callers work through application-owned review and revision rules.
-- [Load a plugin implementation](./docs/guides/plugins.md) — keep the interaction declaration with the host while another language supplies the implementation.
-- [Publish with evidence of completion](./docs/guides/controlled-effects.md) — add explicit approval, execution, verification, and reconciliation when a returned value isn't enough.
+- [Investigate a support ticket, then review its resolution](./docs/guides/next-domains.md#triage): callers work through application-owned review and revision rules.
+- [Load a plugin implementation](./docs/guides/plugins.md): keep the interaction declaration with the host while another language supplies the implementation.
+- [Publish with evidence of completion](./docs/guides/controlled-effects.md): add explicit approval, execution, verification, and reconciliation when a returned value isn't enough.
 
 The document review above uses ordinary application rules. Consequential
-effects can use Boundary Control; an ambiguous outcome stays uncertain until the
-host reconciles it, without permission to repeat the effect.
+effects can use [Boundary Control](./docs/guides/controlled-effects.md). There, an ambiguous outcome stays uncertain
+until the host reconciles it, without permission to repeat the effect.
 
-## Run the example
+## Install (Not Yet Published)
 
-Packages are currently unpublished; [availability and support](./docs/concepts/current-status.md)
-records the release boundary. From this checkout, after installing its pinned
-toolchain and dependencies:
+Boundary is not published to npm or crates.io yet.
+[Availability and support](./docs/concepts/current-status.md) records the
+release boundary. For now, work from a checkout of this repository.
+
+### Run the Example
+
+From the checkout, after installing Node 26.13.0, pnpm 12.11.2, Rust 1.99.1,
+and the dependencies:
 
 ```console
 pnpm exec vitest run --config config/vitest.config.ts tests/typescript/document-review-docs.test.ts
 ```
 
-## Use Boundary locally
+### Use Boundary in Another Project
 
 Until the package is published, a sibling project installs a packed snapshot
-from this checkout, not workspace source:
+from this checkout, not the workspace source:
+
+In this checkout:
 
 ```console
 just pack
+```
+
+In your project, substitute the Boundary checkout path, the reported package
+version, the full tarball SHA-256 without its `sha256:` prefix, and the
+`peerDependencies.zod` range from the generated package manifest (`^4.6.5`
+in this tree):
+
+```console
+mkdir -p vendor/boundary/<SHA256_HEX>
+cp /path/to/boundary/dist/boundary/foxworth-boundary-<VERSION>.tgz vendor/boundary/<SHA256_HEX>/
+cp /path/to/boundary/dist/boundary/foxworth-boundary-<VERSION>.tgz.receipt.json vendor/boundary/<SHA256_HEX>/
 pnpm add "file:vendor/boundary/<SHA256_HEX>/foxworth-boundary-<VERSION>.tgz" "zod@<ZOD_PEER_RANGE>"
 ```
 
-[Use Boundary locally](./docs/guides/local-consumers.md) covers vendoring the
-snapshot, verifying the installed bytes, peers, and bundling rules for
-applications and reusable libraries.
+`just pack` runs in this checkout. `pnpm add` runs in your project, after you
+copy the packed tarball and receipt into its `vendor/boundary/<SHA256_HEX>/` directory.
+[Use Boundary locally](./docs/guides/local-consumers.md) covers that copy,
+verifying the installed bytes, peers, and bundling rules for applications and
+reusable libraries.
 
-[Continue with the model and guides](./docs/README.md). The map also links to
-framework integrations, package references, and the independent native Rust
-implementation. Native C and C++ hosts can follow the [embedding guide](./docs/guides/native-embedding.md).
+## Learn More
 
-The [WebSocket Todo room](./examples/apps/typescript/websocket-room/README.md)
-adds a local streaming AI guide, deferred tool discovery, reconnect replay,
-and host-owned completion proposals with explicit screen approval.
+- [The model and guides](./docs/README.md): framework integrations, package
+  references, and the independent native Rust implementation.
+- Native C and C++ hosts: the [embedding guide](./docs/guides/native-embedding.md).
+- The [WebSocket Todo room](./examples/apps/typescript/websocket-room/README.md)
+  is a local demo where a streaming assistant looks up tools as it goes and
+  proposes completing a todo for host-owned, on-screen approval. On reconnect,
+  it replays a stored reply without rerunning the model or the approved action.
 
 ## License
 
-Boundary is licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution.
+Apache-2.0. See [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
