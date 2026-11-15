@@ -131,7 +131,7 @@ describe("CI workflow policy", () => {
     }
     expect(ci).toContain("cancel-in-progress: ${{ github.event_name == 'pull_request' }}");
     expect(ci).toContain("RUSTUP_TOOLCHAIN: 1.96.0");
-    expect(ci).toContain("RUSTUP_TOOLCHAIN: 1.99.1");
+    expect(ci).toContain("RUSTUP_TOOLCHAIN: 1.100.0");
     expect(ci).toContain("node-version: 24.21.0");
   });
 

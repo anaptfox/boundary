@@ -500,7 +500,7 @@ release boundary. For now, work from a checkout of this repository.
 
 ### Run the Example
 
-From the checkout, after installing Node 26.13.0, pnpm 12.11.2, Rust 1.99.1,
+From the checkout, after installing Node 26.13.0, pnpm 12.11.2, Rust 1.100.0,
 and the dependencies:
 
 ```console
