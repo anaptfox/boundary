@@ -17,7 +17,7 @@ resolver = "3"
 version = "0.2.0"
 edition = "2024"
 rust-version = "1.88"
-license = "MIT"
+license = "Apache-2.0"
 authors = ["Taron Foxworth"]
 publish = false
 

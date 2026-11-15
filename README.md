@@ -533,3 +533,7 @@ implementation. Native C and C++ hosts can follow the [embedding guide](./docs/g
 The [WebSocket Todo room](./examples/apps/typescript/websocket-room/README.md)
 adds a local streaming AI guide, deferred tool discovery, reconnect replay,
 and host-owned completion proposals with explicit screen approval.
+
+## License
+
+Boundary is licensed under the [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution.

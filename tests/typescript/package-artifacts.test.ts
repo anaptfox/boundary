@@ -35,7 +35,7 @@ describe("Boundary package topology", () => {
       const manifest = manifestFor();
       expect(manifest).toMatchObject({
         name: `@foxworth/${name}`,
-        license: "MIT",
+        license: "Apache-2.0",
         author: "Taron Foxworth",
       });
       expect(existsSync(path.join(packageRoot, "README.md"))).toBe(true);

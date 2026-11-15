@@ -2,7 +2,7 @@
   "name": "@foxworth/boundary",
   "version": "0.2.0",
   "description": "Typed, host-owned interfaces for narrow and accountable interaction",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Taron Foxworth",
   "repository": {
     "type": "git",
@@ -15,7 +15,9 @@
   "type": "module",
   "files": [
     "dist",
-    "boundary-artifact.json"
+    "boundary-artifact.json",
+    "LICENSE",
+    "NOTICE"
   ],
   "exports": {
     ".": "./core/host/index.ts",
