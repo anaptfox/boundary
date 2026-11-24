@@ -214,7 +214,7 @@ export async function validateHandoffOutcomeAgainstManifest(
   manifestValue: unknown,
   outcomeValue: unknown,
 ): Promise<HandoffOutcome> {
-  const manifest = await validateProjectionBindingManifest(manifestValue);
+  const manifest = validateProjectionBindingManifest(manifestValue);
   const outcome = validateHandoffOutcome(outcomeValue);
   if (outcome.bindingDigest !== manifest.bindingDigest) {
     failHandoff("STALE_BINDING", "outcome.bindingDigest", "outcome targets a different Binding");
@@ -281,7 +281,7 @@ export async function validateHandoffResponse(
   invocationValue: unknown,
   outcomeValue: unknown,
 ): Promise<HandoffOutcome> {
-  const manifest = await validateProjectionBindingManifest(manifestValue);
+  const manifest = validateProjectionBindingManifest(manifestValue);
   const invocation = validateHandoffInvocation(invocationValue);
   const outcome = await validateHandoffOutcomeAgainstManifest(manifest, outcomeValue);
   for (const key of [

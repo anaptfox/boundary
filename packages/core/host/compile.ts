@@ -2,6 +2,7 @@ import { composePrograms, createInteractionDescriptor, createProgram, diffProgra
 import { declaredErrorSchema, isInteractionDefinition } from "./definitions";
 import { failHost } from "./errors";
 import type { AnyInteractionDefinition, CompileInteractionsOptions, CompiledInteractions, InteractionDefinitions, InteractionHandle, InteractionLowering, SchemaAdapter } from "./types";
+import type { AsyncInteractionLowering } from "./async-lowering";
 import { dataEntries, descriptorAnnotations, snapshotDefinitions } from "./definition-snapshot";
 import { compileAuthoringSchema, schemaAdapters } from "./schema-adapters";
 
@@ -29,14 +30,13 @@ const handleMetadata = new WeakMap<
   }>
 >();
 
-async function compileSnapshot<Definitions extends InteractionDefinitions>(
+function compileSnapshot<Definitions extends InteractionDefinitions>(
   definitions: Definitions,
   nativeTargets: ReadonlyMap<string, unknown>,
   adapters: readonly SchemaAdapter<any>[],
-): Promise<CompiledInteractions<Definitions>> {
+): CompiledInteractions<Definitions> {
   const aliases = Object.keys(definitions);
-  const compiledDefinitions = await Promise.all(
-    aliases.map(async (alias) => {
+  const compiledDefinitions = aliases.map((alias) => {
       const definition = definitions[alias]!;
       const input = compileAuthoringSchema(
         adapters,
@@ -73,7 +73,7 @@ async function compileSnapshot<Definitions extends InteractionDefinitions>(
         output: output.annotations,
         errors: Object.freeze(errorAnnotations),
       });
-      const descriptor = await createInteractionDescriptor({
+      const descriptor = createInteractionDescriptor({
         contract: {
           version: 1,
           id: definition.id,
@@ -108,8 +108,7 @@ async function compileSnapshot<Definitions extends InteractionDefinitions>(
           : { annotations }),
       });
       return Object.freeze({ descriptor, errorSchemas });
-    }),
-  );
+    });
   const descriptors = compiledDefinitions.map((entry) => entry.descriptor);
   const errorSchemas = new Map(
     compiledDefinitions.map((entry) => [
@@ -128,7 +127,7 @@ async function compileSnapshot<Definitions extends InteractionDefinitions>(
     }
     ids.add(descriptor.contract.id);
   }
-  const program = await createProgram(descriptors);
+  const program = createProgram(descriptors);
   return assembleCompiled(definitions, nativeTargets, program, errorSchemas);
 }
 
@@ -204,27 +203,27 @@ type ComposedDefinitions<
   ? Definitions
   : never;
 
-export async function compileInteractions<
+export function compileInteractions<
   const Definitions extends InteractionDefinitions,
 >(
   definitions: Definitions,
   options?: CompileInteractionsOptions,
-): Promise<CompiledInteractions<Definitions>>;
-export async function compileInteractions<
+): CompiledInteractions<Definitions>;
+export function compileInteractions<
   const Native extends Readonly<Record<string, unknown>>,
   const Definitions extends InteractionDefinitions,
 >(
   native: Native,
   lowering: InteractionLowering<Native, Definitions>,
   options?: CompileInteractionsOptions,
-): Promise<CompiledInteractions<Definitions>>;
-export async function compileInteractions(
+): CompiledInteractions<Definitions>;
+export function compileInteractions(
   source: Readonly<Record<string, unknown>>,
   loweringOrOptions?:
     | InteractionLowering<any, any>
     | CompileInteractionsOptions,
   options?: CompileInteractionsOptions,
-): Promise<CompiledInteractions<any>> {
+): CompiledInteractions<any> {
   const entries = dataEntries(source, "interactions");
   const lowering =
     loweringOrOptions !== undefined &&
@@ -257,7 +256,10 @@ export async function compileInteractions(
   for (const [alias, native] of entries) {
     let definition: unknown;
     try {
-      definition = await lowering.lower(native, Object.freeze({ alias }));
+      definition = lowering.lower(native, Object.freeze({ alias }));
+      if (definition !== null && typeof definition === "object" && "then" in definition) {
+        failHost("INVALID_DECLARATION", `lowering.${alias}`, "asynchronous lowering requires compileInteractionsAsync");
+      }
     } catch (cause) {
       failHost(
         "INVALID_DECLARATION",
@@ -283,17 +285,44 @@ export async function compileInteractions(
   );
 }
 
+export async function compileInteractionsAsync<
+  const Native extends Readonly<Record<string, unknown>>,
+  const Definitions extends InteractionDefinitions,
+>(
+  native: Native,
+  lowering: AsyncInteractionLowering<Native, Definitions>,
+  options?: CompileInteractionsOptions,
+): Promise<CompiledInteractions<Definitions>> {
+  const entries = dataEntries(native, "interactions");
+  const definitions: Record<string, AnyInteractionDefinition> = {};
+  const nativeTargets = new Map<string, unknown>();
+  for (const [alias, value] of entries) {
+    let definition: unknown;
+    try {
+      definition = await lowering.lower(value as Native[string], Object.freeze({ alias }));
+    } catch (cause) {
+      failHost("INVALID_DECLARATION", `lowering.${alias}`, "native interaction lowering failed", cause);
+    }
+    if (!isInteractionDefinition(definition)) {
+      failHost("FORGED_DEFINITION", `lowering.${alias}`, "interaction lowering must return an authentic interaction definition");
+    }
+    definitions[alias] = definition;
+    nativeTargets.set(alias, value);
+  }
+  return compileSnapshot(Object.freeze(definitions) as Definitions, nativeTargets, schemaAdapters(options));
+}
+
 /**
  * Compose already-compiled closed records without weakening their typed
  * handles. Alias collisions are rejected before Program composition; interaction
  * identity conflicts retain Program's structured diagnostics.
  */
-export async function composeCompiledInteractions<
+export function composeCompiledInteractions<
   const Inputs extends readonly [
     CompiledInteractions,
     ...CompiledInteractions[],
   ],
->(...inputs: Inputs): Promise<CompiledInteractions<ComposedDefinitions<Inputs>>> {
+>(...inputs: Inputs): CompiledInteractions<ComposedDefinitions<Inputs>> {
   const definitions: Record<string, AnyInteractionDefinition> = {};
   const nativeTargets = new Map<string, unknown>();
   const errorSchemas = new Map<
@@ -320,7 +349,7 @@ export async function composeCompiledInteractions<
       );
     }
   }
-  const program = await composePrograms(inputs.map((input) => input.program));
+  const program = composePrograms(inputs.map((input) => input.program));
   return assembleCompiled(
     Object.freeze(definitions) as ComposedDefinitions<Inputs>,
     nativeTargets,

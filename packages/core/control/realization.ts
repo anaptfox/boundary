@@ -385,11 +385,11 @@ export function controlled<
   >;
 }
 
-export async function digestControlRealization<Context = unknown>(
+export function digestControlRealization<Context = unknown>(
   compiler: ControlSchemaCompiler,
   identity: ControlRealizationIdentity,
   control: unknown,
-): Promise<ResolvedControl<Context>> {
+): ResolvedControl<Context> {
   const exactIdentity = snapshotInteractionIdentity(identity);
   const hook = validateControlHook<Context>(
     control,
@@ -421,7 +421,7 @@ export async function digestControlRealization<Context = unknown>(
   const resolved = Object.freeze({
     identity: exactIdentity,
     hook,
-    controlDigest: await hashJson(
+    controlDigest: hashJson(
       CONTROL_REALIZATION_DOMAIN,
       digestIdentity as unknown as JsonObject,
     ),

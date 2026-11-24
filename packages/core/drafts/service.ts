@@ -125,7 +125,7 @@ export async function proposeDraft(
     draftDigest,
   });
   try {
-    await verifyDraft(draft);
+    verifyDraft(draft);
   } catch (cause) {
     throw declaredInteractionError(draftsPropose, "invalidDraft", {
       message: cause instanceof Error ? cause.message : "invalid draft",
@@ -170,7 +170,7 @@ async function requireDraft(
     fail({ draftDigest: rawDraftDigest });
   }
   try {
-    await verifyDraft(draft);
+    verifyDraft(draft);
   } catch (cause) {
     throw new InteractionFault(
       "realization-failed",
@@ -202,7 +202,7 @@ export async function acceptDraft(
   const draft = await requireDraft(store, input.draftDigest, (details) => {
     throw declaredInteractionError(draftsAccept, "draftNotFound", details);
   });
-  const contractDigest = await digestInteractionContract(draft.contract);
+  const contractDigest = digestInteractionContract(draft.contract);
   await writeFault(
     () =>
       store.recordDecision(

@@ -99,13 +99,13 @@ describe("module composition recipe", () => {
   });
 
   it("rejects repeated compiled aliases and repeated interaction IDs before installation", async () => {
-    await expect(composeCompiledInteractions(
-      await compileInteractions(taskModule), await compileInteractions(capacityModule),
-    )).rejects.toMatchObject({ code: "DUPLICATE_INTERACTION_ALIAS", path: "interactions.mutate" });
-    await expect(composeCompiledInteractions(
-      await compileInteractions({ taskMutate: taskModule.mutate }),
-      await compileInteractions({ anotherAlias: taskModule.mutate }),
-    )).rejects.toMatchObject({ code: "DUPLICATE_INTERACTION_ID" });
+    expect(() => composeCompiledInteractions(
+      compileInteractions(taskModule), compileInteractions(capacityModule),
+    )).toThrow(expect.objectContaining({ code: "DUPLICATE_INTERACTION_ALIAS", path: "interactions.mutate" }));
+    expect(() => composeCompiledInteractions(
+      compileInteractions({ taskMutate: taskModule.mutate }),
+      compileInteractions({ anotherAlias: taskModule.mutate }),
+    )).toThrow(expect.objectContaining({ code: "DUPLICATE_INTERACTION_ID" }));
   });
 
   type Mutation = ImplementationMap<typeof taskModule, Context>["mutate"];

@@ -43,21 +43,21 @@ const interactions = {
     changes: ["todos"],
   }),
 };
-const compiled = await compileInteractions(interactions);
+const compiled = compileInteractions(interactions);
 const implementations = implementInteractions(interactions, {
   create: () => ({ id: 1 }),
 });
-const { installation } = await installInteractions(compiled, {
+const { installation } = installInteractions(compiled, {
   installationId: "smoke:mcp-workerd:1",
   implementations,
   realizationIds: {
     create: { direct: "smoke:mcp-workerd:create:1" },
   },
 });
-const projection = await projectInteractions(compiled, {
+const projection = projectInteractions(compiled, {
   create: { interaction: compiled.handles.create, modes: ["direct"] },
 });
-const result = await bindProjection(projection, installation, {
+const result = bindProjection(projection, installation, {
   admit: admitAll,
 });
 if (result.status !== "bound") {

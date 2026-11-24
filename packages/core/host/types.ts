@@ -197,7 +197,7 @@ export interface InteractionLowering<
   lower<Alias extends keyof Native & string>(
     value: Native[Alias],
     context: Readonly<{ alias: Alias }>,
-  ): MaybePromise<Definitions[Alias]>;
+  ): Definitions[Alias];
 }
 
 type ContextualImplementation<

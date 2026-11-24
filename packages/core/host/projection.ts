@@ -81,7 +81,7 @@ export type AliasProjectionSelections<
 export function projectInteractions<
   Definitions extends InteractionDefinitions,
   const Selections extends ProjectionSelections,
->(compiled: CompiledInteractions<Definitions>, selections: Selections): Promise<Projection<Selections>>;
+>(compiled: CompiledInteractions<Definitions>, selections: Selections): Projection<Selections>;
 export function projectInteractions<
   Definitions extends InteractionDefinitions,
   const Selections extends Readonly<Record<string, InteractionMode | ProjectionSelection>>,
@@ -92,11 +92,11 @@ export function projectInteractions<
       ? Alias extends keyof Definitions ? Selections[Alias] : never
       : Selections[Alias];
   },
-): Promise<Projection<AliasProjectionSelections<Definitions, Selections>>>;
-export async function projectInteractions(
+): Projection<AliasProjectionSelections<Definitions, Selections>>;
+export function projectInteractions(
   compiled: CompiledInteractions<any>,
   selections: Readonly<Record<string, InteractionMode | ProjectionSelection>>,
-): Promise<Projection<any>> {
+): Projection<any> {
   metadataForCompiled(compiled);
   if (selections === null || typeof selections !== "object" || Array.isArray(selections)) {
     return failHost("INVALID_PROJECTION", "selections", "projection selections must be a closed record");
@@ -121,13 +121,13 @@ export async function projectInteractions(
   return projectExplicit(compiled, lowered);
 }
 
-async function projectExplicit<
+function projectExplicit<
   Definitions extends InteractionDefinitions,
   const Selections extends ProjectionSelections,
 >(
   compiled: CompiledInteractions<Definitions>,
   selections: Selections,
-): Promise<Projection<Selections>> {
+): Projection<Selections> {
   const compiledMeta = metadataForCompiled(compiled);
   if (
     selections === null ||
@@ -225,7 +225,7 @@ async function projectExplicit<
   const descriptors = [...selectedIds].map(
     (id) => compiledMeta.descriptors.get(id)!,
   );
-  const program = await createProgram(descriptors);
+  const program = createProgram(descriptors);
   const interactions = Object.freeze(
     [...byAlias.values()]
       .map((entry) => entry.interaction)
@@ -248,7 +248,7 @@ async function projectExplicit<
       ),
     ),
   });
-  const projectionDigest = await hashJson(
+  const projectionDigest = hashJson(
     PROJECTION_DOMAIN,
     identity as unknown as JsonObject,
   );
@@ -313,9 +313,9 @@ export type DirectProjectionSelections<Definitions extends InteractionDefinition
   };
 
 /** Project every compiled handle in direct mode. */
-export async function projectAllDirect<Definitions extends InteractionDefinitions>(
+export function projectAllDirect<Definitions extends InteractionDefinitions>(
   compiled: CompiledInteractions<Definitions>,
-): Promise<Projection<DirectProjectionSelections<Definitions>>> {
+): Projection<DirectProjectionSelections<Definitions>> {
   metadataForCompiled(compiled);
   const selections = Object.fromEntries(
     Object.entries(compiled.handles).map(([alias, handle]) => [
@@ -345,21 +345,21 @@ function resolvePickEntry(
  * Keys resolve as aliases first, then as interaction ids.
  * The result is a new Projection with its own digest.
  */
-export async function pickProjection<
+export function pickProjection<
   Selections extends ProjectionSelections,
   const Keys extends readonly (keyof Selections & string)[],
 >(
   projection: Projection<Selections>,
   ...keys: Keys
-): Promise<Projection<Pick<Selections, Keys[number]>>>;
-export async function pickProjection<Selections extends ProjectionSelections>(
+): Projection<Pick<Selections, Keys[number]>>;
+export function pickProjection<Selections extends ProjectionSelections>(
   projection: Projection<Selections>,
   ...keys: readonly string[]
-): Promise<Projection<Selections>>;
-export async function pickProjection(
+): Projection<Selections>;
+export function pickProjection(
   projection: Projection<ProjectionSelections>,
   ...keys: readonly string[]
-): Promise<Projection<ProjectionSelections>> {
+): Projection<ProjectionSelections> {
   const meta = metadataForProjection(projection);
 
   if (new Set(keys).size !== keys.length) {

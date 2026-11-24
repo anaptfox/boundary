@@ -41,7 +41,7 @@ export async function statusControl(
       "proposal was not found",
     );
   }
-  const proposal = await requireValidProposal(rawProposal);
+  const proposal = requireValidProposal(rawProposal);
   if (proposal.id !== proposalId) {
     invalidStatus(
       "status.proposal.id",
@@ -194,7 +194,7 @@ export async function pageControl(
         (query.interactionId !== undefined && row.interactionId !== query.interactionId)) {
       invalidStatus("page.scope", "journal returned a row outside requested scope");
     }
-    const proposal = await requireValidProposal(row);
+    const proposal = requireValidProposal(row);
     if (previous !== undefined && compareUtf8(previous, proposal.id) >= 0) invalidStatus("page.cursor", "journal rows must strictly advance cursor");
     previous = proposal.id;
     proposals.push(proposal);

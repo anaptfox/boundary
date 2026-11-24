@@ -176,7 +176,7 @@ describe("projector footprint cache", () => {
 
   it("invalidates mounted reads without react-ui", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
       create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
     });
@@ -211,7 +211,7 @@ describe("projector footprint cache", () => {
 
   it("merges per-invoke headers onto the fetch transport", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
     });
     const binding = await fixture.bind(projection);

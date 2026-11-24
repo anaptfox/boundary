@@ -84,7 +84,7 @@ export async function createAdapterFixture() {
       description: "Read the versioned todo representation.",
     }),
   } as const;
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions<typeof interactions, AdapterContext>(
     interactions,
     {
@@ -127,7 +127,7 @@ export async function createAdapterFixture() {
       },
     },
   });
-  const { installation } = await installInteractions<typeof interactions, AdapterContext>(
+  const { installation } = installInteractions<typeof interactions, AdapterContext>(
     compiled,
     {
       installationId: "installation:adapter-v1:1",
@@ -150,7 +150,7 @@ export async function createAdapterFixture() {
   async function bind<const Selections extends ProjectionSelections>(
     projection: Projection<Selections>,
   ) {
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: ({ context }) =>
         context.role === "owner"
           ? { decision: "allow" }

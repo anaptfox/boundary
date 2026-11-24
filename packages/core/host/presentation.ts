@@ -5,10 +5,10 @@ import { failHost } from "./errors";
 import type { Projection, ProjectionSelections } from "./types";
 
 /** Derive schemas from the selected contract; presentation overrides cannot change execution facts. */
-export async function presentProjection<Selections extends ProjectionSelections>(
+export function presentProjection<Selections extends ProjectionSelections>(
   projection: Projection<Selections>,
   overrides?: Readonly<Partial<Record<keyof Selections & string, InteractionPresentationOverride>>>,
-): Promise<ProjectionPresentation> {
+): ProjectionPresentation {
   metadataForProjection(projection);
   const presentation = normalizeJson(overrides ?? {}, "presentation.overrides") as Record<string, InteractionPresentationOverride>;
   if (!presentation || Array.isArray(presentation) || typeof presentation !== "object") return failHost("INVALID_ARTIFACT", "presentation.overrides", "overrides must be a record");
@@ -32,6 +32,6 @@ export async function presentProjection<Selections extends ProjectionSelections>
     };
   });
   const identity = normalizeJson({ version: 1, projectionDigest: projection.projectionDigest, interactions }) as JsonObject;
-  const presentationDigest = await hashJson("boundary.projection-presentation/v1", identity);
+  const presentationDigest = hashJson("boundary.projection-presentation/v1", identity);
   return Object.freeze({ ...identity, presentationDigest }) as unknown as ProjectionPresentation;
 }

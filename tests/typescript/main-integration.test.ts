@@ -27,13 +27,13 @@ describe("integration with main's contract and invocation laws", () => {
       read: defineInteraction({ id: "integration.read", input: Input,
         output: Output, reads: ["documents"], changes: [] }),
     };
-    const expectedCompiled = await compileInteractions(expected);
-    const actualCompiled = await compileInteractions(actual);
-    const parentProjection = await projectAllDirect(expectedCompiled);
-    const childProjection = await projectInteractions(expectedCompiled, {
+    const expectedCompiled = compileInteractions(expected);
+    const actualCompiled = compileInteractions(actual);
+    const parentProjection = projectAllDirect(expectedCompiled);
+    const childProjection = projectInteractions(expectedCompiled, {
       lookup: { interaction: expectedCompiled.handles.read, modes: ["direct"] },
     });
-    const actualProjection = await projectAllDirect(actualCompiled);
+    const actualProjection = projectAllDirect(actualCompiled);
     let value = "first";
     let evaluations = 0;
     let authorizations = 0;
@@ -50,7 +50,7 @@ describe("integration with main's contract and invocation laws", () => {
         });
       },
     };
-    const { installation } = await installInteractions<typeof actual, Context>(actualCompiled, {
+    const { installation } = installInteractions<typeof actual, Context>(actualCompiled, {
       installationId: "integration:observed",
       realizationIds: { read: { direct: "integration:observed:read" } },
       implementations: implementInteractions<typeof actual, Context>(actual, {
@@ -67,7 +67,7 @@ describe("integration with main's contract and invocation laws", () => {
         }),
       }),
     });
-    const parent = await bindProjection(parentProjection, installation, {
+    const parent = bindProjection(parentProjection, installation, {
       admit() {
         admissions.push("parent");
         return allowed ? { decision: "allow" } : { decision: "deny", reason: "host policy changed" };
@@ -75,7 +75,7 @@ describe("integration with main's contract and invocation laws", () => {
     });
     expect(parent.status).toBe("bound");
     if (parent.status !== "bound") throw new Error("compatible contract did not bind");
-    const child = await restrictBinding(parent.binding, {
+    const child = restrictBinding(parent.binding, {
       projection: childProjection,
       admit() { admissions.push("child"); return { decision: "allow" }; },
     });
@@ -95,7 +95,7 @@ describe("integration with main's contract and invocation laws", () => {
       actualContractDigest: actualCompiled.handles.read.contractDigest,
       realizationId: "integration:observed:read",
     });
-    expect(await restrictBinding(parent.binding, { projection: actualProjection, admit: admitAll }))
+    expect(restrictBinding(parent.binding, { projection: actualProjection, admit: admitAll }))
       .toMatchObject({ status: "unrealized", report: { issues: [{ reason: "contract-not-selected" }] } });
     const caller = child.binding.connect();
     await expect(caller.call(childProjection.handles.lookup, "document", context)).resolves.toBe("first");
@@ -137,23 +137,23 @@ describe("integration with main's contract and invocation laws", () => {
           save: defineInteraction({ id: "integration.save", input: Input,
             output: Output, changes: ["documents"] }),
         };
-        const compiled = await compileInteractions(definitions);
-        const parentProjection = await projectAllDirect(compiled);
-        const childProjection = await projectInteractions(compiled, {
+        const compiled = compileInteractions(definitions);
+        const parentProjection = projectAllDirect(compiled);
+        const childProjection = projectInteractions(compiled, {
           write: { interaction: compiled.handles.save, modes: ["direct"] },
         });
-        const { installation } = await installInteractions<typeof definitions, Context>(compiled, {
+        const { installation } = installInteractions<typeof definitions, Context>(compiled, {
           installationId: `integration:deferred:${action}:${outcome}`,
           realizationIds: { save: { direct: "integration:deferred:save" } },
           implementations: implementInteractions<typeof definitions, Context>(definitions, {
             save() { dispatches++; signalStarted(); return pending; },
           }),
         });
-        const parent = await bindProjection(parentProjection, installation, {
+        const parent = bindProjection(parentProjection, installation, {
           admit() { admissions.push("parent"); return { decision: "allow" }; },
         });
         if (parent.status !== "bound") throw new Error("parent did not bind");
-        const child = await restrictBinding(parent.binding, {
+        const child = restrictBinding(parent.binding, {
           projection: childProjection,
           admit() { admissions.push("child"); return { decision: "allow" }; },
         });

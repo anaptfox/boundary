@@ -20,9 +20,9 @@ const screenContext: TodoCaller = { kind: "screen", actorId: "ada" };
 const agentContext: TodoCaller = { kind: "agent", actorId: "agent-7" };
 
 export async function createTodoHost(store: TodoStore = createTodoStore()) {
-  const compiled = await compileInteractions(interactions);
-  const screen = await projectAllDirect(compiled);
-  const agent = await pickProjection(screen, "list", "complete", "reopen");
+  const compiled = compileInteractions(interactions);
+  const screen = projectAllDirect(compiled);
+  const agent = pickProjection(screen, "list", "complete", "reopen");
   const readStats = { evaluations: 0, reuses: 0, validations: 0 };
   const implementations = implementInteractions<typeof interactions, TodoCaller>(
     interactions,
@@ -70,7 +70,7 @@ export async function createTodoHost(store: TodoStore = createTodoStore()) {
       },
     },
   );
-  const { installation } = await installInteractions<typeof interactions, TodoCaller>(
+  const { installation } = installInteractions<typeof interactions, TodoCaller>(
     compiled,
     {
       installationId: "todos:local:v1",
@@ -79,10 +79,10 @@ export async function createTodoHost(store: TodoStore = createTodoStore()) {
     },
   );
 
-  const screenResult = await bindProjection(screen, installation, {
+  const screenResult = bindProjection(screen, installation, {
     admit: admitWhen((ctx: TodoCaller) => ctx.kind === "screen", "screen only"),
   });
-  const agentResult = await bindProjection(agent, installation, {
+  const agentResult = bindProjection(agent, installation, {
     admit: admitWhen((ctx: TodoCaller) => ctx.kind === "agent", "agent only"),
   });
   if (screenResult.status !== "bound" || agentResult.status !== "bound") {

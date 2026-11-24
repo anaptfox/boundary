@@ -100,7 +100,7 @@ identity. There is no `defineInteractions` registry or mutable registration API.
 ## `compileInteractions`
 
 ```ts
-const compiled = await compileInteractions(interactions);
+const compiled = compileInteractions(interactions);
 ```
 
 Compilation snapshots and validates the complete closed record before deriving:
@@ -172,7 +172,7 @@ second dispatch or authorization path.
 ```ts
 type EditorActor = Readonly<{ role: "editor" | "assistant" }>;
 
-const api = await bindInteractions(interactions, {
+const api = bindInteractions(interactions, {
   installationId: "editor:local:v1",
   realizationVersion: "editor-handlers:v3",
   handlers: {
@@ -296,7 +296,7 @@ using the Control bridge with an honest Host-supplied plan.
 
 ```ts
 const { installation, controller: installationController } =
-  await installInteractions(compiled, {
+  installInteractions(compiled, {
     installationId,
     implementations,
     realizationIds: directRealizationIds(compiled, "v1"),
@@ -337,7 +337,7 @@ value, never this host-held controller.
 explicit closed record:
 
 ```ts
-const agent = await projectInteractions(compiled, {
+const agent = projectInteractions(compiled, {
   create: direct(compiled.handles.create),
   list: direct(compiled.handles.list),
 });
@@ -380,7 +380,7 @@ Binding is the atomic live conjunction of one Projection, one exact
 InteractionInstallation, and one explicit admission interface.
 
 ```ts
-const result = await bindProjection(agent, installation, {
+const result = bindProjection(agent, installation, {
   admit: admitWhen((ctx) => ctx.kind === "agent", "agent only"),
 });
 
@@ -411,8 +411,8 @@ Derive a caller with fewer interactions or modes while retaining the parent's
 admission policy, exact realization pins, observer, and revocation lineage:
 
 ```ts
-const reads = await pickProjection(agent, "list");
-const result = await restrictBinding(parentBinding, {
+const reads = pickProjection(agent, "list");
+const result = restrictBinding(parentBinding, {
   projection: reads,
   admit: admitWhen((context) => context.kind === "agent"),
 });
@@ -498,7 +498,7 @@ An optional observer on `bindProjection` publishes one validated observation
 for each resolved invocation outcome:
 
 ```ts
-const bound = await bindProjection(agentProjection, installation, {
+const bound = bindProjection(agentProjection, installation, {
   admit,
   observation: {
     correlate: (context) => ({ run: context.runId }),

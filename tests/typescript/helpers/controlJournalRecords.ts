@@ -69,7 +69,7 @@ export async function validProposal(): Promise<ProposalRecord> {
   const identity = proposalIdentity();
   return {
     ...identity,
-    proposalDigest: await proposalDigest(identity),
+    proposalDigest: proposalDigest(identity),
   };
 }
 

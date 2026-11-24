@@ -65,19 +65,19 @@ describe("@foxworth/boundary/build", () => {
   });
 
   it("renders pure bytes and removes only previously inventoried stale files", async () => {
-    const compiled = await compileInteractions({ ping: Ping });
+    const compiled = compileInteractions({ ping: Ping });
     const implementations = implementInteractions({ ping: Ping }, {
       ping: () => ({ ok: true as const }),
     });
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "deploy:ping:1",
       implementations,
       realizationIds: { ping: { direct: "realization:ping:1" } },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       ping: { interaction: compiled.handles.ping, modes: ["direct"] },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (bound.status !== "bound") throw new Error("expected bound");
@@ -134,7 +134,7 @@ describe("@foxworth/boundary/build", () => {
     );
     expect(referenceSource).not.toMatch(/^import(?! type)/mu);
 
-    const hostileCompiled = await compileInteractions({
+    const hostileCompiled = compileInteractions({
       ping: defineInteraction({
         id: "hostile.not-system-ping",
         output: portableSchema({ const: "wrong" }),
@@ -187,8 +187,8 @@ describe("@foxworth/boundary/build", () => {
   });
 
   it("orders paths by unsigned UTF-8 bytes rather than process locale", async () => {
-    const compiled = await compileInteractions({ ping: Ping });
-    const projection = await projectInteractions(compiled, {
+    const compiled = compileInteractions({ ping: Ping });
+    const projection = projectInteractions(compiled, {
       ping: { interaction: compiled.handles.ping, modes: ["direct"] },
     });
     const artifacts = renderHostArtifacts({
@@ -204,8 +204,8 @@ describe("@foxworth/boundary/build", () => {
   });
 
   it("rejects invalid generated binding names while allowing reserved property names", async () => {
-    const compiled = await compileInteractions({ ["default"]: Ping });
-    const projection = await projectInteractions(compiled, {
+    const compiled = compileInteractions({ ["default"]: Ping });
+    const projection = projectInteractions(compiled, {
       ping: { interaction: compiled.handles["default"], modes: ["direct"] },
     });
     const reference = {
@@ -226,7 +226,7 @@ describe("@foxworth/boundary/build", () => {
   });
 
   it("compiles import-free request references with an own __proto__ alias", async () => {
-    const compiled = await compileInteractions({ ping: Ping });
+    const compiled = compileInteractions({ ping: Ping });
     const implementations = implementInteractions({ ping: Ping }, {
       ping: () => ({ ok: true as const }),
     });
@@ -243,7 +243,7 @@ describe("@foxworth/boundary/build", () => {
         request: () => ({ id: "proposal-1" }),
       },
     });
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "deploy:ping:request:1",
       implementations,
       requests,
@@ -254,10 +254,10 @@ describe("@foxworth/boundary/build", () => {
         },
       },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       ["__proto__"]: { interaction: compiled.handles.ping, modes: ["request"] },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (bound.status !== "bound") throw new Error("expected request binding");
@@ -412,7 +412,7 @@ client.request(requestReferences["__proto__"], {});
   });
 
   it("rejects a symlink destination and never writes through it", async () => {
-    const compiled = await compileInteractions({ ping: Ping });
+    const compiled = compileInteractions({ ping: Ping });
     const artifacts = renderHostArtifacts({
       program: { name: "system", value: compiled.program },
     });
@@ -433,7 +433,7 @@ client.request(requestReferences["__proto__"], {});
   });
 
   it("rejects symlink parents for writes and inventoried stale deletion", async () => {
-    const compiled = await compileInteractions({ ping: Ping });
+    const compiled = compileInteractions({ ping: Ping });
     const nested = renderHostArtifacts({
       program: { name: "owned/stale", value: compiled.program },
     });

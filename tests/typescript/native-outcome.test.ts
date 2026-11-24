@@ -59,7 +59,7 @@ const definitions = {
 
 describe("native dispatch outcomes", () => {
   it("preserves host-owned outcomes and never retries dispatch", async () => {
-    const compiled = await compileInteractions(definitions);
+    const compiled = compileInteractions(definitions);
     let dispatches = 0;
     let effects = 0;
     expect(semanticFixtures.nativeDispatchOutcomes).toEqual([
@@ -75,7 +75,7 @@ describe("native dispatch outcomes", () => {
     ) => NativeDispatchOutcome<typeof definitions.create>;
     behavior = (request) => request.outcomes.returned({ id: "first", title: request.input.title });
     const target = {};
-    const { installation, controller: installationController } = await installInteractions(
+    const { installation, controller: installationController } = installInteractions(
       compiled,
       {
         installationId: "native:outcomes:1",
@@ -90,10 +90,10 @@ describe("native dispatch outcomes", () => {
         realizationIds: { create: { direct: "native:outcomes:create:1" } },
       },
     );
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -175,7 +175,7 @@ describe("native dispatch outcomes", () => {
     });
     expect(dispatches).toBe(beforeInvalid);
 
-    const replacement = await bindProjection(projection, installation, {
+    const replacement = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(replacement.status).toBe("bound");
@@ -198,8 +198,8 @@ describe("native dispatch outcomes", () => {
   });
 
   it("does not treat a plain outcome-shaped object as authority", async () => {
-    const compiled = await compileInteractions(definitions);
-    const { installation } = await installInteractions(compiled, {
+    const compiled = compileInteractions(definitions);
+    const { installation } = installInteractions(compiled, {
       installationId: "native:outcomes:forged:1",
       bindings: [{
         interaction: compiled.handles.create,
@@ -210,10 +210,10 @@ describe("native dispatch outcomes", () => {
       }],
       realizationIds: { create: { direct: "native:outcomes:forged:create:1" } },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (result.status !== "bound") throw new Error("expected bound");
@@ -228,10 +228,10 @@ describe("native dispatch outcomes", () => {
   });
 
   it("rejects a retained outcome token from an earlier native invocation", async () => {
-    const compiled = await compileInteractions(definitions);
+    const compiled = compileInteractions(definitions);
     let cached: NativeDispatchOutcome<typeof definitions.create> | undefined;
     let effects = 0;
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "native:outcomes:retained:1",
       bindings: [{
         interaction: compiled.handles.create,
@@ -247,13 +247,13 @@ describe("native dispatch outcomes", () => {
       }],
       realizationIds: { create: { direct: "native:outcomes:retained:create:1" } },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const first = await bindProjection(projection, installation, {
+    const first = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
-    const second = await bindProjection(projection, installation, {
+    const second = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (first.status !== "bound" || second.status !== "bound") {

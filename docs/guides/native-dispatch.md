@@ -22,7 +22,7 @@ directly; native dispatch is useful when it supplies explicit outcomes.
 Select a mode per alias with a shorthand string:
 
 ```ts
-const projection = await projectInteractions(compiled, {
+const projection = projectInteractions(compiled, {
   inspect: "direct",
   export: "request",
 });
@@ -31,7 +31,7 @@ const projection = await projectInteractions(compiled, {
 The explicit form names the handle and its modes:
 
 ```ts
-const projection = await projectInteractions(compiled, {
+const projection = projectInteractions(compiled, {
   inspect: { interaction: compiled.handles.inspect, modes: ["direct"] },
   export: { interaction: compiled.handles.export, modes: ["request"] },
 });

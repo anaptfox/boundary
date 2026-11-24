@@ -63,7 +63,7 @@ export async function createSceneAuthoringExample() {
   let nextCandidateId = 1;
 
   // #region binding-call
-  const boundary = await bindInteractions(sceneInteractions, {
+  const boundary = bindInteractions(sceneInteractions, {
     installationId: "scene:local:v1",
     realizationVersion: "scene-handlers:v1",
     handlers: {

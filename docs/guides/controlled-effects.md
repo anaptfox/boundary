@@ -18,7 +18,7 @@ are common examples. Keep ordinary interactions on the direct path.
 A Projection can desire request mode before a deployment realizes it:
 
 ```ts
-const operatorProjection = await projectInteractions(compiled, {
+const operatorProjection = projectInteractions(compiled, {
   publish: {
     interaction: compiled.handles.publish,
     modes: ["request"],
@@ -41,7 +41,7 @@ const requests = contributeControlRequests(compiled, controlRequester, {
 });
 
 const { installation, controller: installationController } =
-  await installInteractions(compiled, {
+  installInteractions(compiled, {
   installationId,
   implementations,
   requests,

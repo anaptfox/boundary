@@ -17,7 +17,7 @@ const definitions = {
   nested: defineInteraction({ id: 'fixture.nested', output: portableSchema({ type: 'object', properties: { certainty: { type: 'string' } }, required: ['certainty'], additionalProperties: false }) }),
   hidden: defineInteraction({ id: 'fixture.hidden', output: string }),
 };
-const compiled = await compileInteractions(definitions);
+const compiled = compileInteractions(definitions);
 let effects = 0;
 let proposals = 0;
 const bindings = bindNativeInteractions(compiled, { change: null, inspect: null, nested: null, hidden: null }, {
@@ -30,7 +30,7 @@ const bindings = bindNativeInteractions(compiled, { change: null, inspect: null,
   nested({ outcomes }) { return outcomes.returned({ certainty: 'unknown' }); },
   hidden({ outcomes }) { return outcomes.returned('hidden'); },
 });
-const installed = await installInteractions(compiled, {
+const installed = installInteractions(compiled, {
   installationId: 'inspector:fixture:installation', bindings,
   requests: createControlRequestContributions(compiled, {
     change: { interaction: compiled.handles.change, controlDigest: compiled.handles.change.contractDigest,
@@ -38,8 +38,8 @@ const installed = await installInteractions(compiled, {
   }),
   realizationIds: { change: { direct: 'inspector:fixture:change', request: 'inspector:fixture:proposal' }, inspect: { direct: 'inspector:fixture:inspect' }, nested: { direct: 'inspector:fixture:nested' }, hidden: { direct: 'inspector:fixture:hidden' } },
 });
-const projection = await projectInteractions(compiled, { change: { interaction: compiled.handles.change, modes: ['direct', 'request'] }, inspect: 'direct', nested: 'direct' });
-const bound = await bindProjection(projection, installed.installation, { admit: () => ({ decision: 'allow' }) });
+const projection = projectInteractions(compiled, { change: { interaction: compiled.handles.change, modes: ['direct', 'request'] }, inspect: 'direct', nested: 'direct' });
+const bound = bindProjection(projection, installed.installation, { admit: () => ({ decision: 'allow' }) });
 assert.equal(bound.status, 'bound');
 const bundle = await readFile(process.argv[2]);
 const server = createServer(async (request, response) => {

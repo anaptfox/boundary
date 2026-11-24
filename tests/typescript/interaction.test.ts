@@ -254,7 +254,7 @@ describe("framework-neutral interaction interactions", () => {
 
   it("submits a request through the checked Binding client", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       create: { interaction: fixture.compiled.handles.create, modes: ["request"] },
     });
     const binding = await fixture.bind(projection);

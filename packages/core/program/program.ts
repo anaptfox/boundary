@@ -110,12 +110,12 @@ function fail(
   throw new ProgramError(code, path, message);
 }
 
-async function digest(
+function digest(
   hasher: DomainHasher,
   domain: string,
   value: JsonObject | JsonArray,
-): Promise<Sha256Digest> {
-  const result = await hasher(domain, value);
+): Sha256Digest {
+  const result = hasher(domain, value);
   if (!isSha256Digest(result)) {
     fail(
       "INVALID_HASHER_RESULT",
@@ -292,10 +292,10 @@ export function interactionContractIdentity(
   return identityFromNormalized(normalized);
 }
 
-export async function digestInteractionContract(
+export function digestInteractionContract(
   contract: InteractionContract,
   hasher: DomainHasher = hashJson,
-): Promise<Sha256Digest> {
+): Sha256Digest {
   return digest(
     hasher,
     INTERACTION_CONTRACT_DOMAIN,
@@ -303,12 +303,12 @@ export async function digestInteractionContract(
   );
 }
 
-export async function createInteractionDescriptor(
+export function createInteractionDescriptor(
   source: InteractionDescriptorSource,
   hasher: DomainHasher = hashJson,
-): Promise<InteractionDescriptor> {
+): InteractionDescriptor {
   const contract = normalizeContract(source.contract);
-  const contractDigest = await digestInteractionContract(contract, hasher);
+  const contractDigest = digestInteractionContract(contract, hasher);
   return Object.freeze({
     version: 1,
     contract,
@@ -321,10 +321,10 @@ export async function createInteractionDescriptor(
   });
 }
 
-async function normalizeDescriptor(
+function normalizeDescriptor(
   descriptor: InteractionDescriptor,
   hasher: DomainHasher,
-): Promise<InteractionDescriptor> {
+): InteractionDescriptor {
   if (descriptor.version !== 1) {
     fail(
       "UNSUPPORTED_DESCRIPTOR_VERSION",
@@ -332,7 +332,7 @@ async function normalizeDescriptor(
       `${descriptor.contract.id} must use interaction descriptor version 1`,
     );
   }
-  const normalized = await createInteractionDescriptor(
+  const normalized = createInteractionDescriptor(
     {
       contract: descriptor.contract,
       docs: descriptor.docs,
@@ -363,20 +363,18 @@ export function programIdentity(
   );
 }
 
-export async function digestProgram(
+export function digestProgram(
   interactions: readonly InteractionDescriptor[],
   hasher: DomainHasher = hashJson,
-): Promise<Sha256Digest> {
+): Sha256Digest {
   return digest(hasher, PROGRAM_DOMAIN, programIdentity(interactions));
 }
 
-export async function createProgram(
+export function createProgram(
   interactions: readonly InteractionDescriptor[],
   hasher: DomainHasher = hashJson,
-): Promise<Program> {
-  const normalized = await Promise.all(
-    interactions.map((interaction) => normalizeDescriptor(interaction, hasher)),
-  );
+): Program {
+  const normalized = interactions.map((interaction) => normalizeDescriptor(interaction, hasher));
   normalized.sort((left, right) =>
     compareUtf8(left.contract.id, right.contract.id),
   );
@@ -395,14 +393,14 @@ export async function createProgram(
   return Object.freeze({
     version: 1,
     interactions: frozenInteractions,
-    programDigest: await digestProgram(frozenInteractions, hasher),
+    programDigest: digestProgram(frozenInteractions, hasher),
   });
 }
 
-export async function validateProgram(
+export function validateProgram(
   program: Program,
   hasher: DomainHasher = hashJson,
-): Promise<Program> {
+): Program {
   if (program.version !== 1) {
     fail(
       "UNSUPPORTED_PROGRAM_VERSION",
@@ -410,7 +408,7 @@ export async function validateProgram(
       "program must use version 1",
     );
   }
-  const normalized = await createProgram(program.interactions, hasher);
+  const normalized = createProgram(program.interactions, hasher);
   if (normalized.programDigest !== program.programDigest) {
     fail(
       "PROGRAM_DIGEST_MISMATCH",
@@ -421,11 +419,11 @@ export async function validateProgram(
   return normalized;
 }
 
-export async function composePrograms(
+export function composePrograms(
   programs: readonly Program[],
   hasher: DomainHasher = hashJson,
-): Promise<Program> {
-  await Promise.all(programs.map((program) => validateProgram(program, hasher)));
+): Program {
+  programs.forEach((program) => validateProgram(program, hasher));
   return createProgram(
     programs.flatMap((program) => [...program.interactions]),
     hasher,

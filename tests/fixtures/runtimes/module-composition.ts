@@ -115,12 +115,12 @@ async function outcomes(style: DispatchStyle) {
 assert.deepEqual(await outcomes("ordinary"), await outcomes("native"),
   "the ordinary and native returned-wrapper paths must preserve the same exercised outcomes");
 
-const localTasks = await compileInteractions(taskModule);
-const localCapacity = await compileInteractions(capacityModule);
-await assert.rejects(composeCompiledInteractions(localTasks, localCapacity),
+const localTasks = compileInteractions(taskModule);
+const localCapacity = compileInteractions(capacityModule);
+assert.throws(() => composeCompiledInteractions(localTasks, localCapacity),
   "repeated aliases must be rejected instead of silently namespaced");
-await assert.rejects(composeCompiledInteractions(
-  await compileInteractions({ first: taskModule.mutate }),
-  await compileInteractions({ second: taskModule.mutate }),
+assert.throws(() => composeCompiledInteractions(
+  compileInteractions({ first: taskModule.mutate }),
+  compileInteractions({ second: taskModule.mutate }),
 ), "repeated interaction IDs must remain rejected even with distinct aliases");
 console.log("Packed module recipe: shared installation, selected authority, validated input, and ordinary/native outcome laws passed.");

@@ -36,15 +36,15 @@ describe("Host Binding satisfies the Handoff structural seam", () => {
   it("executes a live Host Binding through the checked Handoff seam", async () => {
     const Text = portableSchema<string>({ type: "string" });
     const interactions = { echo: defineInteraction({ id: "seam.echo", input: Text, output: Text }) };
-    const compiled = await compileInteractions(interactions);
+    const compiled = compileInteractions(interactions);
     const implementations = implementInteractions(interactions, { echo: (value: string) => value });
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "seam:installation",
       implementations,
       realizationIds: { echo: { direct: "seam:echo:direct" } },
     });
-    const projection = await projectInteractions(compiled, { echo: "direct" });
-    const bound = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
+    const projection = projectInteractions(compiled, { echo: "direct" });
+    const bound = bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
     if (bound.status !== "bound") throw new Error("fixture did not bind");
     const executable: HandoffExecutable = bound.binding;
     const handoff = await createCheckedHandoff(executable);

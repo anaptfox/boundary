@@ -31,8 +31,8 @@ describe("native Projection handles", () => {
         output: Result,
       }),
     } as const;
-    const compiled = await compileInteractions(interactions);
-    const projection = await projectInteractions(compiled, {
+    const compiled = compileInteractions(interactions);
+    const projection = projectInteractions(compiled, {
       implicitEmpty: {
         interaction: compiled.handles.implicitEmpty,
         modes: ["direct"],
@@ -57,22 +57,22 @@ describe("native Projection handles", () => {
     const interactions = {
       run: defineInteraction({ id: "native.run", output: Result }),
     } as const;
-    const compiled = await compileInteractions(interactions);
+    const compiled = compileInteractions(interactions);
     const implementations = implementInteractions<typeof interactions, Context>(interactions, {
       run(context) {
         seen.push(context);
         return { ok: true };
       },
     });
-    const { installation } = await installInteractions<typeof interactions, Context>(compiled, {
+    const { installation } = installInteractions<typeof interactions, Context>(compiled, {
       installationId: "installation:native:2",
       implementations,
       realizationIds: { run: { direct: "realization:native:2" } },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       run: { interaction: compiled.handles.run, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (result.status !== "bound") throw new Error("expected bound");

@@ -29,7 +29,7 @@ import { createAdapterFixture } from "./helpers/adapter";
 describe("MCP schema ownership", () => {
   it("detaches frozen Program schemas before Cloudflare validator compilation", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       create: {
         interaction: fixture.compiled.handles.create,
         modes: ["direct"],

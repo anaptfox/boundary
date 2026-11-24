@@ -307,24 +307,24 @@ function requireProposalProjectionSource<Preview extends JsonValue>(
   return proposal as ProposalRecord<Preview>;
 }
 
-export async function proposalDigest(
+export function proposalDigest(
   proposal: Omit<ProposalRecord, "proposalDigest">,
-): Promise<Sha256Digest> {
+): Sha256Digest {
   return hashJson(
     CONTROL_PROPOSAL_DOMAIN,
     snapshot(proposal, "proposal") as unknown as JsonObject,
   );
 }
 
-export async function verifyProposalIntegrity(
+export function verifyProposalIntegrity(
   value: ProposalRecord,
-): Promise<ProposalIntegrity> {
+): ProposalIntegrity {
   try {
     const proposal = snapshot(value, "proposal");
     const issue = proposalShapeIssue(proposal);
     if (issue) return Object.freeze({ status: "invalid", reason: issue });
     const { proposalDigest: actual, ...identity } = proposal;
-    const expected = await proposalDigest(identity);
+    const expected = proposalDigest(identity);
     if (actual !== expected) {
       return Object.freeze({
         status: "invalid",
@@ -341,10 +341,10 @@ export async function verifyProposalIntegrity(
   }
 }
 
-export async function requireValidProposal(
+export function requireValidProposal(
   value: ProposalRecord,
-): Promise<ProposalRecord> {
-  const integrity = await verifyProposalIntegrity(value);
+): ProposalRecord {
+  const integrity = verifyProposalIntegrity(value);
   if (integrity.status === "invalid") {
     throw controlError(
       "CONTROL_INTEGRITY_MISMATCH",

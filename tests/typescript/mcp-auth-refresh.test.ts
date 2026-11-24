@@ -13,7 +13,7 @@ const modern = (name: string) => new Request(resource, { method: "POST", headers
 describe("modern MCP qualification", () => {
   it("rejects legacy requests without resolving context and forwards body limits", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, { create: { interaction: fixture.compiled.handles.create, modes: ["direct"] } });
+    const projection = projectInteractions(fixture.compiled, { create: { interaction: fixture.compiled.handles.create, modes: ["direct"] } });
     const binding = await fixture.bind(projection);
     let contexts = 0;
     const server = serveHost({ doors: [], mcp: { path: "/api/mcp", name: "bounded", version: "1", binding, context: () => { contexts++; return { role: "owner" as const, marker: {} }; }, tools: [tool(projection.handles.create)], handlerOptions: { maxRequestBodySize: 256 } } });
@@ -26,7 +26,7 @@ describe("modern MCP qualification", () => {
   });
   it("challenges missing scopes before host context or effect execution", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, { create: { interaction: fixture.compiled.handles.create, modes: ["direct"] } });
+    const projection = projectInteractions(fixture.compiled, { create: { interaction: fixture.compiled.handles.create, modes: ["direct"] } });
     const binding = await fixture.bind(projection); let contexts = 0;
     const handler = createMcpHandler({ name: "scope", version: "1", binding, context: ({ extra }) => { contexts++; expect(extra.http?.authInfo?.clientId).toBe("folio-editor"); return { role: "owner" as const, marker: {} }; }, tools: [tool(projection.handles.create, { name: "create", scopeChallenge: requireScopes("folio:draft") })] }, { responseMode: "json" });
     const verifier = localTokenVerifier(resource);

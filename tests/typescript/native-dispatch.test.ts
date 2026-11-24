@@ -18,7 +18,7 @@ async function fixture(coordinate?: InvocationCoordinator<Context>, admit: Admis
     echo: defineInteraction({ id: "coordination.echo", input: Input, output: Output, changes: ["documents"] }),
     other: defineInteraction({ id: "coordination.other", output: Output }),
   };
-  const compiled = await compileInteractions(definitions);
+  const compiled = compileInteractions(definitions);
   const dispatched: Context[] = [];
   const events: InvocationObservation[] = [];
   const requests: Context[] = [];
@@ -26,7 +26,7 @@ async function fixture(coordinate?: InvocationCoordinator<Context>, admit: Admis
     echo({ input, context, outcomes }) { dispatched.push(context); return outcomes.returned(input); },
     other({ outcomes }) { return outcomes.returned("other"); },
   });
-  const installed = await installInteractions<typeof definitions, Context>(compiled, {
+  const installed = installInteractions<typeof definitions, Context>(compiled, {
     installationId: "coordination:installation", bindings,
     requests: createControlRequestContributions(compiled, {
       echo: { interaction: compiled.handles.echo, controlDigest: compiled.handles.echo.contractDigest, previewSchema: Output,
@@ -34,10 +34,10 @@ async function fixture(coordinate?: InvocationCoordinator<Context>, admit: Admis
     }),
     realizationIds: { echo: { direct: "echo:direct", request: "echo:request" }, other: { direct: "other:direct" } },
   });
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     echo: { interaction: compiled.handles.echo, modes: ["direct", "request"] }, other: "direct",
   });
-  const bound = await bindProjection(projection, installed.installation, { admit, coordinate, observation: { publish(event) { events.push(event); } } });
+  const bound = bindProjection(projection, installed.installation, { admit, coordinate, observation: { publish(event) { events.push(event); } } });
   if (bound.status !== "bound") throw new Error("fixture not bound");
   return { ...bound, compiled, projection, installed, dispatched, events, requests };
 }
@@ -45,11 +45,11 @@ async function fixture(coordinate?: InvocationCoordinator<Context>, admit: Admis
 describe("typed native integration", () => {
   it("lowers shorthand to the same exact selection identity and keeps explicit aliases", async () => {
     const { compiled } = await fixture();
-    const simple = await projectInteractions(compiled, { echo: "direct" });
-    const explicit = await projectInteractions(compiled, { echo: { interaction: compiled.handles.echo, modes: ["direct"] } });
+    const simple = projectInteractions(compiled, { echo: "direct" });
+    const explicit = projectInteractions(compiled, { echo: { interaction: compiled.handles.echo, modes: ["direct"] } });
     expect(simple.manifest).toEqual(explicit.manifest);
     expect(Object.keys(simple.handles)).toEqual(["echo"]);
-    const mixed = await projectInteractions(compiled, { echo: "request", renamed: { interaction: compiled.handles.other, modes: ["direct"] } });
+    const mixed = projectInteractions(compiled, { echo: "request", renamed: { interaction: compiled.handles.other, modes: ["direct"] } });
     expect(mixed.handles.renamed.interactionId).toBe("coordination.other");
   });
 
@@ -59,7 +59,7 @@ describe("typed native integration", () => {
     const accessor = Object.defineProperty({}, "echo", { enumerable: true, get() { getters++; return "direct"; } });
     const hidden = Object.defineProperty({}, "echo", { value: "direct" });
     for (const invalid of [{ missing: "direct" }, { echo: "invalid" }, accessor, hidden, { [Symbol("echo")]: "direct" }]) {
-      await expect(projectInteractions(compiled, invalid as never)).rejects.toMatchObject({ code: "INVALID_PROJECTION" });
+      expect(() => projectInteractions(compiled, invalid as never)).toThrow(expect.objectContaining({ code: "INVALID_PROJECTION" }));
     }
     expect(getters).toBe(0);
     expect(() => bindNativeInteractions(compiled, { echo: 1 } as never, {} as never)).toThrow();
@@ -69,8 +69,8 @@ describe("typed native integration", () => {
 describe("checked selected Binding descriptions", () => {
   it("only exposes the narrowed selection, freezes schema data and rejects forged bindings", async () => {
     const parent = await fixture();
-    const projection = await projectInteractions(parent.compiled, { echo: "request" });
-    const child = await restrictBinding(parent.binding, { projection, admit: admitAll });
+    const projection = projectInteractions(parent.compiled, { echo: "request" });
+    const child = restrictBinding(parent.binding, { projection, admit: admitAll });
     if (child.status !== "bound") throw new Error("child not bound");
     const descriptions = describeBinding(child.binding);
     expect(descriptions).toHaveLength(1);
@@ -106,8 +106,8 @@ describe("host invocation coordination", () => {
         }
       }, () => row.admit ? { decision: "allow" } : { decision: "deny", reason: "vector" });
       revoke = f.controller.revoke;
-      const projection = await projectInteractions(f.compiled, { echo: "direct" });
-      const child = await restrictBinding(f.binding, { projection, admit: admitAll });
+      const projection = projectInteractions(f.compiled, { echo: "direct" });
+      const child = restrictBinding(f.binding, { projection, admit: admitAll });
       if (child.status !== "bound") throw new Error("not bound");
       const binding = row.restricted ? child.binding : f.binding;
       const result = await binding.invoke({ interaction: binding.resolve("coordination.echo")!, mode: row.mode ?? "direct", input: "input" }, { requestId: row.law });
@@ -172,11 +172,11 @@ describe("host invocation coordination", () => {
 
   it("assigns the continuation promise before a native dispatcher can re-enter it", async () => {
     const definitions = { run: defineInteraction({ id: "coordination.reentrant", output: Output }) };
-    const compiled = await compileInteractions(definitions);
+    const compiled = compileInteractions(definitions);
     let proceed!: () => Promise<RawInvocationOutcome>;
     let dispatches = 0;
     let reentered: Promise<RawInvocationOutcome> | undefined;
-    const installed = await installInteractions(compiled, {
+    const installed = installInteractions(compiled, {
       installationId: "coordination:reentrant",
       bindings: bindNativeInteractions(compiled, { run: null }, { run({ outcomes }) {
         dispatches++;
@@ -185,8 +185,8 @@ describe("host invocation coordination", () => {
       } }),
       realizationIds: { run: { direct: "reentrant:run" } },
     });
-    const projection = await projectInteractions(compiled, { run: "direct" });
-    const bound = await bindProjection(projection, installed.installation, { admit: admitAll, coordinate(_request, continuation) { proceed = continuation; return proceed(); } });
+    const projection = projectInteractions(compiled, { run: "direct" });
+    const bound = bindProjection(projection, installed.installation, { admit: admitAll, coordinate(_request, continuation) { proceed = continuation; return proceed(); } });
     if (bound.status !== "bound") throw new Error("not bound");
     expect(await bound.binding.connect().call(projection.handles.run)).toBe("once");
     expect((await reentered)?.certainty).toBe("completed");
@@ -221,8 +221,8 @@ describe("host invocation coordination", () => {
       const pending = new Promise<void>(resolve => { resume = resolve; });
       const queued = new Promise<void>(resolve => { entered = resolve; });
       const f = await fixture(async (_request, proceed) => { entered(); await pending; return proceed(); });
-      const projection = await projectInteractions(f.compiled, { echo: "direct" });
-      const child = await restrictBinding(f.binding, { projection, admit: admitAll });
+      const projection = projectInteractions(f.compiled, { echo: "direct" });
+      const child = restrictBinding(f.binding, { projection, admit: admitAll });
       if (child.status !== "bound") throw new Error("not bound");
       const call = child.binding.connect().call(projection.handles.echo, "never", { requestId: target });
       await queued;

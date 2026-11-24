@@ -50,7 +50,7 @@ describe("@foxworth/boundary/frameworks/hono native context", () => {
 
   it("derives checked invocation context from overlapping middleware-scoped requests", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: direct(fixture.compiled.handles.list),
     });
     const binding = await fixture.bind(projection);

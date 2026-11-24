@@ -26,8 +26,8 @@ export async function createScopedObservationExample(
   render: (snapshot: Readonly<{ data: readonly Todo[] | undefined }>) => void,
 ) {
   const rows: Todo[] = [];
-  const compiled = await compileInteractions(interactions);
-  const projection = await projectInteractions(compiled, {
+  const compiled = compileInteractions(interactions);
+  const projection = projectInteractions(compiled, {
     list: direct(compiled.handles.list), create: direct(compiled.handles.create),
   });
   const implementations = implementInteractions<typeof interactions, Context>(interactions, {
@@ -38,12 +38,12 @@ export async function createScopedObservationExample(
       return todo;
     },
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "todos:scoped-observations:1", implementations,
     realizationIds: directRealizationIds(compiled, "release-1"),
   });
   const listeners = new Set<(event: InvocationObservation) => void>();
-  const bound = await bindProjection(projection, installation, {
+  const bound = bindProjection(projection, installation, {
     admit: ({ context }) => context.role === "owner" ? { decision: "allow" } : { decision: "deny", reason: "owner required" },
     observation: { publish: (event) => { for (const send of listeners) send(event); } },
   });

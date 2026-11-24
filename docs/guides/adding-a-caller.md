@@ -32,8 +32,8 @@ editor already has one.
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#projection -->
 ```ts
-const compiled = await compileInteractions(interactions);
-const thumbnailSurface = await projectInteractions(compiled, {
+const compiled = compileInteractions(interactions);
+const thumbnailSurface = projectInteractions(compiled, {
   makeThumbnail: direct(compiled.handles.makeThumbnail),
 });
 // No implementation or live installation is needed to select this surface.
@@ -54,7 +54,7 @@ const admitScreenOrScript = admitWhen(
   (context: Context) => context.kind === "screen" || context.kind === "script",
   "This connection admits the screen and script",
 );
-const result = await bindProjection(thumbnailSurface, installation, {
+const result = bindProjection(thumbnailSurface, installation, {
   admit: admitScreenOrScript,
 });
 if (result.status !== "bound") {
@@ -121,11 +121,11 @@ existing interactions, and the host still admits each invocation.
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#agent -->
 ```ts
-const agentSurface = await projectInteractions(compiled, {
+const agentSurface = projectInteractions(compiled, {
   makeThumbnail: direct(compiled.handles.makeThumbnail),
   inspectImage: direct(compiled.handles.inspectImage),
 });
-const agentResult = await bindProjection(agentSurface, installation, {
+const agentResult = bindProjection(agentSurface, installation, {
   admit: admitWhen((context: Context) => context.kind === "agent", "Agent connection required"),
 });
 if (agentResult.status !== "bound") {

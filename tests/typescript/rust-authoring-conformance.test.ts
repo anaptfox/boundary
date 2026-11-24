@@ -56,7 +56,7 @@ describe("Zod and Rust author the same contracts", () => {
     const errors = zodErrors[name];
     expect(errors, name).toBeDefined();
     const definitions = { probe: defineInteraction({ id: "errors.probe", input: z.string(), output: z.string(), reads: ["p"], changes: [], errors: errors! }) };
-    const compiled = await compileInteractions(definitions);
+    const compiled = compileInteractions(definitions);
     const built = compiled.program.interactions[0]!.contract.errorSchema;
     expect(built).toEqual(errorSchema);
     const hash = createHash("sha256").update(canonicalJson(built as never)).digest("hex");

@@ -127,7 +127,7 @@ export function createProjectionClient(transport: ClientTransport): ProjectionCl
       throw new AdapterError("TRANSPORT_FAILURE", "transport.inspect", "the Binding handshake failed", { cause: error });
     }
     try {
-      const manifest = await validateProjectionBindingManifest(value);
+      const manifest = validateProjectionBindingManifest(value);
       const interactions = new Map(
         manifest.interactions.map((interaction) => [
           interactionKey(interaction.interactionId, interaction.mode),

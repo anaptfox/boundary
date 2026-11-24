@@ -36,8 +36,8 @@ const interactions = {
   start: defineInteraction({ id: "runs.start", input: z.strictObject({}), output: z.strictObject({ runId: z.string() }), changes: ["runs"] }),
   status: defineInteraction({ id: "runs.status", input: z.strictObject({}), output: z.strictObject({ runId: z.string(), state: z.literal("uncertain") }), reads: ["runs"] }),
 };
-const compiled = await compileInteractions(interactions);
-const installed = await installInteractions(compiled, {
+const compiled = compileInteractions(interactions);
+const installed = installInteractions(compiled, {
   installationId: "evidence-fixture-owner",
   realizationIds: directRealizationIds(compiled, "evidence-fixture-v1"),
   implementations: implementInteractions(interactions, {
@@ -45,8 +45,8 @@ const installed = await installInteractions(compiled, {
     status() { statusReads += 1; return { runId: retained.subjectId, state: retained.state }; },
   }),
 });
-const projection = await projectAllDirect(compiled);
-const bound = await bindProjection(projection, installed.installation, {
+const projection = projectAllDirect(compiled);
+const bound = bindProjection(projection, installed.installation, {
   admit: admitWhen(context => context.principal === "owner", "fixture owner"),
   observation: { publish(observation) { observations.push(observation); } },
 });
@@ -66,7 +66,7 @@ try {
   const address = server.address();
   assert.ok(address && typeof address === "object");
   const transport = fetchTransport({ baseUrl: `http://127.0.0.1:${address.port}/handoff` });
-  const manifest = await validateProjectionBindingManifest(await transport.inspect());
+  const manifest = validateProjectionBindingManifest(await transport.inspect());
   const invoke = async id => {
     const invocation = await createHandoffInvocation(manifest, id, "direct", {});
     return validateHandoffResponse(manifest, invocation, await transport.invoke(invocation));

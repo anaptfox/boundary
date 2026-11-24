@@ -351,13 +351,13 @@ because both read and suggest. The editor also needs to accept.
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#surfaces -->
 ```ts
-const compiled = await compileInteractions(reviewInteractions);
-const editorSurface = await projectInteractions(compiled, {
+const compiled = compileInteractions(reviewInteractions);
+const editorSurface = projectInteractions(compiled, {
   read: direct(compiled.handles.read),
   suggest: direct(compiled.handles.suggest),
   accept: direct(compiled.handles.accept),
 });
-const contributorSurface = await projectInteractions(compiled, {
+const contributorSurface = projectInteractions(compiled, {
   read: direct(compiled.handles.read),
   suggest: direct(compiled.handles.suggest),
 });
@@ -374,7 +374,7 @@ const implementations = implementInteractions<typeof reviewInteractions, ReviewA
   suggest: application.handlers.suggest,
   accept: application.handlers.accept,
 });
-const { installation } = await installInteractions(compiled, {
+const { installation } = installInteractions(compiled, {
   installationId: "review:local:1",
   implementations,
   realizationIds: directRealizationIds(compiled, "release-1"),
@@ -386,10 +386,10 @@ installation. The host also supplies admission rules, checked on every call:
 
 <!-- snippet:examples/snippets/typescript/document-review.ts#connections -->
 ```ts
-const editorResult = await bindProjection(editorSurface, installation, {
+const editorResult = bindProjection(editorSurface, installation, {
   admit: admitWhen((actor: ReviewActor) => actor.kind === "editor", "Editor required"),
 });
-const contributorResult = await bindProjection(contributorSurface, installation, {
+const contributorResult = bindProjection(contributorSurface, installation, {
   admit: admitWhen(
     (actor: ReviewActor) => actor.kind === "script" || actor.kind === "assistant",
     "Contributor required",

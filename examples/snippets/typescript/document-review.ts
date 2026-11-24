@@ -16,13 +16,13 @@ import {
 
 export async function createDocumentReviewExample() {
   // #region surfaces
-  const compiled = await compileInteractions(reviewInteractions);
-  const editorSurface = await projectInteractions(compiled, {
+  const compiled = compileInteractions(reviewInteractions);
+  const editorSurface = projectInteractions(compiled, {
     read: direct(compiled.handles.read),
     suggest: direct(compiled.handles.suggest),
     accept: direct(compiled.handles.accept),
   });
-  const contributorSurface = await projectInteractions(compiled, {
+  const contributorSurface = projectInteractions(compiled, {
     read: direct(compiled.handles.read),
     suggest: direct(compiled.handles.suggest),
   });
@@ -35,7 +35,7 @@ export async function createDocumentReviewExample() {
     suggest: application.handlers.suggest,
     accept: application.handlers.accept,
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "review:local:1",
     implementations,
     realizationIds: directRealizationIds(compiled, "release-1"),
@@ -43,10 +43,10 @@ export async function createDocumentReviewExample() {
   // #endregion installation
 
   // #region connections
-  const editorResult = await bindProjection(editorSurface, installation, {
+  const editorResult = bindProjection(editorSurface, installation, {
     admit: admitWhen((actor: ReviewActor) => actor.kind === "editor", "Editor required"),
   });
-  const contributorResult = await bindProjection(contributorSurface, installation, {
+  const contributorResult = bindProjection(contributorSurface, installation, {
     admit: admitWhen(
       (actor: ReviewActor) => actor.kind === "script" || actor.kind === "assistant",
       "Contributor required",
@@ -88,12 +88,12 @@ export async function createDocumentReviewExample() {
   async function replaceImplementation() {
     // A fresh set of implementation functions shares the application-owned store.
     const replacementApplication = createReviewApplication(application.store);
-    const { installation: replacement } = await installInteractions(compiled, {
+    const { installation: replacement } = installInteractions(compiled, {
       installationId: "review:local:2",
       implementations: implementInteractions<typeof reviewInteractions, ReviewActor>(reviewInteractions, replacementApplication.handlers),
       realizationIds: directRealizationIds(compiled, "release-2"),
     });
-    const result = await bindProjection(contributorSurface, replacement, {
+    const result = bindProjection(contributorSurface, replacement, {
       admit: admitWhen((actor: ReviewActor) => actor.kind === "assistant", "Assistant required"),
     });
     if (result.status !== "bound") throw new Error("Replacement is unavailable");
@@ -113,9 +113,9 @@ export async function createDocumentReviewExample() {
         changes: ["suggestions", "document"],
       }),
     };
-    const changed = await compileInteractions(changedInteractions);
+    const changed = compileInteractions(changedInteractions);
     const dispatches: string[] = [];
-    const { installation: changedInstallation } = await installInteractions(changed, {
+    const { installation: changedInstallation } = installInteractions(changed, {
       installationId: "review:auto-apply:1",
       implementations: implementInteractions<typeof changedInteractions, ReviewActor>(changedInteractions, {
         read() { dispatches.push("read"); return application.store.read(); },
@@ -124,7 +124,7 @@ export async function createDocumentReviewExample() {
       }),
       realizationIds: directRealizationIds(changed, "release-1"),
     });
-    const result = await bindProjection(contributorSurface, changedInstallation, {
+    const result = bindProjection(contributorSurface, changedInstallation, {
       admit: admitWhen((actor: ReviewActor) => actor.kind === "assistant", "Assistant required"),
     });
     return { result, dispatches };

@@ -35,7 +35,7 @@ describe("current Rust/TypeScript Todo process fixture", () => {
 
   it("rejects invalid input, stale identity, and an unselected interaction before effects", async () => {
     const host = rust();
-    const manifest = await validateProjectionBindingManifest(await host.transport.inspect());
+    const manifest = validateProjectionBindingManifest(await host.transport.inspect());
     const invocation = await createHandoffInvocation(manifest, "todos.create", "direct", { title: "valid" });
     for (const input of [scenarios.boundary.invalidCreateInput, scenarios.boundary.emptyCreateInput]) {
       expect(await host.transport.invoke({ ...invocation, input })).toMatchObject({ certainty: "not-started", result: { kind: "fault", cause: "invalid-input" } });

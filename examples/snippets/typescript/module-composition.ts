@@ -135,15 +135,15 @@ export async function createModuleCompositionHost(options: Readonly<{
   taskMutation?: ImplementationMap<typeof taskModule, Context>["mutate"];
 }> = {}) {
   // #region assembly
-  const tasks = await compileInteractions({
+  const tasks = compileInteractions({
     taskMutate: taskModule.mutate,
     taskQuery: taskModule.query,
   });
-  const capacity = await compileInteractions({
+  const capacity = compileInteractions({
     capacityMutate: capacityModule.mutate,
     capacityQuery: capacityModule.query,
   });
-  const compiled = await composeCompiledInteractions(tasks, capacity);
+  const compiled = composeCompiledInteractions(tasks, capacity);
   // #endregion assembly
 
   const taskState = new Map<string, DefinitionInput<typeof taskModule.mutate>>([
@@ -225,13 +225,13 @@ export async function createModuleCompositionHost(options: Readonly<{
 
   // #region selected-projections
   const localCompiled = {
-    tasks: await compileInteractions(taskModule),
-    capacity: await compileInteractions(capacityModule),
+    tasks: compileInteractions(taskModule),
+    capacity: compileInteractions(capacityModule),
   };
-  const taskEditor = await projectAllDirect(localCompiled.tasks);
-  const taskReader = await pickProjection(taskEditor, "query");
-  const capacityReader = await pickProjection(
-    await projectAllDirect(localCompiled.capacity), "query",
+  const taskEditor = projectAllDirect(localCompiled.tasks);
+  const taskReader = pickProjection(taskEditor, "query");
+  const capacityReader = pickProjection(
+    projectAllDirect(localCompiled.capacity), "query",
   );
   // #endregion selected-projections
 
@@ -263,9 +263,9 @@ export async function createModuleCompositionHost(options: Readonly<{
   // #endregion admission
 
   // #region binding
-  const taskEditorResult = await bindProjection(taskEditor, installed.installation, { admit });
-  const taskReaderResult = await bindProjection(taskReader, installed.installation, { admit });
-  const capacityReaderResult = await bindProjection(capacityReader, installed.installation, { admit });
+  const taskEditorResult = bindProjection(taskEditor, installed.installation, { admit });
+  const taskReaderResult = bindProjection(taskReader, installed.installation, { admit });
+  const capacityReaderResult = bindProjection(capacityReader, installed.installation, { admit });
   if (taskEditorResult.status !== "bound" || taskReaderResult.status !== "bound" ||
       capacityReaderResult.status !== "bound") {
     throw new Error("the selected module interfaces did not bind to the installation");

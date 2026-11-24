@@ -63,7 +63,7 @@ describe("@foxworth/boundary/electron native trust seam", () => {
       increment: defineInteraction({ id: "workspace.increment", input: Amount, output: Workspace, reads: ["workspace"], changes: ["workspace"] }),
     } as const;
     const state = new Map<Context["workspaceId"], number>([["alpha", 0], ["beta", 10]]);
-    const compiled = await compileInteractions(interactions);
+    const compiled = compileInteractions(interactions);
     const implementations = implementInteractions<typeof interactions, Context>(interactions, {
       read: (context) => ({ workspaceId: context.workspaceId, count: state.get(context.workspaceId)! }),
       increment: (input, context) => {
@@ -72,12 +72,12 @@ describe("@foxworth/boundary/electron native trust seam", () => {
         return { workspaceId: context.workspaceId, count };
       },
     });
-    const { installation, controller: installationController } = await installInteractions(compiled, {
+    const { installation, controller: installationController } = installInteractions(compiled, {
       installationId: "electron:workspaces:1",
       implementations,
       realizationIds: { read: { direct: "workspace:read:1" }, increment: { direct: "workspace:increment:1" } },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       read: { interaction: compiled.handles.read, modes: ["direct"] },
       increment: { interaction: compiled.handles.increment, modes: ["direct"] },
     });
@@ -85,7 +85,7 @@ describe("@foxworth/boundary/electron native trust seam", () => {
     const subscribers = new Map<Context["workspaceId"], Set<(value: unknown) => void>>([
       ["alpha", new Set()], ["beta", new Set()],
     ]);
-    const bound = await bindProjection(projection, installation, {
+    const bound = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
       observation: {
         correlate: (context) => ({ workspaceId: context.workspaceId }),

@@ -10,9 +10,9 @@ async function fixture(type: "string" | "number" = "string") {
     id: "items.read", input: portableSchema({ type }), output: portableSchema({ type }),
     reads: ["items"], changes: [],
   }) };
-  const compiled = await compileInteractions(definitions);
-  const projection = await projectAllDirect(compiled);
-  const installed = await installInteractions(compiled, {
+  const compiled = compileInteractions(definitions);
+  const projection = projectAllDirect(compiled);
+  const installed = installInteractions(compiled, {
     installationId: "candidate:1",
     implementations: implementInteractions(definitions, { read: (value) => value }),
     realizationIds: directRealizationIds(compiled, "v1"),
@@ -29,14 +29,14 @@ describe("candidate Projection assessment", () => {
     ] });
     expect(Object.isFrozen(report.issues)).toBe(true);
     expect("binding" in report).toBe(false);
-    expect((await bindProjection(projection, installation, { admit: () => ({ decision: "deny", reason: "offline-is-not-admission" }) })).status).toBe("bound");
+    expect((bindProjection(projection, installation, { admit: () => ({ decision: "deny", reason: "offline-is-not-admission" }) })).status).toBe("bound");
   });
 
   it("shares incompatibility diagnostics with live binding", async () => {
     const expected = await fixture();
     const actual = await fixture("number");
     const offline = assessProjection(expected.projection.manifest, actual.installation.manifest);
-    const live = await bindProjection(expected.projection, actual.installation, { admit: () => ({ decision: "allow" }) });
+    const live = bindProjection(expected.projection, actual.installation, { admit: () => ({ decision: "allow" }) });
     expect(offline.status).toBe("mismatch");
     expect(live.status).toBe("unrealized");
     if (live.status === "unrealized") expect(offline.issues).toEqual(live.report.issues);
@@ -61,7 +61,7 @@ describe("candidate Projection assessment", () => {
     const { projection, installation, controller } = await fixture();
     controller.revoke();
     expect(assessProjection(projection.manifest, installation.manifest).status).toBe("fit");
-    const live = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
+    const live = bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
     expect(live.status).toBe("unrealized");
     if (live.status === "unrealized") expect(live.report.issues[0]?.reason).toBe("installation-revoked");
   });

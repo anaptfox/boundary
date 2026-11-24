@@ -9,11 +9,11 @@ const Input = portableSchema<{ value: string }>({ type: "object", properties: { 
 const Output = portableSchema<string>({ type: "string" });
 async function fixture() {
   const definitions = { read: defineInteraction({ id: "test.read", input: Input, output: Output, reads: ["items"] }), hidden: defineInteraction({ id: "test.hidden", input: Input, output: Output, changes: ["items"] }) };
-  const compiled = await compileInteractions(definitions); const calls: string[] = [];
-  const { installation } = await installInteractions<typeof definitions, void>(compiled, { installationId: "test:inspector", implementations: implementInteractions<typeof definitions, void>(definitions, { read(input) { calls.push(input.value); return input.value; }, hidden(input) { calls.push(input.value); return input.value; } }), requests: createControlRequestContributions<typeof definitions, void>(compiled, { read: { interaction: compiled.handles.read, controlDigest: compiled.handles.read.contractDigest, previewSchema: Output, request(input) { return input.value; } } }), realizationIds: { read: { direct: "test:read", request: "test:request" }, hidden: { direct: "test:hidden" } } });
-  const projection = await projectInteractions(compiled, { read: { interaction: compiled.handles.read, modes: ["direct", "request"] }, hidden: { interaction: compiled.handles.hidden, modes: ["direct"] } });
-  const parent = await bindProjection(projection, installation, { admit: admitAll }); if (parent.status !== "bound") throw Error("not bound");
-  const selected = await pickProjection(projection, "read"); const child = await restrictBinding(parent.binding, { projection: selected, admit: admitAll }); if (child.status !== "bound") throw Error("not bound");
+  const compiled = compileInteractions(definitions); const calls: string[] = [];
+  const { installation } = installInteractions<typeof definitions, void>(compiled, { installationId: "test:inspector", implementations: implementInteractions<typeof definitions, void>(definitions, { read(input) { calls.push(input.value); return input.value; }, hidden(input) { calls.push(input.value); return input.value; } }), requests: createControlRequestContributions<typeof definitions, void>(compiled, { read: { interaction: compiled.handles.read, controlDigest: compiled.handles.read.contractDigest, previewSchema: Output, request(input) { return input.value; } } }), realizationIds: { read: { direct: "test:read", request: "test:request" }, hidden: { direct: "test:hidden" } } });
+  const projection = projectInteractions(compiled, { read: { interaction: compiled.handles.read, modes: ["direct", "request"] }, hidden: { interaction: compiled.handles.hidden, modes: ["direct"] } });
+  const parent = bindProjection(projection, installation, { admit: admitAll }); if (parent.status !== "bound") throw Error("not bound");
+  const selected = pickProjection(projection, "read"); const child = restrictBinding(parent.binding, { projection: selected, admit: admitAll }); if (child.status !== "bound") throw Error("not bound");
   return { child, parent, calls, transport: await createBindingInspectorTransport(child.binding, () => undefined) };
 }
 async function settle() { for (let i = 0; i < 30; i++) await new Promise(resolve => setTimeout(resolve, 0)); }
@@ -28,10 +28,10 @@ describe("inspector", () => {
   it("does not mistake nested domain certainty for invocation certainty", async () => {
     const output = portableSchema<{ certainty: string }>({ type: "object", properties: { certainty: { type: "string" } }, required: ["certainty"], additionalProperties: false });
     const definitions = { read: defineInteraction({ id: "nested.read", input: Input, output, reads: ["items"] }) };
-    const compiled = await compileInteractions(definitions);
-    const { installation } = await installInteractions<typeof definitions, void>(compiled, { installationId: "nested:installation", implementations: implementInteractions<typeof definitions, void>(definitions, { read() { return { certainty: "unknown" }; } }), realizationIds: { read: { direct: "nested:read" } } });
-    const projection = await projectInteractions(compiled, { read: { interaction: compiled.handles.read, modes: ["direct"] } });
-    const bound = await bindProjection(projection, installation, { admit: admitAll }); if (bound.status !== "bound") throw Error("not bound");
+    const compiled = compileInteractions(definitions);
+    const { installation } = installInteractions<typeof definitions, void>(compiled, { installationId: "nested:installation", implementations: implementInteractions<typeof definitions, void>(definitions, { read() { return { certainty: "unknown" }; } }), realizationIds: { read: { direct: "nested:read" } } });
+    const projection = projectInteractions(compiled, { read: { interaction: compiled.handles.read, modes: ["direct"] } });
+    const bound = bindProjection(projection, installation, { admit: admitAll }); if (bound.status !== "bound") throw Error("not bound");
     const ui = setup(await createBindingInspectorTransport(bound.binding, () => undefined)); await select(ui); invoke(ui, '{"value":"x"}'); await settle();
     expect(ui.root.querySelector("[data-testid=inspector-attempts] summary")?.textContent).toContain("Settled");
     expect(ui.root.querySelector("[data-testid=inspector-attempts] summary")?.textContent).not.toContain("Unknown");

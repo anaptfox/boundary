@@ -68,8 +68,8 @@ const interactions = {
     changes: ["workspace"],
   }),
 } as const;
-const compiled = await compileInteractions(interactions);
-const projection = await projectInteractions(compiled, {
+const compiled = compileInteractions(interactions);
+const projection = projectInteractions(compiled, {
   read: { interaction: compiled.handles.read, modes: ["direct"] },
   increment: {
     interaction: compiled.handles.increment,
@@ -336,7 +336,7 @@ export class Workspace extends DurableObject<Environment> {
       verify: ({ output, proposal }) => this.#journal.effectMatches(proposal.proposalDigest, output.count) ? { ok: true, evidence: { proposalDigest: proposal.proposalDigest, count: output.count } } : { ok: false, message: "exact durable effect ledger entry is absent or differs" },
       reconcile: ({ proposal }) => { const count = this.#journal.effectCount(proposal.proposalDigest); return count === undefined ? { status: "not-applied", reason: "no exact durable effect ledger entry exists" } : { status: "completed", value: { count } }; },
     };
-    const controlled = await digestControlRealization({ compileSchema(schema, context) { return compileZodSchema(schema as z.ZodType, context.role, context.path); } }, { interactionId: compiled.handles.increment.interactionId, contractDigest: compiled.handles.increment.contractDigest }, hook);
+    const controlled = digestControlRealization({ compileSchema(schema, context) { return compileZodSchema(schema as z.ZodType, context.role, context.path); } }, { interactionId: compiled.handles.increment.interactionId, contractDigest: compiled.handles.increment.contractDigest }, hook);
     let installed: Awaited<ReturnType<typeof installInteractions<typeof interactions, Context>>>["installation"] | undefined;
     const requestRealizationId = `workspace:${installation.workspaceId}:${installation.deploymentId}:increment:request`;
     const executionRealizationId = `workspace:${installation.workspaceId}:${installation.deploymentId}:increment:execute`;
@@ -360,9 +360,9 @@ export class Workspace extends DurableObject<Environment> {
       read: () => this.read(),
       increment: (input) => this.#directIncrement(input.amount),
     });
-    const result = await installInteractions<typeof interactions, Context>(compiled, { installationId: `installation:workspace:${installation.workspaceId}:${installation.deploymentId}`, implementations, requests: contributeControlRequests(compiled, control.requester, { increment: { interaction: compiled.handles.increment, control: controlled, executionRealizationId, actor: (context) => context.session } }), realizationIds: { ...directRealizationIds(compiled, `workspace:${installation.workspaceId}:${installation.deploymentId}`), increment: { direct: `workspace:${installation.workspaceId}:${installation.deploymentId}:increment:direct`, request: requestRealizationId } } });
+    const result = installInteractions<typeof interactions, Context>(compiled, { installationId: `installation:workspace:${installation.workspaceId}:${installation.deploymentId}`, implementations, requests: contributeControlRequests(compiled, control.requester, { increment: { interaction: compiled.handles.increment, control: controlled, executionRealizationId, actor: (context) => context.session } }), realizationIds: { ...directRealizationIds(compiled, `workspace:${installation.workspaceId}:${installation.deploymentId}`), increment: { direct: `workspace:${installation.workspaceId}:${installation.deploymentId}:increment:direct`, request: requestRealizationId } } });
     installed = result.installation;
-    const bound = await bindProjection(projection, installed, { admit: admitWhen((context: Context) => context.session.role === "owner", "owner session required") });
+    const bound = bindProjection(projection, installed, { admit: admitWhen((context: Context) => context.session.role === "owner", "owner session required") });
     if (bound.status !== "bound") throw new Error("workspace projection did not bind");
     return { installation, binding: bound.binding, control };
   }

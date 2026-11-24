@@ -151,7 +151,7 @@ export async function runSceneHostProof(engine: SceneEngineDriver) {
 
   try {
     storage = await mkdtemp(join(tmpdir(), `boundary-${engine.engine}-scene-`));
-    const boundary = await bindInteractions(interactions, {
+    const boundary = bindInteractions(interactions, {
       installationId: `example:crdt:${engine.engine}:one`,
       realizationVersion: `${engine.engine}-scene:v1`,
       handlers: {

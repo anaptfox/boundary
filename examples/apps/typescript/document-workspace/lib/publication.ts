@@ -148,7 +148,7 @@ export async function createPublicationControl(options: {
     unknown,
     DemoContext
   > = {
-    realizationDigest: await hashJson("folio.publication-artifact/v1", {
+    realizationDigest: hashJson("folio.publication-artifact/v1", {
       buildId,
       sources: artifactSources,
     }),
@@ -222,7 +222,7 @@ export async function createPublicationControl(options: {
         };
     },
   };
-  const control = await digestControlRealization({
+  const control = digestControlRealization({
     compileSchema: (schema, context) =>
       compileZodSchema(schema as z.ZodType, context.role, context.path),
   }, {

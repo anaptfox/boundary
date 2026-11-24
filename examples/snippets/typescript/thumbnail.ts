@@ -68,8 +68,8 @@ function svg(width: number, height: number) {
 
 export async function createThumbnailExample() {
   // #region projection
-  const compiled = await compileInteractions(interactions);
-  const thumbnailSurface = await projectInteractions(compiled, {
+  const compiled = compileInteractions(interactions);
+  const thumbnailSurface = projectInteractions(compiled, {
     makeThumbnail: direct(compiled.handles.makeThumbnail),
   });
   // No implementation or live installation is needed to select this surface.
@@ -113,7 +113,7 @@ export async function createThumbnailExample() {
       return { deleted: images.delete(imageId) };
     },
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "images:local:release-1",
     implementations,
     realizationIds: directRealizationIds(compiled, "release-1"),
@@ -125,7 +125,7 @@ export async function createThumbnailExample() {
     (context: Context) => context.kind === "screen" || context.kind === "script",
     "This connection admits the screen and script",
   );
-  const result = await bindProjection(thumbnailSurface, installation, {
+  const result = bindProjection(thumbnailSurface, installation, {
     admit: admitScreenOrScript,
   });
   if (result.status !== "bound") {
@@ -149,12 +149,12 @@ export async function createThumbnailExample() {
 
   // #region replacement
   // A new local installation, not a remote-worker implementation.
-  const { installation: replacement } = await installInteractions(compiled, {
+  const { installation: replacement } = installInteractions(compiled, {
     installationId: "images:local:release-2",
     implementations,
     realizationIds: directRealizationIds(compiled, "release-2"),
   });
-  const replacementResult = await bindProjection(thumbnailSurface, replacement, {
+  const replacementResult = bindProjection(thumbnailSurface, replacement, {
     admit: admitScreenOrScript,
   });
   if (replacementResult.status !== "bound") {
@@ -174,9 +174,9 @@ export async function createThumbnailExample() {
       changes: ["images"],
     }),
   };
-  const queued = await compileInteractions(queuedInteractions);
+  const queued = compileInteractions(queuedInteractions);
   const queuedDispatches: string[] = [];
-  const { installation: queuedInstallation } = await installInteractions(queued, {
+  const { installation: queuedInstallation } = installInteractions(queued, {
     installationId: "images:queued:release-1",
     implementations: implementInteractions<typeof queuedInteractions, Context>(queuedInteractions, {
       makeThumbnail() {
@@ -186,7 +186,7 @@ export async function createThumbnailExample() {
     }),
     realizationIds: directRealizationIds(queued, "release-1"),
   });
-  const mismatch = await bindProjection(thumbnailSurface, queuedInstallation, {
+  const mismatch = bindProjection(thumbnailSurface, queuedInstallation, {
     admit: admitScreenOrScript,
   });
   // mismatch.status === "unrealized": a job ID does not satisfy ImageInfo.
@@ -194,11 +194,11 @@ export async function createThumbnailExample() {
   // #endregion mismatch
 
   // #region agent
-  const agentSurface = await projectInteractions(compiled, {
+  const agentSurface = projectInteractions(compiled, {
     makeThumbnail: direct(compiled.handles.makeThumbnail),
     inspectImage: direct(compiled.handles.inspectImage),
   });
-  const agentResult = await bindProjection(agentSurface, installation, {
+  const agentResult = bindProjection(agentSurface, installation, {
     admit: admitWhen((context: Context) => context.kind === "agent", "Agent connection required"),
   });
   if (agentResult.status !== "bound") {

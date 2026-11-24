@@ -7,7 +7,7 @@ import { createAdapterFixture, type AdapterContext } from "./helpers/adapter";
 
 async function boundFixture() {
   const fixture = await createAdapterFixture();
-  const projection = await projectInteractions(fixture.compiled, {
+  const projection = projectInteractions(fixture.compiled, {
     list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     create: { interaction: fixture.compiled.handles.create, modes: ["direct", "request"] },
     explode: { interaction: fixture.compiled.handles.explode, modes: ["direct"] },
@@ -96,7 +96,7 @@ describe("@foxworth/boundary/frameworks/next native server caller", () => {
 
   it("reports a revoked pinned Binding as stale/not-started and does not enter the host", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     });
     const bound = await (async () => {

@@ -225,7 +225,7 @@ async function getRecord(
       const record = await options.journal.getProposal(reference.id);
       if (record === undefined) return undefined;
       if (!controlReaderScopeIncludes(scope, record)) return undefined;
-      const proposal = await requireValidProposal(record);
+      const proposal = requireValidProposal(record);
       requireRequestedId(proposal.id, "control.reader.proposal.id");
       return publicProposal(proposal);
     }

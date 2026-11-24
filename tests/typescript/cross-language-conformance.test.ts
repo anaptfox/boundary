@@ -49,7 +49,7 @@ describe("shared Rust and TypeScript Program v1 vectors", () => {
   it("agrees on contract and Program identity", async () => {
     const descriptors = new Map<string, Awaited<ReturnType<typeof createInteractionDescriptor>>>();
     for (const vector of vectors.contracts) {
-      const descriptor = await createInteractionDescriptor({ contract: vector.contract });
+      const descriptor = createInteractionDescriptor({ contract: vector.contract });
       expect(
         canonicalJson(interactionContractIdentity(descriptor.contract)),
         vector.name,
@@ -59,7 +59,7 @@ describe("shared Rust and TypeScript Program v1 vectors", () => {
     }
 
     for (const vector of vectors.programs) {
-      const program = await createProgram(
+      const program = createProgram(
         vector.contracts.map(name => {
           const descriptor = descriptors.get(name);
           if (descriptor === undefined) throw new Error(`unknown contract vector: ${name}`);

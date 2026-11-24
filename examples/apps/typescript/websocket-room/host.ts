@@ -4,8 +4,8 @@ import { createTodoHost, type TodoCaller } from "../todo-multisurface/host";
 
 export async function createRoomHost() {
   const todos = await createTodoHost();
-  const readProjection = await pickProjection(todos.screen, "list");
-  const selected = await bindProjection(readProjection, todos.installation, {
+  const readProjection = pickProjection(todos.screen, "list");
+  const selected = bindProjection(readProjection, todos.installation, {
     admit: admitWhen((context: TodoCaller) => context.kind === "agent", "agent only"),
   });
   if (selected.status !== "bound") throw new Error("read-only room Binding unavailable");

@@ -39,11 +39,11 @@ export const interactions = {
 
 export async function runReadmeExample() {
   // #region project
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
 
   // The screen may complete and clear. The agent may only complete.
-  const screen = await projectAllDirect(compiled);
-  const agent = await pickProjection(screen, "complete");
+  const screen = projectAllDirect(compiled);
+  const agent = pickProjection(screen, "complete");
   // #endregion project
 
   // #region install
@@ -68,7 +68,7 @@ export async function runReadmeExample() {
     },
   });
 
-  const { installation } = await installInteractions<typeof interactions, Actor>(compiled, {
+  const { installation } = installInteractions<typeof interactions, Actor>(compiled, {
     installationId: "todos:local:v1",
     implementations,
     realizationIds: directRealizationIds(compiled, "v1"),
@@ -76,7 +76,7 @@ export async function runReadmeExample() {
   // #endregion install
 
   // #region call
-  const bound = await bindProjection(agent, installation, {
+  const bound = bindProjection(agent, installation, {
     admit: admitWhen((actor) => actor.kind === "agent"),
   });
   if (bound.status !== "bound") {

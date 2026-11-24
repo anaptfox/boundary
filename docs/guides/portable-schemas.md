@@ -29,7 +29,7 @@ export const interactions = {
   }),
 } as const;
 
-const compiled = await compileInteractions(interactions);
+const compiled = compileInteractions(interactions);
 ```
 
 Compilation makes the assertion-bearing contract canonical. Titles,
@@ -61,7 +61,7 @@ const interactions = {
   }),
 } as const;
 
-const compiled = await compileInteractions(interactions, {
+const compiled = compileInteractions(interactions, {
   schemas: [zodSchemaAdapter],
 });
 ```
@@ -196,7 +196,7 @@ const unsafeInteraction = defineInteraction({
   input: unsafe,
   output: z.string(),
 });
-// await compileInteractions({ unsafe: unsafeInteraction }) rejects at compile
+// compileInteractions({ unsafe: unsafeInteraction }) rejects at compile
 ```
 
 Runtime values must be portable JSON: null, booleans, finite numbers, strings,
@@ -230,7 +230,7 @@ const interactions = {
   }),
 } as const;
 
-const compiled = await compileInteractions(interactions, {
+const compiled = compileInteractions(interactions, {
   schemas: [adapter],
 });
 ```

@@ -100,8 +100,8 @@ describe("plugin Binding", () => {
     );
     expect(direct).toMatchObject({ status: "returned" });
 
-    const compiled = await compileInteractions(definitions);
-    const { installation } = await installInteractions(compiled, {
+    const compiled = compileInteractions(definitions);
+    const { installation } = installInteractions(compiled, {
       installationId: "images:plugin:thumbnail:1",
       realizationIds: {
         makeThumbnail: { direct: loaded.inspection.realizationId },
@@ -130,10 +130,10 @@ describe("plugin Binding", () => {
         },
       }],
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       makeThumbnail: { interaction: compiled.handles.makeThumbnail, modes: ["direct"] },
     });
-    const binding = await bindProjection(projection, installation, {
+    const binding = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(binding.status).toBe("bound");

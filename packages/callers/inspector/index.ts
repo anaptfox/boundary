@@ -109,7 +109,7 @@ export function mountInspector(container: HTMLElement, options: { transport: Ins
       })();
     };
   }
-  async function load() { const token = ++epoch; manifest = null; selected = null; outcome = ""; busy = false; if (!transport) { status = "Disconnected"; render(); return; } status = "Loading selected interactions…"; render(); try { const result = await transport.manifest(); const checked = await validateProjectionBindingManifest(result); if (disposed || token !== epoch) return; manifest = checked; status = checked.interactions.length ? "Connected — selection is not authorization." : "Connected — no interactions selected."; } catch { if (disposed || token !== epoch) return; status = "Unable to load a valid Binding. Check the connection and refresh."; } render(); }
+  async function load() { const token = ++epoch; manifest = null; selected = null; outcome = ""; busy = false; if (!transport) { status = "Disconnected"; render(); return; } status = "Loading selected interactions…"; render(); try { const result = await transport.manifest(); const checked = validateProjectionBindingManifest(result); if (disposed || token !== epoch) return; manifest = checked; status = checked.interactions.length ? "Connected — selection is not authorization." : "Connected — no interactions selected."; } catch { if (disposed || token !== epoch) return; status = "Unable to load a valid Binding. Check the connection and refresh."; } render(); }
   render(); void load();
   return { async setTransport(next) { transport = next; await load(); }, refresh: load, dispose() { if (disposed) return; disposed = true; epoch++; root.remove(); } };
 }

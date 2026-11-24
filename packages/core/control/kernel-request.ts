@@ -113,7 +113,7 @@ export async function requestControl<Actor, Context>(
   });
   const proposal: ProposalRecord = Object.freeze({
     ...withoutDigest,
-    proposalDigest: await proposalDigest(withoutDigest),
+    proposalDigest: proposalDigest(withoutDigest),
   });
 
   let decision: ControlDecision;

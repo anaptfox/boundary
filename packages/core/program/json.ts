@@ -1,3 +1,6 @@
+import { sha256 as nobleSha256 } from "@noble/hashes/sha2.js";
+import { BoundaryErrorBase } from "./errors";
+
 // Only snapshots created here can be trusted by internal identity caches.
 const ownedJson = new WeakSet<object>();
 // Metadata lives only as long as its owned object; payload strings are not cached.
@@ -5,8 +8,6 @@ const ownedObjectKeys = new WeakMap<object, readonly string[]>();
 export function isOwnedJson(value: object): boolean {
   return ownedJson.has(value);
 }
-
-import { BoundaryErrorBase } from "./errors";
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
@@ -18,7 +19,7 @@ export type Sha256Digest = `sha256:${string}`;
 export type DomainHasher = (
   domain: string,
   value: JsonValue,
-) => Promise<Sha256Digest>;
+) => Sha256Digest;
 
 /** Stable failures at Boundary's portable JSON seam. */
 export type JsonDiagnosticCode =
@@ -358,10 +359,10 @@ export function isSha256Digest(value: unknown): value is Sha256Digest {
 }
 
 /** Hash canonical JSON in an explicit domain separated by a NUL byte. */
-export async function hashJson(
+export function hashJson(
   domain: string,
   value: JsonValue,
-): Promise<Sha256Digest> {
+): Sha256Digest {
   if (!domain.trim() || domain.includes("\0")) {
     fail(
       "HASH_INVALID_DOMAIN",
@@ -369,23 +370,15 @@ export async function hashJson(
       "hash domain must be non-empty and cannot contain NUL",
     );
   }
-  const subtle = globalThis.crypto?.subtle;
-  if (!subtle) {
-    fail(
-      "HASH_SHA256_UNAVAILABLE",
-      "crypto.subtle",
-      "Web Crypto SHA-256 is unavailable",
-    );
-  }
   const bytes = encoder.encode(`${domain}\0${canonicalJson(value)}`);
-  const digest = await subtle.digest("SHA-256", bytes);
-  const hex = Array.from(new Uint8Array(digest), (byte) =>
+  const digest = nobleSha256(bytes);
+  const hex = Array.from(digest, (byte) =>
     byte.toString(16).padStart(2, "0"),
   ).join("");
   return `sha256:${hex}`;
 }
 
 /** Generic canonical-JSON hash; Boundary protocol identities use explicit domains. */
-export function sha256(value: JsonValue): Promise<Sha256Digest> {
+export function sha256(value: JsonValue): Sha256Digest {
   return hashJson("canonical-json/v1", value);
 }

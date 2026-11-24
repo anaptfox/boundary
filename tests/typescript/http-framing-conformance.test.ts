@@ -114,23 +114,23 @@ const interactions = {
 const BASE = "/boundary/v1";
 
 async function fixture(options: { readonly admit?: boolean } = {}) {
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions(interactions, {
     echo: (input) => ({ text: input.text }),
     fail: () => {
       throw declaredInteractionError(interactions.fail, "REFUSED", {});
     },
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "deploy:http-framing:1",
     implementations,
     realizationIds: directRealizationIds(compiled, "v1"),
   });
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     echo: direct(compiled.handles.echo),
     fail: direct(compiled.handles.fail),
   });
-  const bound = await bindProjection(projection, installation, {
+  const bound = bindProjection(projection, installation, {
     admit: () =>
       options.admit === false
         ? { decision: "deny" as const, reason: "DENIED" }

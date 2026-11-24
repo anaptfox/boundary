@@ -41,7 +41,7 @@ describe("@foxworth/boundary/cloudflare native Worker context", () => {
 
   it("uses request, environment, and execution for matched invocations without sharing them", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: direct(fixture.compiled.handles.list),
     });
     const binding = await fixture.bind(projection);

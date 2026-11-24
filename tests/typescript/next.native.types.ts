@@ -12,12 +12,12 @@ import { createAdapterFixture } from "./helpers/adapter";
 
 async function nextNativeTypes() {
   const fixture = await createAdapterFixture();
-  const projection = await projectInteractions(fixture.compiled, {
+  const projection = projectInteractions(fixture.compiled, {
     list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     create: { interaction: fixture.compiled.handles.create, modes: ["direct", "request"] },
     proposalOnly: { interaction: fixture.compiled.handles.create, modes: ["request"] },
   });
-  const bound = await bindProjection(projection, fixture.installation, {
+  const bound = bindProjection(projection, fixture.installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (bound.status !== "bound") return;

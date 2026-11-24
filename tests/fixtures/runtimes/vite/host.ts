@@ -51,8 +51,8 @@ export async function createViteTodoHost(statePath: string) {
   const todos = await loadTodos(statePath);
   let nextId = Math.max(0, ...todos.map((item) => item.id)) + 1;
   const persist = () => writeFile(statePath, JSON.stringify(todos), "utf8");
-  const compiled = await compileInteractions(interactions);
-  const projection = await projectInteractions(compiled, {
+  const compiled = compileInteractions(interactions);
+  const projection = projectInteractions(compiled, {
     list: { interaction: compiled.handles.list, modes: ["direct"] },
     create: { interaction: compiled.handles.create, modes: ["direct"] },
   });
@@ -65,12 +65,12 @@ export async function createViteTodoHost(statePath: string) {
       return created;
     },
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "vite-native:todos:v1",
     implementations,
     realizationIds: directRealizationIds(compiled, "vite-native"),
   });
-  const result = await bindProjection(projection, installation, { admit: admitAll });
+  const result = bindProjection(projection, installation, { admit: admitAll });
   if (result.status !== "bound") throw new Error("Vite native todo projection did not bind");
   return {
     handler: createHttpHandler({

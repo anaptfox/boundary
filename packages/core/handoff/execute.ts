@@ -164,7 +164,7 @@ export async function executeHandoff<Context>(
   context: Context,
 ): Promise<HandoffOutcome> {
   const invocation = validateHandoffInvocation(invocationValue);
-  const manifest = await validateProjectionBindingManifest(binding.manifest);
+  const manifest = validateProjectionBindingManifest(binding.manifest);
   return executeWithManifest(binding, manifest, invocation, context);
 }
 
@@ -220,7 +220,7 @@ export async function createHandoffInvocation(
   mode: InteractionMode,
   input: JsonValue,
 ): Promise<HandoffInvocation> {
-  const manifest = await validateProjectionBindingManifest(manifestValue);
+  const manifest = validateProjectionBindingManifest(manifestValue);
   const interaction = validatedManifests.get(manifest)!.interactions.get(interactionId)?.get(mode);
   if (!interaction) {
     failHandoff("MODE_NOT_EXPOSED", "interaction", "Binding does not expose the requested interaction mode");
@@ -246,7 +246,7 @@ export async function createCheckedHandoff<Context>(
   // Prove source stability before validation yields. Mutable or accessor-backed
   // seams still validate their current manifest on every invocation.
   const immutable = hasImmutableManifest(binding, source);
-  const manifest = await validateProjectionBindingManifest(source);
+  const manifest = validateProjectionBindingManifest(source);
   return Object.freeze({
     manifest,
     async invoke(invocation: HandoffInvocation, context: Context) {
