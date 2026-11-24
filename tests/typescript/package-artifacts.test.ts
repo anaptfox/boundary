@@ -98,7 +98,7 @@ describe("Boundary package topology", () => {
 
   it("keeps optional framework dependencies behind their owning subpaths", () => {
     const sdk = manifestFor();
-    expect(sdk.dependencies ?? {}).toEqual({ "@noble/hashes": "^2.4.0" });
+    expect(sdk.dependencies ?? {}).toEqual({});
     for (const peer of Object.keys(sdk.peerDependencies)) {
       expect(sdk.peerDependenciesMeta[peer]).toEqual({ optional: true });
     }
