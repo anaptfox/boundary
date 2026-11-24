@@ -85,7 +85,7 @@ const interactions = {
     description: "Choose one exact reviewed candidate.",
   }),
 } as const;
-const compiled = await compileInteractions(interactions);
+const compiled = compileInteractions(interactions);
 const implementations = implementInteractions<typeof interactions, StudioContext>(
   interactions,
   {
@@ -173,7 +173,7 @@ ${right.name} emphasizes ${right.direction.slice(0, 54)}.`,
     },
   },
 );
-const { installation } = await installInteractions(compiled, {
+const { installation } = installInteractions(compiled, {
   installationId: "next-native:studio:1",
   implementations,
   realizationIds: {
@@ -184,14 +184,14 @@ const { installation } = await installInteractions(compiled, {
     choose: { direct: "studio-choose-1" },
   },
 });
-export const studioProjection = await projectInteractions(compiled, {
+export const studioProjection = projectInteractions(compiled, {
   view: { interaction: compiled.handles.view, modes: ["direct"] },
   create: { interaction: compiled.handles.create, modes: ["direct"] },
   edit: { interaction: compiled.handles.edit, modes: ["direct"] },
   compare: { interaction: compiled.handles.compare, modes: ["direct"] },
   choose: { interaction: compiled.handles.choose, modes: ["direct"] },
 });
-const bound = await bindProjection(studioProjection, installation, {
+const bound = bindProjection(studioProjection, installation, {
   admit: ({ context, handle }) => {
     const role = context.role;
     const allowed = (handle.interactionId === "studio.candidates.view" ||

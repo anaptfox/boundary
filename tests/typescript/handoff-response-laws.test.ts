@@ -11,7 +11,7 @@ import { createAdapterFixture } from "./helpers/adapter";
 
 async function fixture() {
   const host = await createAdapterFixture();
-  const projection = await projectInteractions(host.compiled, {
+  const projection = projectInteractions(host.compiled, {
     create: { interaction: host.compiled.handles.create, modes: ["direct", "request"] },
     list: { interaction: host.compiled.handles.list, modes: ["direct"] },
   });
@@ -94,12 +94,12 @@ describe("owned boundary snapshots", () => {
       (raw: any) => { Object.defineProperty(raw, "bindingDigest", { get() { throw new Error("accessed"); } }); },
     ]) {
       const raw = structuredClone(f.binding.manifest);
-      const owned = await validateProjectionBindingManifest(raw);
+      const owned = validateProjectionBindingManifest(raw);
       expect(owned).not.toBe(raw);
       expect(Object.isFrozen(owned.interactions[0])).toBe(true);
       mutate(raw);
-      await expect(validateProjectionBindingManifest(raw)).rejects.toThrow();
-      expect(await validateProjectionBindingManifest(owned)).toBe(owned);
+      expect(() => validateProjectionBindingManifest(raw)).toThrow();
+      expect(validateProjectionBindingManifest(owned)).toBe(owned);
     }
   });
   it("revalidates mutable invocation input and snapshots handle modes", async () => {

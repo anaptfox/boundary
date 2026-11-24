@@ -149,15 +149,15 @@ export function bindInteractions<
     readonly handlers: Handlers & Record<Exclude<keyof Handlers, keyof Definitions>, never> & CompatibleHandlerContexts<Definitions, Handlers>;
     readonly callers: Callers & ExactCallerAliases<Definitions, Callers>;
   },
-): Promise<BindInteractionsResult<Definitions, ContextFromHandlers<Definitions, Handlers>, Callers>>;
-export async function bindInteractions<
+): BindInteractionsResult<Definitions, ContextFromHandlers<Definitions, Handlers>, Callers>;
+export function bindInteractions<
   const Definitions extends InteractionDefinitions,
   Context,
   const Callers extends BindInteractionCallers<Definitions, Context> = BindInteractionCallers<Definitions, Context>,
 >(
   definitions: Definitions,
   options: unknown,
-): Promise<BindInteractionsResult<Definitions, Context, Callers>> {
+): BindInteractionsResult<Definitions, Context, Callers> {
   const copiedOptions = ownDataRecord(options, "options");
   exactKeys(copiedOptions, ["installationId", "realizationVersion", "handlers", "callers"], "options");
   const installationId = copiedOptions.installationId;
@@ -190,12 +190,12 @@ export async function bindInteractions<
     }))];
   if (issues.length > 0) throw new BindInteractionsError(issues);
 
-  const compiled = await compileInteractions(definitionSnapshot);
+  const compiled = compileInteractions(definitionSnapshot);
   const implementations = implementInteractions(
     definitionSnapshot as Definitions,
     handlers as never,
   ) as import("./types").InteractionImplementations<Definitions, Context>;
-  const installed = await installInteractions(compiled, {
+  const installed = installInteractions(compiled, {
     installationId,
     implementations,
     realizationIds: directRealizationIds(compiled, realizationVersion),
@@ -205,8 +205,7 @@ export async function bindInteractions<
   const bindings: Record<string, import("./types").ProjectionBinding<any, Context>> = Object.create(null) as Record<string, import("./types").ProjectionBinding<any, Context>>;
   const controllers: Record<string, import("./types").BindingController> = Object.create(null) as Record<string, import("./types").BindingController>;
   try {
-    const outcomes = await Promise.all(
-      Object.entries(callerSnapshots).map(async ([name, caller]) => {
+    const outcomes = Object.entries(callerSnapshots).map(([name, caller]) => {
         try {
           const selection: Record<string, ProjectionSelection> =
             Object.create(null) as Record<string, ProjectionSelection>;
@@ -220,8 +219,8 @@ export async function bindInteractions<
               }),
             );
           }
-          const projection = await projectInteractions(compiled, selection);
-          const bound = await bindProjection(projection, installed.installation, {
+          const projection = projectInteractions(compiled, selection);
+          const bound = bindProjection(projection, installed.installation, {
             admit: async ({ context }) =>
               (await caller.admit(context)) === true
                 ? { decision: "allow" as const }
@@ -239,8 +238,7 @@ export async function bindInteractions<
         } catch (cause) {
           return { name, cause };
         }
-      }),
-    );
+      });
 
     for (const outcome of outcomes) {
       if ("cause" in outcome) {

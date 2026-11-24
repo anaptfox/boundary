@@ -71,12 +71,12 @@ implementInteractions(interactions, {
 });
 
 async function contextlessLifecycle() {
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions(interactions, {
     echo: (input) => input.message,
     version: () => "1",
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "deploy:types:1",
     implementations,
     realizationIds: {
@@ -84,11 +84,11 @@ async function contextlessLifecycle() {
       version: { direct: "realization:version:1" },
     },
   });
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     echo: { interaction: compiled.handles.echo, modes: ["direct"] },
     version: { interaction: compiled.handles.version, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = bindProjection(projection, installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (result.status !== "bound") return;
@@ -130,9 +130,9 @@ const invalidNarrowBinding: typeof narrowBinding = wideBinding;
 narrowBinding.revoke();
 
 async function composedHandleTypes() {
-  const left = await compileInteractions({ echo: interactions.echo });
-  const right = await compileInteractions({ version: interactions.version });
-  const composed = await composeCompiledInteractions(left, right);
+  const left = compileInteractions({ echo: interactions.echo });
+  const right = compileInteractions({ version: interactions.version });
+  const composed = composeCompiledInteractions(left, right);
   composed.handles.echo.interactionId satisfies "echo";
   composed.handles.version.interactionId satisfies "version";
   // @ts-expect-error composition retains a closed handle record

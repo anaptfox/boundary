@@ -28,7 +28,7 @@ const makeThumbnail = defineInteraction({
   reads: ["images"],
   changes: ["images"],
 });
-const compiled = await compileInteractions({ makeThumbnail });
+const compiled = compileInteractions({ makeThumbnail });
 ```
 
 `compiled.program` contains the contract and its identity. It contains no
@@ -151,7 +151,7 @@ plugin replies into native host outcomes:
 ```ts
 import { bindProjection, installInteractions, projectInteractions } from "@foxworth/boundary";
 
-const { installation } = await installInteractions(compiled, {
+const { installation } = installInteractions(compiled, {
   installationId: "images:plugin:thumbnail:1",
   realizationIds: {
     makeThumbnail: { direct: loaded.inspection.realizationId },
@@ -174,10 +174,10 @@ const { installation } = await installInteractions(compiled, {
     },
   }],
 });
-const callerProjection = await projectInteractions(compiled, {
+const callerProjection = projectInteractions(compiled, {
   makeThumbnail: { interaction: compiled.handles.makeThumbnail, modes: ["direct"] },
 });
-const bound = await bindProjection(callerProjection, installation, {
+const bound = bindProjection(callerProjection, installation, {
   admit: () => ({ decision: "allow" }), // the application's admission policy
 });
 if (bound.status !== "bound") throw new Error("thumbnail interaction did not bind");

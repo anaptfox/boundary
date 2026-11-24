@@ -30,14 +30,14 @@ function requestOnly<Handle extends InteractionHandle>(
 }
 
 /** A worker's authority: propose only, direct mode. Never accept or reject. */
-export async function proposerProjection(compiled: DraftsCompiled) {
+export function proposerProjection(compiled: DraftsCompiled) {
   return projectInteractions(compiled, {
     propose: direct(compiled.handles.propose),
   });
 }
 
 /** An author's authority: accept and reject, request mode. Never propose. */
-export async function authorProjection(compiled: DraftsCompiled) {
+export function authorProjection(compiled: DraftsCompiled) {
   return projectInteractions(compiled, {
     accept: requestOnly(compiled.handles.accept),
     reject: requestOnly(compiled.handles.reject),
@@ -49,6 +49,6 @@ export async function authorProjection(compiled: DraftsCompiled) {
  * a host that only needs to gate invocation of interactions already
  * declared and must prove it grants no Draft-deciding capability at all.
  */
-export async function runnerProjection(compiled: DraftsCompiled) {
+export function runnerProjection(compiled: DraftsCompiled) {
   return projectInteractions(compiled, {});
 }

@@ -243,15 +243,15 @@ describe("strict Boundary program JSON", () => {
       docs: { summary: "Read a record" },
     };
 
-    await expect(createInteractionDescriptor(source)).rejects.toMatchObject({
+    expect(() => createInteractionDescriptor(source)).toThrow(expect.objectContaining({
       name: "JsonError",
       code: "JSON_NON_PLAIN_OBJECT",
       path: "records.read.inputSchema",
-    });
+    }));
   });
 
   it("deeply freezes normalized descriptor data", async () => {
-    const descriptor = await createInteractionDescriptor({
+    const descriptor = createInteractionDescriptor({
       contract: {
         version: 1,
         id: "records.read",

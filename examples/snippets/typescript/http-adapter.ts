@@ -45,7 +45,7 @@ const interactions = {
 
 export async function createTodoHttpExample() {
   const rows: Todo[] = [];
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions<typeof interactions, Actor>(interactions, {
     list: () => [...rows],
     create(input) {
@@ -54,7 +54,7 @@ export async function createTodoHttpExample() {
       return todo;
     },
   });
-  const { installation } = await installInteractions<typeof interactions, Actor>(compiled, {
+  const { installation } = installInteractions<typeof interactions, Actor>(compiled, {
     installationId: "todos:http:1",
     implementations,
     realizationIds: {
@@ -62,11 +62,11 @@ export async function createTodoHttpExample() {
       create: { direct: "todos:create:http:1" },
     },
   });
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     list: { interaction: compiled.handles.list, modes: ["direct"] },
     create: { interaction: compiled.handles.create, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = bindProjection(projection, installation, {
     admit({ context, handle }) {
       return context.role === "owner" || handle.changes.length === 0
         ? { decision: "allow" }

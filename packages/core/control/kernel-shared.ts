@@ -339,7 +339,7 @@ export async function loadProposalRecord<Actor, Context>(
       `unknown proposal: ${id}`,
     );
   }
-  const proposal = await requireValidProposal(stored);
+  const proposal = requireValidProposal(stored);
   if (proposal.id !== id) {
     throw controlError(
       "CONTROL_INTEGRITY_MISMATCH",

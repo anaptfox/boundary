@@ -54,7 +54,7 @@ async function handoffFromTransport(
   } catch {
     fail("INVALID_TOOL", "transport.inspect", "the Binding handshake failed");
   }
-  const manifest = await validateProjectionBindingManifest(inspected);
+  const manifest = validateProjectionBindingManifest(inspected);
   return Object.freeze({
     manifest,
     async invoke(invocation: HandoffInvocation, _context?: unknown, framing?: ClientInvokeFraming) {

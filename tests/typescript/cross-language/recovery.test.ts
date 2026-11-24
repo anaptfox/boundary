@@ -44,7 +44,7 @@ it("records a lost Rust response as uncertain and reconciles without a second cr
           : { status: "uncertain", reason: "fixture state does not prove this create" };
       },
     };
-    const resolved = await digestControlRealization(
+    const resolved = digestControlRealization(
       { compileSchema: () => ({ contract: schema }) },
       { interactionId: interaction.interactionId, contractDigest: interaction.actualContractDigest }, hook,
     );

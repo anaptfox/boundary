@@ -90,7 +90,7 @@ async function validProposal(): Promise<ProposalRecord> {
   const identity = proposalIdentity();
   return {
     ...identity,
-    proposalDigest: await proposalDigest(identity),
+    proposalDigest: proposalDigest(identity),
   };
 }
 
@@ -152,7 +152,7 @@ function descendants(proposal: ProposalRecord) {
 describe("control record identity", () => {
   it("has an independent golden digest for a complete proposal", async () => {
     expect(CONTROL_PROPOSAL_DOMAIN).toBe("boundary.control-proposal/v1");
-    await expect(proposalDigest(proposalIdentity())).resolves.toBe(
+    expect(proposalDigest(proposalIdentity())).toBe(
       "sha256:afde4671c0499dcae6396fa2401e3dcc43864f86b888be6e461874d6db8852dd",
     );
   });
@@ -179,7 +179,7 @@ describe("control record identity", () => {
     ["preview", { title: "Delete inbox", count: 2 }],
   ] as const)("rejects proposal %s tampering", async (field, value) => {
     const proposal = await validProposal();
-    const integrity = await verifyProposalIntegrity({
+    const integrity = verifyProposalIntegrity({
       ...proposal,
       [field]: value,
     } as ProposalRecord);
@@ -192,7 +192,7 @@ describe("control record identity", () => {
 
   it("fails closed on the unknown-version proposal record", async () => {
     const proposal = await validProposal();
-    const integrity = await verifyProposalIntegrity({
+    const integrity = verifyProposalIntegrity({
       ...proposal,
       version: 99,
     } as unknown as ProposalRecord);

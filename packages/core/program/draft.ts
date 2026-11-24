@@ -158,10 +158,10 @@ function draftIdentity(
  * @throws {DraftError} when `gap` or `proposer` is empty, or `createdAt` is
  * not a valid ISO-8601 timestamp.
  */
-export async function createDraft(
+export function createDraft(
   source: DraftSource,
   hasher: DomainHasher = hashJson,
-): Promise<Draft> {
+): Draft {
   const gap = source.gap;
   if (gap.trim() === "") {
     fail("EMPTY_GAP", "draft.gap", "a draft's gap explanation must not be empty");
@@ -185,7 +185,7 @@ export async function createDraft(
   // ProgramError (not DraftError) on an invalid contract.
   const contract = interactionContractIdentity(source.contract);
 
-  const draftDigest = await hasher(
+  const draftDigest = hasher(
     INTERACTION_DRAFT_DOMAIN,
     draftIdentity(contract, gap, proposer, createdAt),
   );
@@ -206,11 +206,11 @@ export async function createDraft(
  * @throws {DraftError} with code `DIGEST_MISMATCH` when the draft's recorded
  * digest does not match its content.
  */
-export async function verifyDraft(
+export function verifyDraft(
   draft: Draft,
   hasher: DomainHasher = hashJson,
-): Promise<void> {
-  const recomputed = await hasher(
+): void {
+  const recomputed = hasher(
     INTERACTION_DRAFT_DOMAIN,
     draftIdentity(draft.contract, draft.gap, draft.proposer, draft.createdAt),
   );

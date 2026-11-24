@@ -63,7 +63,7 @@ const interactions = {
   }),
 } as const;
 
-const compiled = await compileInteractions(interactions);
+const compiled = compileInteractions(interactions);
 let currentInstallation: InteractionInstallation<DemoContext>;
 export const publications = await createPublicationControl({ interaction: compiled.handles.publish,
   installation: () => currentInstallation,
@@ -97,7 +97,7 @@ const implementations = implementInteractions<typeof interactions, DemoContext>(
     }
   },
 });
-const { installation } = await installInteractions<typeof interactions, DemoContext>(compiled, {
+const { installation } = installInteractions<typeof interactions, DemoContext>(compiled, {
   installationId: "next-native-demo:documents:rich-text",
   implementations,
   requests: contributeControlRequests(compiled, publications.requester, { publish: { interaction: compiled.handles.publish, control: publications.control, executionRealizationId: "folio:publish:execute:1", actor: publicationActor } }),
@@ -109,7 +109,7 @@ const { installation } = await installInteractions<typeof interactions, DemoCont
   },
 });
 currentInstallation = installation;
-export const projection = await projectInteractions(compiled, {
+export const projection = projectInteractions(compiled, {
   publish: { interaction: compiled.handles.publish, modes: ["request"] },
   publicationStatus: { interaction: compiled.handles.publicationStatus, modes: ["direct"] },
   get: { interaction: compiled.handles.get, modes: ["direct"] },
@@ -119,7 +119,7 @@ export const projection = await projectInteractions(compiled, {
 // happens here, where it is enforced, not in a tool list a model happens to
 // receive: an interaction absent from this Projection is absent from the
 // Binding and cannot be reached through it at all.
-export const readProjection = await projectInteractions(compiled, {
+export const readProjection = projectInteractions(compiled, {
   publicationStatus: { interaction: compiled.handles.publicationStatus, modes: ["direct"] },
   get: { interaction: compiled.handles.get, modes: ["direct"] },
 });
@@ -157,10 +157,10 @@ const bindOptions: Readonly<{
     return reason ? { decision: "deny", reason } : { decision: "allow" };
   },
 };
-const result = await bindProjection(projection, installation, bindOptions);
+const result = bindProjection(projection, installation, bindOptions);
 if (result.status !== "bound") throw new Error("next-native demo Binding was not realized");
 export const binding = result.binding;
-const readResult = await restrictBinding(binding, { projection: readProjection, admit: admitAll });
+const readResult = restrictBinding(binding, { projection: readProjection, admit: admitAll });
 if (readResult.status !== "bound") throw new Error("next-native demo read Binding was not realized");
 export const readBinding = readResult.binding;
 

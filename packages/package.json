@@ -189,5 +189,8 @@
   },
   "scripts": {
     "prepublishOnly": "node -e \"console.error('Boundary is staged by the release workflow (.github/workflows/release.yml), not published from packages/.');process.exit(1)\""
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.4.0"
   }
 }

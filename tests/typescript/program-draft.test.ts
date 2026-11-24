@@ -69,7 +69,7 @@ describe("createDraft — reviewed draft vector", () => {
 
   for (const testCase of vector.cases) {
     it(`case: ${testCase.name}`, async () => {
-      const draft = await createDraft({
+      const draft = createDraft({
         contract: testCase.input.contract,
         gap: testCase.input.gap,
         proposer: testCase.input.proposer,
@@ -79,7 +79,7 @@ describe("createDraft — reviewed draft vector", () => {
       expect(draft.draftDigest, `case ${testCase.name}: digest`).toBe(
         testCase.expected.draftDigest,
       );
-      await expect(verifyDraft(draft)).resolves.toBeUndefined();
+      expect(verifyDraft(draft)).toBeUndefined();
     });
   }
 
@@ -94,7 +94,7 @@ describe("createDraft — reviewed refusals", () => {
     it(`refusal: ${refusal.name}`, async () => {
       let thrown: unknown;
       try {
-        await createDraft({
+        createDraft({
           contract: refusal.contract,
           gap: refusal.gap,
           proposer: refusal.proposer,
@@ -146,7 +146,7 @@ describe("createDraft — laws beyond the reviewed cases", () => {
   };
 
   it("round-trips a draft through JSON and still verifies", async () => {
-    const draft = await createDraft({
+    const draft = createDraft({
       contract,
       gap: "a gap",
       proposer: "agent:test",
@@ -155,11 +155,11 @@ describe("createDraft — laws beyond the reviewed cases", () => {
 
     const encoded = JSON.stringify(draft);
     const decoded = JSON.parse(encoded) as Draft;
-    await expect(verifyDraft(decoded)).resolves.toBeUndefined();
+    expect(verifyDraft(decoded)).toBeUndefined();
   });
 
   it("fails verification when a tampered draft's content no longer matches its digest", async () => {
-    const draft = await createDraft({
+    const draft = createDraft({
       contract,
       gap: "a gap",
       proposer: "agent:test",
@@ -168,13 +168,13 @@ describe("createDraft — laws beyond the reviewed cases", () => {
 
     const tampered: Draft = { ...draft, gap: "a different gap entirely" };
 
-    await expect(verifyDraft(tampered)).rejects.toMatchObject({
+    expect(() => verifyDraft(tampered)).toThrow(expect.objectContaining({
       code: "DIGEST_MISMATCH",
-    });
+    }));
   });
 
   it("is not a Program entry: only the expected fields are present", async () => {
-    const draft = await createDraft({
+    const draft = createDraft({
       contract,
       gap: "a gap",
       proposer: "agent:test",

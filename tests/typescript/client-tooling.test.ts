@@ -30,22 +30,22 @@ async function fixture() {
       }),
     }),
   };
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions(interactions, {
     ping() {
       executions += 1;
       return { ok: true as const };
     },
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "installation:client-tooling:1",
     implementations,
     realizationIds: { ping: { direct: "realization:client-tooling:1" } },
   });
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     ["__proto__"]: { interaction: compiled.handles.ping, modes: ["direct"] },
   });
-  const bound = await bindProjection(projection, installation, {
+  const bound = bindProjection(projection, installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (bound.status !== "bound") throw new Error("fixture did not bind");

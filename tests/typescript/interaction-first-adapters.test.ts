@@ -104,7 +104,7 @@ async function fixture() {
   const directContexts: Context[] = [];
   const requestContexts: Context[] = [];
   let directCreates = 0;
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions<typeof interactions, Context>(interactions, {
     list(context) {
       directContexts.push(context);
@@ -147,7 +147,7 @@ async function fixture() {
       },
     },
   );
-  const { installation } = await installInteractions<typeof interactions, Context>(compiled, {
+  const { installation } = installInteractions<typeof interactions, Context>(compiled, {
     installationId: "installation:projectors:2",
     implementations,
     requests,
@@ -161,13 +161,13 @@ async function fixture() {
       explode: { direct: "realization:explode:2" },
     },
   });
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     list: { interaction: compiled.handles.list, modes: ["direct"] },
     create: { interaction: compiled.handles.create, modes: ["direct", "request"] },
     find: { interaction: compiled.handles.find, modes: ["direct"] },
     explode: { interaction: compiled.handles.explode, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = bindProjection(projection, installation, {
     admit({ context, handle, mode }) {
       return context.role === "owner" || (handle.changes.length === 0 && mode === "direct")
         ? { decision: "allow" }

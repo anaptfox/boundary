@@ -56,7 +56,7 @@ zero-input interaction such as `capture` takes only its actor; `move` and
 `render` take input followed by actor.
 
 ```ts
-const api = await bindInteractions(scene, {
+const api = bindInteractions(scene, {
   installationId: "scene:local:v1",
   realizationVersion: "scene-handlers:v1",
   handlers: {

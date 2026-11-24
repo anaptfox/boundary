@@ -310,7 +310,7 @@ describe("useInteraction argument handling", () => {
 describe("useInteraction declared errors", () => {
   it("narrows declared error codes and details through the projected handle", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       create: {
         interaction: fixture.compiled.handles.create,
         modes: ["direct"],

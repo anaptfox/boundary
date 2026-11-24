@@ -92,9 +92,9 @@ function validateBindingInteraction(
 }
 
 /** Snapshot and fully validate an untrusted v1 Binding handshake. */
-export async function validateProjectionBindingManifest(
+export function validateProjectionBindingManifest(
   value: unknown,
-): Promise<ProjectionBindingManifest> {
+): ProjectionBindingManifest {
   if (value !== null && typeof value === "object" && validatedManifests.has(value)) {
     return value as ProjectionBindingManifest;
   }
@@ -131,8 +131,8 @@ export async function validateProjectionBindingManifest(
   let expectedProgram;
   let actualProgram;
   try {
-    expectedProgram = await validateProgram(raw.expectedProgram as never);
-    actualProgram = await validateProgram(raw.actualProgram as never);
+    expectedProgram = validateProgram(raw.expectedProgram as never);
+    actualProgram = validateProgram(raw.actualProgram as never);
   } catch (error) {
     malformed("manifest", "pinned Programs are invalid", error);
   }
@@ -261,7 +261,7 @@ export async function validateProjectionBindingManifest(
       })
       .sort((left, right) => compareUtf8(left.alias, right.alias)),
   );
-  const projectionDigest = await hashJson(
+  const projectionDigest = hashJson(
     PROJECTION_DOMAIN,
     Object.freeze({
       program: expectedProgram.programDigest,
@@ -296,7 +296,7 @@ export async function validateProjectionBindingManifest(
     actualCatalog,
     interactions,
   });
-  const bindingDigest = await hashJson(
+  const bindingDigest = hashJson(
     BINDING_DOMAIN,
     identity as unknown as JsonObject,
   );

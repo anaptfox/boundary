@@ -57,7 +57,7 @@ const interactions = {
 
 export async function createTodoWebMcpExample(modelContext: ModelContextPort) {
   const rows: Todo[] = [];
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions<typeof interactions, Actor>(
     interactions,
     {
@@ -69,7 +69,7 @@ export async function createTodoWebMcpExample(modelContext: ModelContextPort) {
       },
     },
   );
-  const { installation } = await installInteractions<typeof interactions, Actor>(
+  const { installation } = installInteractions<typeof interactions, Actor>(
     compiled,
     {
       installationId: "docs:webmcp:1",
@@ -80,11 +80,11 @@ export async function createTodoWebMcpExample(modelContext: ModelContextPort) {
       },
     },
   );
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     list: { interaction: compiled.handles.list, modes: ["direct"] },
     create: { interaction: compiled.handles.create, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = bindProjection(projection, installation, {
     admit: ({ context, handle }) =>
       context.role === "owner" || handle.changes.length === 0
         ? { decision: "allow" }

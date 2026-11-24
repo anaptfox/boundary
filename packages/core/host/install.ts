@@ -169,13 +169,13 @@ function requestEntries<Context>(
   return result;
 }
 
-export async function installInteractions<
+export function installInteractions<
   Definitions extends InteractionDefinitions,
   Context = void,
 >(
   compiled: CompiledInteractions<Definitions>,
   options: InstallInteractionsOptions<Definitions, Context>,
-): Promise<InstalledInteractions<Context>> {
+): InstalledInteractions<Context> {
   const compiledMeta = metadataForCompiled(compiled);
   if (options === null || typeof options !== "object") {
     return failHost(
@@ -392,7 +392,7 @@ export async function installInteractions<
     );
   }
   const catalog = createCatalog(compiled.program, availability);
-  const installationDigest = await hashJson(
+  const installationDigest = hashJson(
     INSTALLATION_DOMAIN,
     Object.freeze({
       version: 1,

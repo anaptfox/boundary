@@ -57,8 +57,8 @@ async function host(snapshots: Source, evaluate: (input: JsonValue, view: View) 
   let authorizations = 0;
   const definitions = { read: defineInteraction({ id: "observed.read", input: portableSchema<JsonValue>({}),
     output: portableSchema<JsonValue>(options.output ?? {}), reads: ["world"], changes: [] }) };
-  const compiled = await compileInteractions(definitions);
-  const projection = await projectAllDirect(compiled);
+  const compiled = compileInteractions(definitions);
+  const projection = projectAllDirect(compiled);
   const implementations = implementInteractions<typeof definitions, Context>(definitions, {
     read: observedRead(definitions.read, {
       snapshots,
@@ -71,9 +71,9 @@ async function host(snapshots: Source, evaluate: (input: JsonValue, view: View) 
     }),
   });
   const install = async (revision: string) => {
-    const installed = await installInteractions(compiled, { installationId: `observed:${revision}`, implementations,
+    const installed = installInteractions(compiled, { installationId: `observed:${revision}`, implementations,
       realizationIds: directRealizationIds(compiled, revision) });
-    const bound = await bindProjection(projection, installed.installation, { admit: () => ({ decision: "allow" }) });
+    const bound = bindProjection(projection, installed.installation, { admit: () => ({ decision: "allow" }) });
     if (bound.status !== "bound") throw new Error("expected binding");
     return { ...installed, call: (input: JsonValue, ctx: Context = context) => bound.binding.connect().call(projection.handles.read, input, ctx) };
   };

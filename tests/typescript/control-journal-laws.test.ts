@@ -71,7 +71,7 @@ async function populatedJournal(count: number) {
   const proposals: ProposalRecord[] = [];
   for (let index = 0; index < count; index++) {
     const raw = { ...identity, id: `proposal-${String(index).padStart(2, "0")}` };
-    const proposal = { ...raw, proposalDigest: await proposalDigest(raw) };
+    const proposal = { ...raw, proposalDigest: proposalDigest(raw) };
     proposals.push(proposal);
     await journal.createProposal(proposal);
     const records = descendants(proposal);
@@ -162,8 +162,8 @@ describe("list batch integrity", () => {
     const { proposalDigest: _digest, ...identity } = base!;
     const otherTenant = { ...identity, id: "other-tenant", subject: { ...identity.subject, id: "elsewhere" } };
     const otherInteraction = { ...identity, id: "other-interaction", interactionId: "todos.other" };
-    await journal.createProposal({ ...otherTenant, proposalDigest: await proposalDigest(otherTenant) });
-    await journal.createProposal({ ...otherInteraction, proposalDigest: await proposalDigest(otherInteraction) });
+    await journal.createProposal({ ...otherTenant, proposalDigest: proposalDigest(otherTenant) });
+    await journal.createProposal({ ...otherInteraction, proposalDigest: proposalDigest(otherInteraction) });
     const nativeBatch = journal.readStatusChains.bind(journal);
     const requested: string[][] = [];
     journal.readStatusChains = async (digests) => { requested.push([...digests]); return nativeBatch(digests); };

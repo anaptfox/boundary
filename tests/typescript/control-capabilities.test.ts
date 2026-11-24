@@ -300,8 +300,8 @@ describe("Control capabilities", () => {
         output: OutputSchema,
       }),
     } as const;
-    const compiled = await compileInteractions(definitions);
-    const exactControl = await digestControlRealization(
+    const compiled = compileInteractions(definitions);
+    const exactControl = digestControlRealization(
       {
         compileSchema(schema) {
           return { contract: schema as JsonObject };
@@ -363,7 +363,7 @@ describe("Control capabilities", () => {
       definitions,
       { publish: (input) => ({ published: input.body }), inspect: () => ({ published: "none" }) },
     );
-    const { installation } = await installInteractions<typeof definitions, Context>(
+    const { installation } = installInteractions<typeof definitions, Context>(
       compiled,
       {
         installationId: target.installationId,
@@ -379,13 +379,13 @@ describe("Control capabilities", () => {
       },
     );
     currentInstallation = installation;
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       publish: {
         interaction: compiled.handles.publish,
         modes: ["request"],
       },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (bound.status !== "bound") throw new Error("control fixture did not bind");

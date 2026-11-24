@@ -26,7 +26,7 @@ async function seed(count: number) {
       baselineSummary: "unpublished", effects: [{ kind: "network", action: "publish", resource: "benchmark", details: { index } }],
       preview: { index }, createdAt: 1000 + index, input: { index }, baseline: { revision: index }, state: { index },
     };
-    await journal.createProposal({ ...identity, proposalDigest: await proposalDigest(identity) } as ProposalRecord);
+    await journal.createProposal({ ...identity, proposalDigest: proposalDigest(identity) } as ProposalRecord);
   }
   return { journal, scope: Object.freeze({ interactionIds: Object.freeze(["perf.publish"]), tenant }) };
 }

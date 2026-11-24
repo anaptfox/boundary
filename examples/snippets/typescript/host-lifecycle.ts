@@ -126,10 +126,10 @@ function completeInput(value: unknown): value is Readonly<{ id: number }> {
 
 /** Ordinary Host lifecycle proof: two callers share one interaction identity. */
 export async function createHostLifecycleExample() {
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
 
   // #region caller-projections
-  const screenProjection = await projectInteractions(compiled, {
+  const screenProjection = projectInteractions(compiled, {
     complete: {
       interaction: compiled.handles.complete,
       modes: ["direct"],
@@ -139,7 +139,7 @@ export async function createHostLifecycleExample() {
       modes: ["direct"],
     },
   });
-  const agentProjection = await projectInteractions(compiled, {
+  const agentProjection = projectInteractions(compiled, {
     complete: {
       interaction: compiled.handles.complete,
       modes: ["direct"],
@@ -175,7 +175,7 @@ export async function createHostLifecycleExample() {
       },
     },
   );
-  const { installation } = await installInteractions<typeof interactions, Caller>(
+  const { installation } = installInteractions<typeof interactions, Caller>(
     compiled,
     {
       installationId: "todos:local:v1",
@@ -202,10 +202,10 @@ export async function createHostLifecycleExample() {
         : ({ decision: "deny", reason: `${expected} caller required` } as const);
     };
 
-  const screenResult = await bindProjection(screenProjection, installation, {
+  const screenResult = bindProjection(screenProjection, installation, {
     admit: admitKind("screen"),
   });
-  const agentResult = await bindProjection(agentProjection, installation, {
+  const agentResult = bindProjection(agentProjection, installation, {
     admit: admitKind("agent"),
   });
   if (screenResult.status !== "bound" || agentResult.status !== "bound") {
@@ -217,14 +217,14 @@ export async function createHostLifecycleExample() {
   const screenClear = screenResult.binding.resolve("todos.clear");
   if (!screenClear) throw new Error("screen clear interaction was not bound");
 
-  const staleCompiled = await compileInteractions(staleInteractions);
-  const staleProjection = await projectInteractions(staleCompiled, {
+  const staleCompiled = compileInteractions(staleInteractions);
+  const staleProjection = projectInteractions(staleCompiled, {
     complete: {
       interaction: staleCompiled.handles.complete,
       modes: ["direct"],
     },
   });
-  const staleResult = await bindProjection(staleProjection, installation, {
+  const staleResult = bindProjection(staleProjection, installation, {
     admit: admitKind("agent"),
   });
   const completeReference = screenProjection.handles.complete;

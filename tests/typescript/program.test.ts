@@ -42,12 +42,12 @@ function source(
 describe("program v1 identity", () => {
   it("hashes exactly the declared contract fields in the v1 domain", async () => {
     const calls: { domain: string; value: JsonValue }[] = [];
-    const recordingHasher: DomainHasher = async (domain, value) => {
+    const recordingHasher: DomainHasher = (domain, value) => {
       calls.push({ domain, value });
       return hashJson(domain, value);
     };
 
-    const descriptor = await createInteractionDescriptor(
+    const descriptor = createInteractionDescriptor(
       source(baseContract, "List todos"),
       recordingHasher,
     );
@@ -74,8 +74,8 @@ describe("program v1 identity", () => {
   });
 
   it("hashes the sorted interaction contracts for program identity", async () => {
-    const list = await createInteractionDescriptor(source(baseContract));
-    const create = await createInteractionDescriptor(
+    const list = createInteractionDescriptor(source(baseContract));
+    const create = createInteractionDescriptor(
       source({
         ...baseContract,
         id: "todos.create",
@@ -84,12 +84,12 @@ describe("program v1 identity", () => {
       }),
     );
     const calls: { domain: string; value: JsonValue }[] = [];
-    const recordingHasher: DomainHasher = async (domain, value) => {
+    const recordingHasher: DomainHasher = (domain, value) => {
       calls.push({ domain, value });
       return hashJson(domain, value);
     };
 
-    const program = await createProgram([list, create], recordingHasher);
+    const program = createProgram([list, create], recordingHasher);
     const programCall = calls.at(-1)!;
 
     expect(programCall.domain).toBe(PROGRAM_DOMAIN);
@@ -124,8 +124,8 @@ describe("program v1 identity", () => {
   });
 
   it("preserves host-authored interaction ids and includes reads in identity", async () => {
-    const original = await createInteractionDescriptor(source(baseContract));
-    const differentReads = await createInteractionDescriptor(
+    const original = createInteractionDescriptor(source(baseContract));
+    const differentReads = createInteractionDescriptor(
       source({ ...baseContract, reads: ["audit", "todos"] }),
     );
 
@@ -133,8 +133,8 @@ describe("program v1 identity", () => {
     expect(original.contract.id).not.toMatch(/^boundary[.:/]/u);
     expect(differentReads.contractDigest).not.toBe(original.contractDigest);
     expect(
-      (await createProgram([differentReads])).programDigest,
-    ).not.toBe((await createProgram([original])).programDigest);
+      (createProgram([differentReads])).programDigest,
+    ).not.toBe((createProgram([original])).programDigest);
   });
 
   it("keeps descriptor documentation exact portable data", async () => {
@@ -147,66 +147,60 @@ describe("program v1 identity", () => {
       },
     });
 
-    await expect(
-      createInteractionDescriptor({
+    expect(() => createInteractionDescriptor({
         contract: baseContract,
         docs: accessor as never,
-      }),
-    ).rejects.toMatchObject({ code: "INVALID_DOCUMENTATION" });
+      })).toThrow(expect.objectContaining({ code: "INVALID_DOCUMENTATION" }));
     expect(getterCalls).toBe(0);
-    await expect(
-      createInteractionDescriptor({
+    expect(() => createInteractionDescriptor({
         contract: baseContract,
         docs: { summary: (() => "unsafe") as never },
-      }),
-    ).rejects.toMatchObject({ code: "INVALID_DOCUMENTATION" });
-    await expect(
-      createInteractionDescriptor({
+      })).toThrow(expect.objectContaining({ code: "INVALID_DOCUMENTATION" }));
+    expect(() => createInteractionDescriptor({
         contract: baseContract,
         docs: { summary: "Todos", extra: true } as never,
-      }),
-    ).rejects.toMatchObject({ code: "INVALID_DOCUMENTATION" });
+      })).toThrow(expect.objectContaining({ code: "INVALID_DOCUMENTATION" }));
   });
 });
 
 describe("program composition and diff", () => {
   it("composes disjoint programs and rejects ambiguous duplicate interaction ids", async () => {
-    const todos = await createInteractionDescriptor(source(baseContract));
-    const notes = await createInteractionDescriptor(
+    const todos = createInteractionDescriptor(source(baseContract));
+    const notes = createInteractionDescriptor(
       source({ ...baseContract, id: "notes.list", reads: ["notes"] }),
     );
-    const todoProgram = await createProgram([todos]);
-    const noteProgram = await createProgram([notes]);
+    const todoProgram = createProgram([todos]);
+    const noteProgram = createProgram([notes]);
 
-    const composed = await composePrograms([noteProgram, todoProgram]);
+    const composed = composePrograms([noteProgram, todoProgram]);
     expect(composed.interactions.map((interaction) => interaction.contract.id)).toEqual([
       "notes.list",
       "todos.list",
     ]);
-    await expect(composePrograms([todoProgram, todoProgram])).rejects.toMatchObject({
+    expect(() => composePrograms([todoProgram, todoProgram])).toThrow(expect.objectContaining({
       code: "DUPLICATE_INTERACTION_ID",
-    });
+    }));
   });
 
   it("diffs semantic contract identity while ignoring descriptor-only changes", async () => {
-    const list = await createInteractionDescriptor(source(baseContract, "List todos"));
-    const renamed = await createInteractionDescriptor(
+    const list = createInteractionDescriptor(source(baseContract, "List todos"));
+    const renamed = createInteractionDescriptor(
       source(baseContract, "Read the todo collection"),
     );
-    const changed = await createInteractionDescriptor(
+    const changed = createInteractionDescriptor(
       source({ ...baseContract, changes: ["todos"] }),
     );
-    const removed = await createInteractionDescriptor(
+    const removed = createInteractionDescriptor(
       source({ ...baseContract, id: "todos.remove", changes: ["todos"] }),
     );
-    const added = await createInteractionDescriptor(
+    const added = createInteractionDescriptor(
       source({ ...baseContract, id: "todos.create", changes: ["todos"] }),
     );
 
     expect(
       diffPrograms(
-        await createProgram([list, removed]),
-        await createProgram([renamed, added]),
+        createProgram([list, removed]),
+        createProgram([renamed, added]),
       ),
     ).toEqual({
       added: ["todos.create"],
@@ -215,22 +209,22 @@ describe("program composition and diff", () => {
       unchanged: ["todos.list"],
     });
     expect(
-      diffPrograms(await createProgram([list]), await createProgram([changed])),
+      diffPrograms(createProgram([list]), createProgram([changed])),
     ).toMatchObject({ changed: ["todos.list"] });
   });
 });
 
 describe("deployment catalog", () => {
   it("pins exact direct and request realizations without changing Program identity", async () => {
-    const list = await createInteractionDescriptor(source(baseContract));
-    const publish = await createInteractionDescriptor(
+    const list = createInteractionDescriptor(source(baseContract));
+    const publish = createInteractionDescriptor(
       source({
         ...baseContract,
         id: "todos.publish",
         changes: ["todos"],
       }),
     );
-    const program = await createProgram([publish, list]);
+    const program = createProgram([publish, list]);
     const previewSchema = {
       type: "object",
       properties: { title: { type: "string" } },
@@ -278,8 +272,8 @@ describe("deployment catalog", () => {
   });
 
   it("rejects old boolean availability and incomplete request identity", async () => {
-    const list = await createInteractionDescriptor(source(baseContract));
-    const program = await createProgram([list]);
+    const list = createInteractionDescriptor(source(baseContract));
+    const program = createProgram([list]);
 
     expect(() =>
       createCatalog(program, {
@@ -318,10 +312,10 @@ describe("deployment catalog", () => {
   });
 
   it("rejects missing, duplicate, unknown, and reused mode identities", async () => {
-    const list = await createInteractionDescriptor(source(baseContract));
-    const program = await createProgram([list]);
-    const other = await createProgram([
-      await createInteractionDescriptor(
+    const list = createInteractionDescriptor(source(baseContract));
+    const program = createProgram([list]);
+    const other = createProgram([
+      createInteractionDescriptor(
         source({ ...baseContract, id: "notes.list", reads: ["notes"] }),
       ),
     ]);

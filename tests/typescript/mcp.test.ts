@@ -17,7 +17,7 @@ describe("MCP Binding adapter", () => {
 
   async function connect(role: AdapterContext["role"] = "owner") {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: {
         interaction: fixture.compiled.handles.list,
         modes: ["direct"],
@@ -149,7 +149,7 @@ describe("MCP Binding adapter", () => {
 
   it("presents every projected interaction and types extra.http.req", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
       create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
     });

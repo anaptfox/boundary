@@ -12,13 +12,13 @@ it("pins observer methods to their original receiver and isolates publication fa
   }
   const observer = new Observer();
   const interactions = { read: defineInteraction({ id: "observer.read", output: portableSchema<string>({ type: "string" }) }) };
-  const compiled = await compileInteractions(interactions);
-  const projection = await projectAllDirect(compiled);
-  const installed = await installInteractions(compiled, {
+  const compiled = compileInteractions(interactions);
+  const projection = projectAllDirect(compiled);
+  const installed = installInteractions(compiled, {
     installationId: "observer:test", realizationIds: directRealizationIds(compiled, "v1"),
     implementations: implementInteractions<typeof interactions, { run: number }>(interactions, { read: () => "returned" }),
   });
-  const bound = await bindProjection(projection, installed.installation, { admit: () => ({ decision: "allow" }), observation: observer });
+  const bound = bindProjection(projection, installed.installation, { admit: () => ({ decision: "allow" }), observation: observer });
   if (bound.status !== "bound") throw new Error("missing binding");
   observer.publish = () => { throw new Error("replacement must not be used"); };
   await expect(bound.binding.connect().call(projection.handles.read, { run: 7 })).resolves.toBe("returned");

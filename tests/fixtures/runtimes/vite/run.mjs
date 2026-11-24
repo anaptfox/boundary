@@ -31,11 +31,11 @@ async function createHost(path) {
   let todos = [];
   try { todos = JSON.parse(await readFile(path, "utf8")); } catch (error) { if (error.code !== "ENOENT") throw error; }
   let nextId = Math.max(0, ...todos.map((item) => item.id)) + 1;
-  const compiled = await compileInteractions(interactions);
-  const projection = await projectInteractions(compiled, { list: { interaction: compiled.handles.list, modes: ["direct"] }, create: { interaction: compiled.handles.create, modes: ["direct"] } });
+  const compiled = compileInteractions(interactions);
+  const projection = projectInteractions(compiled, { list: { interaction: compiled.handles.list, modes: ["direct"] }, create: { interaction: compiled.handles.create, modes: ["direct"] } });
   const implementations = implementInteractions(interactions, { list: () => [...todos], async create(input) { const created = { id: nextId++, title: input.title, completed: false }; todos.push(created); await writeFile(path, JSON.stringify(todos), "utf8"); return created; } });
-  const { installation } = await installInteractions(compiled, { installationId: "vite-native:todos:v1", implementations, realizationIds: directRealizationIds(compiled, "vite-native") });
-  const result = await bindProjection(projection, installation, { admit: admitAll });
+  const { installation } = installInteractions(compiled, { installationId: "vite-native:todos:v1", implementations, realizationIds: directRealizationIds(compiled, "vite-native") });
+  const result = bindProjection(projection, installation, { admit: admitAll });
   if (result.status !== "bound") throw new Error("fixture binding was not realized");
   return createHttpHandler({ binding: result.binding, context: () => undefined, routes: [route(projection.handles.list, { method: "GET", path: "/_boundary/todos" }), route(projection.handles.create, { method: "POST", path: "/_boundary/todos" })] });
 }

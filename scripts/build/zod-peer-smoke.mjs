@@ -37,7 +37,7 @@ try {
     `import { z } from "zod";
 import { compileInteractions, defineInteraction } from "@foxworth/boundary";
 const ping = defineInteraction({ id: "peer.ping", output: z.strictObject({ ok: z.literal(true) }) });
-const compiled = await compileInteractions({ ping });
+const compiled = compileInteractions({ ping });
 if (compiled.program.interactions[0]?.contract.id !== "peer.ping") throw new Error("Zod peer did not compile");
 console.log(JSON.stringify({ zod: zodVersion(), digest: compiled.program.programDigest }));
 function zodVersion() { return z.core.version; }

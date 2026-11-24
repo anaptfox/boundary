@@ -28,10 +28,10 @@ describe("interaction composition through public callers", () => {
     expect(Object.isFrozen(validateInvocationObservation(laws.observation).changes)).toBe(true);
   });
   it("records exactly what an agent saw without changing the callable contract", async () => {
-    const compiled = await compileInteractions(interactions);
-    const projection = await projectAllDirect(compiled);
-    const first = await presentProjection(projection, { inspect: { title: "Read notebook", description: "Read the current research." } });
-    const changed = await presentProjection(projection, { inspect: { title: "Read notebook", description: "Read the current research before proposing changes." } });
+    const compiled = compileInteractions(interactions);
+    const projection = projectAllDirect(compiled);
+    const first = presentProjection(projection, { inspect: { title: "Read notebook", description: "Read the current research." } });
+    const changed = presentProjection(projection, { inspect: { title: "Read notebook", description: "Read the current research before proposing changes." } });
     expect(first.projectionDigest).toBe(changed.projectionDigest);
     expect(first.presentationDigest).not.toBe(changed.presentationDigest);
     expect(first.interactions).toEqual([expect.objectContaining({
@@ -39,11 +39,11 @@ describe("interaction composition through public callers", () => {
       inputSchema: { type: "null" }, directOutputSchema: { type: "string" },
       title: "Read notebook", description: "Read the current research.",
     })]);
-    await expect(presentProjection(projection, { erase: { description: "Delete notebook" } } as never)).rejects.toThrow();
-    await expect(presentProjection(projection, { inspect: { inputSchema: { type: "number" } } } as never)).rejects.toThrow();
-    expect((await presentProjection(await pickProjection(projection))).interactions).toEqual([]);
-    const request = await projectInteractions(compiled, { inspect: { interaction: compiled.handles.inspect, modes: ["request"] } });
-    expect((await presentProjection(request)).interactions[0]).not.toHaveProperty("directOutputSchema");
+    expect(() => presentProjection(projection, { erase: { description: "Delete notebook" } } as never)).toThrow();
+    expect(() => presentProjection(projection, { inspect: { inputSchema: { type: "number" } } } as never)).toThrow();
+    expect((presentProjection(pickProjection(projection))).interactions).toEqual([]);
+    const request = projectInteractions(compiled, { inspect: { interaction: compiled.handles.inspect, modes: ["request"] } });
+    expect((presentProjection(request)).interactions[0]).not.toHaveProperty("directOutputSchema");
   });
   it("an agent outcome refreshes the human screen even when observation delivery fails afterward", async () => {
     let title = "before";
@@ -51,11 +51,11 @@ describe("interaction composition through public callers", () => {
       read: defineInteraction({ id: "notebook.read", output, reads: ["notebook"] }),
       write: defineInteraction({ id: "notebook.write", input: output, output, changes: ["notebook"] }),
     };
-    const compiled = await compileInteractions(definitions);
-    const all = await projectAllDirect(compiled);
-    const agent = await pickProjection(all, "write");
-    const screen = await pickProjection(all, "read");
-    const installed = await installInteractions(compiled, {
+    const compiled = compileInteractions(definitions);
+    const all = projectAllDirect(compiled);
+    const agent = pickProjection(all, "write");
+    const screen = pickProjection(all, "read");
+    const installed = installInteractions(compiled, {
       installationId: "shared:notebook:1", realizationIds: directRealizationIds(compiled, "release-1"),
       implementations: implementInteractions<typeof definitions, { run: string; secret: string }>(definitions, {
         read: () => title,
@@ -64,7 +64,7 @@ describe("interaction composition through public callers", () => {
     });
     const scope = createInteractionCacheScope();
     const seen: InvocationObservation[] = [];
-    const agentBound = await bindProjection(agent, installed.installation, {
+    const agentBound = bindProjection(agent, installed.installation, {
       admit: () => ({ decision: "allow" }),
       observation: {
         correlate: (context) => ({ run: context.run }),
@@ -75,7 +75,7 @@ describe("interaction composition through public callers", () => {
         },
       },
     });
-    const screenBound = await bindProjection(screen, installed.installation, { admit: () => ({ decision: "allow" }) });
+    const screenBound = bindProjection(screen, installed.installation, { admit: () => ({ decision: "allow" }) });
     if (agentBound.status !== "bound" || screenBound.status !== "bound") throw new Error("did not bind");
     const context = { run: "run-7", secret: "credential" };
     const clientFor = async (binding: typeof agentBound.binding | typeof screenBound.binding) => {
@@ -103,16 +103,16 @@ describe("interaction composition through public callers", () => {
     unmount();
   });
   it("a host revision changes realization pins even when contracts and deployment name stay the same", async () => {
-    const compiled = await compileInteractions(interactions);
-    const projection = await projectAllDirect(compiled);
+    const compiled = compileInteractions(interactions);
+    const projection = projectAllDirect(compiled);
     let executions = 0;
     async function deploy(revision: string) {
-      const { installation } = await installInteractions(compiled, {
+      const { installation } = installInteractions(compiled, {
         installationId: "notebook:deployment",
         realizationIds: directRealizationIds(compiled, revision),
         implementations: implementInteractions(interactions, { inspect() { executions += 1; return revision; } }),
       });
-      const result = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
+      const result = bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
       if (result.status !== "bound") throw new Error("did not bind");
       return createProtocolHandler({ binding: result.binding, path: "/boundary", context: () => undefined });
     }
@@ -127,8 +127,8 @@ describe("interaction composition through public callers", () => {
     expect(() => directRealizationIds(compiled, "")).toThrow();
   });
   it("offline request references cannot invent a realized proposal type", async () => {
-    const compiled = await compileInteractions(interactions);
-    const projection = await projectInteractions(compiled, { inspect: { interaction: compiled.handles.inspect, modes: ["request"] } });
+    const compiled = compileInteractions(interactions);
+    const projection = projectInteractions(compiled, { inspect: { interaction: compiled.handles.inspect, modes: ["request"] } });
     const source = { compiled, module: "./notebook.boundary", export: "interactions" };
     const value = { projection, source, exportName: "refs", members: { inspect: { definition: "inspect" } } };
     const render = (candidate: typeof value) => renderHostArtifacts({ references: { request: { name: "request", value: candidate } } });
@@ -138,8 +138,8 @@ describe("interaction composition through public callers", () => {
     expect(() => render({ ...value, projection: {} } as typeof value)).toThrow();
   });
   it("ships references without an implementation and checks them when connecting later", async () => {
-    const compiled = await compileInteractions(interactions);
-    const projection = await projectAllDirect(compiled);
+    const compiled = compileInteractions(interactions);
+    const projection = projectAllDirect(compiled);
     const artifacts = renderHostArtifacts({ references: { notebook: { name: "notebook", value: {
       projection,
       source: { compiled, module: "./notebook.boundary", export: "interactions" },
@@ -148,11 +148,11 @@ describe("interaction composition through public callers", () => {
     const source = new TextDecoder().decode(new Uint8Array(artifacts.files[0]!.bytes));
     const js = stripTypeScriptTypes(source).replace("export const references", "const references");
     const generated: { references: typeof projection.handles } = { references: new Function(`${js}; return references;`)() };
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "offline:1", realizationIds: { inspect: { direct: "inspect:1" } },
       implementations: implementInteractions(interactions, { inspect: () => "connected later" }),
     });
-    const bound = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
+    const bound = bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
     if (bound.status !== "bound") throw new Error("did not bind");
     const handler = createProtocolHandler({ binding: bound.binding, path: "/boundary", context: () => undefined });
     const client = createProjectionClient(await compositionTransport((request) => handler(request)));
@@ -161,21 +161,21 @@ describe("interaction composition through public callers", () => {
     await expect(pinProjectionReferences(client, { inspect: { ...refs.inspect, contractDigest: `sha256:${"0".repeat(64)}` as const } })).rejects.toMatchObject({ code: "STALE_REFERENCE" });
   });
   it("an observer with an empty surface binds and handshakes without acquiring any interaction", async () => {
-    const compiled = await compileInteractions(interactions);
-    const full = await projectAllDirect(compiled);
-    const empty = await pickProjection(full);
-    const declaredEmpty = await projectInteractions(compiled, {});
+    const compiled = compileInteractions(interactions);
+    const full = projectAllDirect(compiled);
+    const empty = pickProjection(full);
+    const declaredEmpty = projectInteractions(compiled, {});
     expect(empty.projectionDigest).toBe(declaredEmpty.projectionDigest);
     expect(empty.projectionDigest).toBe(laws.emptySurface.projectionDigest);
     expect(empty.program.programDigest).toBe(laws.emptySurface.programDigest);
     expect(empty.manifest.interactions).toHaveLength(laws.emptySurface.selectedInteractions);
     let calls = 0;
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "notebook:observer:1",
       realizationIds: { inspect: { direct: "inspect:1" } },
       implementations: implementInteractions(interactions, { inspect() { calls += 1; return "notebook"; } }),
     });
-    const bound = await bindProjection(empty, installation, { admit: () => ({ decision: "allow" }) });
+    const bound = bindProjection(empty, installation, { admit: () => ({ decision: "allow" }) });
     expect(bound.status).toBe(laws.emptySurface.bindStatus);
     if (bound.status !== "bound") throw new Error("observer did not bind");
     const handler = createProtocolHandler({ binding: bound.binding, path: "/boundary", context: () => undefined });

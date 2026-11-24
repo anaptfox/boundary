@@ -5,12 +5,14 @@ import {
   type JsonValue,
   type SchemaCompilationContext,
 } from "@foxworth/boundary/program";
+import { createProgram, hashJson } from "@foxworth/boundary/program";
 import { zodSchemaAdapter } from "@foxworth/boundary/program/zod";
 import { z } from "zod";
 import {
   admitWhen,
   bindProjection,
   compileInteractions,
+  compileInteractionsAsync,
   composeCompiledInteractions,
   declaredInteractionError,
   defineInteraction,
@@ -74,8 +76,40 @@ const interactions = {
 } as const;
 
 describe("@foxworth/boundary lifecycle", () => {
+  it("keeps asynchronous host lowering behind the explicit async entrypoint", async () => {
+    const compiled = await compileInteractionsAsync(
+      { nativeList: "native" },
+      { async lower() { return interactions.list; } },
+    );
+    expect(compiled.program.interactions.map(({ contract }) => contract.id)).toEqual([
+      "todos.list",
+    ]);
+  });
+
+  it("returns static identity and host algebra synchronously", () => {
+    const digest = hashJson("sync-test/v1", { ok: true });
+    const program = createProgram([]);
+    const compiled = compileInteractions(interactions);
+    const projection = projectInteractions(compiled, { list: direct(compiled.handles.list) });
+    const { installation } = installInteractions(compiled, {
+      installationId: "sync-test:1",
+      implementations: implementInteractions(interactions, {
+        create: (input) => ({ id: "sync", title: input.title }),
+        list: () => [],
+      }),
+      realizationIds: directRealizationIds(compiled, "sync"),
+    });
+    const binding = bindProjection(projection, installation, {
+      admit: () => ({ decision: "allow" }),
+    });
+
+    for (const value of [digest, program, compiled, projection, installation, binding]) {
+      expect(value).not.toBeInstanceOf(Promise);
+    }
+  });
+
   it("direct selects a handle and directRealizationIds mints host-owned IDs", async () => {
-    const compiled = await compileInteractions(interactions);
+    const compiled = compileInteractions(interactions);
     expect(direct(compiled.handles.list)).toEqual({
       interaction: compiled.handles.list,
       modes: ["direct"],
@@ -89,16 +123,16 @@ describe("@foxworth/boundary lifecycle", () => {
       create: (input) => ({ id: "todo-1", title: input.title }),
       list: () => [{ id: "todo-1", title: "Ship Boundary" }],
     });
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "deploy:direct-helpers:1",
       implementations,
       realizationIds: directRealizationIds(compiled, "v1"),
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       list: direct(compiled.handles.list),
       create: direct(compiled.handles.create),
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -108,29 +142,29 @@ describe("@foxworth/boundary lifecycle", () => {
   });
 
   it("projectAllDirect, pickProjection, and admitWhen compose a closed surface", async () => {
-    const compiled = await compileInteractions(interactions);
-    const all = await projectAllDirect(compiled);
+    const compiled = compileInteractions(interactions);
+    const all = projectAllDirect(compiled);
     expect(Object.keys(all.handles).sort()).toEqual(["create", "list"]);
-    const listOnly = await pickProjection(all, "list");
+    const listOnly = pickProjection(all, "list");
     expect(Object.keys(listOnly.handles)).toEqual(["list"]);
     expect(listOnly.projectionDigest).not.toBe(all.projectionDigest);
-    const byId = await pickProjection(all, "todos.list");
+    const byId = pickProjection(all, "todos.list");
     expect(Object.keys(byId.handles)).toEqual(["list"]);
     expect(byId.projectionDigest).toBe(listOnly.projectionDigest);
-    await expect(pickProjection(all, "list", "todos.list")).rejects.toMatchObject({
+    expect(() => pickProjection(all, "list", "todos.list")).toThrow(expect.objectContaining({
       code: "INVALID_PROJECTION",
-    });
+    }));
 
     const implementations = implementInteractions(interactions, {
       create: (input) => ({ id: "todo-1", title: input.title }),
       list: () => [{ id: "todo-1", title: "Ship Boundary" }],
     });
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "deploy:project-all:1",
       implementations,
       realizationIds: directRealizationIds(compiled, "v1"),
     });
-    const result = await bindProjection(listOnly, installation, {
+    const result = bindProjection(listOnly, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -179,11 +213,11 @@ describe("@foxworth/boundary lifecycle", () => {
       changes: ["todos"],
     });
 
-    const compiled = await compileInteractions(
+    const compiled = compileInteractions(
       { create: zodInteraction },
       { schemas: [zodSchemaAdapter] },
     );
-    const other = await compileInteractions({ create: differentlyDescribed });
+    const other = compileInteractions({ create: differentlyDescribed });
     const descriptor = compiled.program.interactions[0]!;
     expect(descriptor.docs).toEqual({
       summary: "Create a todo",
@@ -207,12 +241,10 @@ describe("@foxworth/boundary lifecycle", () => {
         input: z.string().transform((value) => value.length),
         output: z.number(),
       });
-    await expect(
-      compileInteractions({ transform }),
-    ).rejects.toMatchObject({
+    expect(() => compileInteractions({ transform })).toThrow(expect.objectContaining({
       code: "SCHEMA_RUNTIME_TRANSFORM",
       path: "todos.transform.input",
-    });
+    }));
     expect(() =>
       defineInteraction({
         id: "todos.reserved-annotation",
@@ -265,11 +297,11 @@ describe("@foxworth/boundary lifecycle", () => {
       output: testSchema<{ readonly id: string; readonly title: string }>(Todo),
     });
 
-    await expect(compileInteractions({ custom })).rejects.toMatchObject({
+    expect(() => compileInteractions({ custom })).toThrow(expect.objectContaining({
       code: "INVALID_DECLARATION",
       path: "todos.custom-schema.input",
-    });
-    const compiled = await compileInteractions(
+    }));
+    const compiled = compileInteractions(
       { custom },
       { schemas: [adapter] },
     );
@@ -289,9 +321,9 @@ describe("@foxworth/boundary lifecycle", () => {
   });
 
   it("composes compiled records with typed handles and diffs contract identity", async () => {
-    const createOnly = await compileInteractions({ create: interactions.create });
-    const listOnly = await compileInteractions({ list: interactions.list });
-    const composed = await composeCompiledInteractions(createOnly, listOnly);
+    const createOnly = compileInteractions({ create: interactions.create });
+    const listOnly = compileInteractions({ list: interactions.list });
+    const composed = composeCompiledInteractions(createOnly, listOnly);
 
     expect(Object.keys(composed.handles)).toEqual(["create", "list"]);
     expect(composed.program.interactions.map((entry) => entry.contract.id)).toEqual([
@@ -305,7 +337,7 @@ describe("@foxworth/boundary lifecycle", () => {
       unchanged: ["todos.create"],
     });
 
-    const changedCreate = await compileInteractions({
+    const changedCreate = compileInteractions({
       create: defineInteraction({
         id: "todos.create",
         input: CreateInput,
@@ -321,25 +353,21 @@ describe("@foxworth/boundary lifecycle", () => {
       unchanged: [],
     });
 
-    await expect(
-      composeCompiledInteractions(createOnly, createOnly),
-    ).rejects.toMatchObject({
+    expect(() => composeCompiledInteractions(createOnly, createOnly)).toThrow(expect.objectContaining({
       code: "DUPLICATE_INTERACTION_ALIAS",
       path: "interactions.create",
-    });
-    await expect(
-      composeCompiledInteractions(
+    }));
+    expect(() => composeCompiledInteractions(
         createOnly,
-        await compileInteractions({ duplicate: interactions.create }),
-      ),
-    ).rejects.toMatchObject({ code: "DUPLICATE_INTERACTION_ID" });
+        compileInteractions({ duplicate: interactions.create }),
+      )).toThrow(expect.objectContaining({ code: "DUPLICATE_INTERACTION_ID" }));
   });
 
   it("compiles, installs, atomically binds, and calls with exact context", async () => {
     type Context = { readonly actor: string };
     const context: Context = { actor: "fox" };
     const seen: Context[] = [];
-    const compiled = await compileInteractions(interactions);
+    const compiled = compileInteractions(interactions);
     const implementations = implementInteractions<typeof interactions, Context>(
       interactions,
       {
@@ -360,7 +388,7 @@ describe("@foxworth/boundary lifecycle", () => {
         },
       },
     );
-    const { installation } = await installInteractions<
+    const { installation } = installInteractions<
       typeof interactions,
       Context
     >(compiled, {
@@ -371,12 +399,12 @@ describe("@foxworth/boundary lifecycle", () => {
         list: { direct: "realization:list:1" },
       },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
       list: { interaction: compiled.handles.list, modes: ["direct"] },
     });
     const admissions: AdmissionRequest<Context>[] = [];
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit(request) {
         admissions.push(request);
         return { decision: "allow" };
@@ -431,7 +459,7 @@ describe("@foxworth/boundary lifecycle", () => {
 
   it("keeps request proposal creation structural and separate from direct calls", async () => {
     type Context = { readonly actor: string };
-    const compiled = await compileInteractions({ create: interactions.create });
+    const compiled = compileInteractions({ create: interactions.create });
     const implementations = implementInteractions<
       { readonly create: typeof interactions.create },
       Context
@@ -469,8 +497,7 @@ describe("@foxworth/boundary lifecycle", () => {
         throw new Error("mutated request capability must not run");
       },
     });
-    await expect(
-      installInteractions<
+    expect(() => installInteractions<
         { readonly create: typeof interactions.create },
         Context
       >(compiled, {
@@ -483,13 +510,11 @@ describe("@foxworth/boundary lifecycle", () => {
             request: "realization:create:request:forged",
           },
         },
-      }),
-    ).rejects.toMatchObject({
+      })).toThrow(expect.objectContaining({
       code: "INVALID_REQUEST_BINDING",
       path: "requests",
-    });
-    await expect(
-      installInteractions<
+    }));
+    expect(() => installInteractions<
         { readonly create: typeof interactions.create },
         Context
       >(compiled, {
@@ -502,12 +527,11 @@ describe("@foxworth/boundary lifecycle", () => {
             request: "realization:create:shared:1",
           },
         },
-      }),
-    ).rejects.toMatchObject({
+      })).toThrow(expect.objectContaining({
       code: "CATALOG_DUPLICATE_REALIZATION",
       path: "catalog.interactions[0].request.realizationId",
-    });
-    const { installation } = await installInteractions<
+    }));
+    const { installation } = installInteractions<
       { readonly create: typeof interactions.create },
       Context
     >(compiled, {
@@ -521,13 +545,13 @@ describe("@foxworth/boundary lifecycle", () => {
         },
       },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: {
         interaction: compiled.handles.create,
         modes: ["direct", "request"],
       },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -576,7 +600,7 @@ describe("@foxworth/boundary lifecycle", () => {
   });
 
   it("pins changed request identities in separate Bindings instead of inventing a Projection constraint", async () => {
-    const compiled = await compileInteractions({ create: interactions.create });
+    const compiled = compileInteractions({ create: interactions.create });
     const implementations = implementInteractions(
       { create: interactions.create },
       {
@@ -585,7 +609,7 @@ describe("@foxworth/boundary lifecycle", () => {
         },
       },
     );
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: {
         interaction: compiled.handles.create,
         modes: ["request"],
@@ -607,7 +631,7 @@ describe("@foxworth/boundary lifecycle", () => {
           },
         },
       });
-      const { installation } = await installInteractions(compiled, {
+      const { installation } = installInteractions(compiled, {
         installationId: `deploy:request-identity:${suffix}`,
         implementations,
         requests,
@@ -647,7 +671,7 @@ describe("@foxworth/boundary lifecycle", () => {
   });
 
   it("narrows declared errors only against the exact expected contract", async () => {
-    const compiled = await compileInteractions({ create: interactions.create });
+    const compiled = compileInteractions({ create: interactions.create });
     const implementations = implementInteractions(
       { create: interactions.create },
       {
@@ -660,17 +684,17 @@ describe("@foxworth/boundary lifecycle", () => {
         },
       },
     );
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "deploy:declared-error-identity:1",
       implementations,
       realizationIds: {
         create: { direct: "realization:declared-error-identity:create:1" },
       },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (bound.status !== "bound") throw new Error("expected bound");
@@ -690,10 +714,10 @@ describe("@foxworth/boundary lifecycle", () => {
       reads: ["todos"],
       changes: ["todos"],
     });
-    const incompatibleCompiled = await compileInteractions({
+    const incompatibleCompiled = compileInteractions({
       create: incompatibleDefinition,
     });
-    const incompatibleProjection = await projectInteractions(
+    const incompatibleProjection = projectInteractions(
       incompatibleCompiled,
       {
         create: {
@@ -735,7 +759,7 @@ describe("@foxworth/boundary lifecycle", () => {
   });
 
   it("captures admission authority before asynchronous binding work", async () => {
-    const compiled = await compileInteractions({ list: interactions.list });
+    const compiled = compileInteractions({ list: interactions.list });
     const implementations = implementInteractions(
       { list: interactions.list },
       {
@@ -744,14 +768,14 @@ describe("@foxworth/boundary lifecycle", () => {
         },
       },
     );
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "deploy:admission-capture:1",
       implementations,
       realizationIds: {
         list: { direct: "realization:admission-capture:list:1" },
       },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       list: { interaction: compiled.handles.list, modes: ["direct"] },
     });
     let originalCalls = 0;
@@ -777,7 +801,7 @@ describe("@foxworth/boundary lifecycle", () => {
     expect(originalCalls).toBe(1);
     expect(replacementCalls).toBe(0);
 
-    const failedAdmission = await bindProjection(projection, installation, {
+    const failedAdmission = bindProjection(projection, installation, {
       admit() {
         throw new Error("private policy failure");
       },
@@ -792,7 +816,7 @@ describe("@foxworth/boundary lifecycle", () => {
   });
 
   it("lets the host revoke one Installation across existing and future Bindings", async () => {
-    const compiled = await compileInteractions({ list: interactions.list });
+    const compiled = compileInteractions({ list: interactions.list });
     let dispatches = 0;
     const implementations = implementInteractions(
       { list: interactions.list },
@@ -803,15 +827,15 @@ describe("@foxworth/boundary lifecycle", () => {
         },
       },
     );
-    const { installation, controller } = await installInteractions(compiled, {
+    const { installation, controller } = installInteractions(compiled, {
       installationId: "deploy:revocable:1",
       implementations,
       realizationIds: { list: { direct: "realization:list:revocable:1" } },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       list: { interaction: compiled.handles.list, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit() {
         controller.revoke();
         return { decision: "allow" };
@@ -828,7 +852,7 @@ describe("@foxworth/boundary lifecycle", () => {
     expect(controller.revoked).toBe(true);
     expect(controller.revoke()).toBe(false);
 
-    const afterRevocation = await bindProjection(projection, installation, {
+    const afterRevocation = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(afterRevocation).toMatchObject({
@@ -841,16 +865,16 @@ describe("@foxworth/boundary lifecycle", () => {
   });
 
   it("keeps declared zero-mode interactions known but unavailable", async () => {
-    const compiled = await compileInteractions({ list: interactions.list });
-    const { installation } = await installInteractions(compiled, {
+    const compiled = compileInteractions({ list: interactions.list });
+    const { installation } = installInteractions(compiled, {
       installationId: "deploy:known-unavailable:1",
       bindings: [],
       realizationIds: {},
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       list: { interaction: compiled.handles.list, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result).toMatchObject({
@@ -870,7 +894,7 @@ describe("@foxworth/boundary lifecycle", () => {
     const route = Object.freeze({ method: "POST", path: "/todos" });
     const native = { create: route } as const;
     const definitions = { create: interactions.create } as const;
-    const compiled = await compileInteractions<typeof native, typeof definitions>(
+    const compiled = compileInteractions<typeof native, typeof definitions>(
       native,
       { lower: () => interactions.create },
     );
@@ -889,7 +913,7 @@ describe("@foxworth/boundary lifecycle", () => {
         });
       },
     };
-    const { installation } = await installInteractions<
+    const { installation } = installInteractions<
       typeof definitions,
       Context
     >(compiled, {
@@ -904,10 +928,10 @@ describe("@foxworth/boundary lifecycle", () => {
         throw new Error("mutated native dispatcher must not run");
       },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     if (result.status !== "bound") throw new Error("expected bound");
@@ -919,13 +943,13 @@ describe("@foxworth/boundary lifecycle", () => {
   });
 
   it("reports the whole unrealized projection without exposing a partial caller", async () => {
-    const compiled = await compileInteractions(interactions);
-    await expect(projectInteractions(compiled, {})).resolves.toMatchObject({ handles: {} });
+    const compiled = compileInteractions(interactions);
+    expect(projectInteractions(compiled, {})).toMatchObject({ handles: {} });
     const implementations = implementInteractions(interactions, {
       create: (input) => ({ id: "1", title: input.title }),
       list: () => [],
     });
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: "deploy:direct-only:1",
       implementations,
       realizationIds: {
@@ -933,11 +957,11 @@ describe("@foxworth/boundary lifecycle", () => {
         list: { direct: "realization:list:1" },
       },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["request"] },
       list: { interaction: compiled.handles.list, modes: ["request"] },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result).toMatchObject({

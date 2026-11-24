@@ -35,7 +35,7 @@ function authorizationTypes(call: InstalledCall) {
 }
 
 async function publicTypes() {
-  const compiled = await compileInteractions(hostDefinitions);
+  const compiled = compileInteractions(hostDefinitions);
   compiled.handles.taskMutate.interactionId satisfies "tasks.mutate";
   compiled.handles.capacityMutate.interactionId satisfies "capacity.mutate";
   // @ts-expect-error host aliases are explicit and closed

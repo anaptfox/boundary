@@ -117,7 +117,7 @@ function definitions() {
 
 async function compiledVector() {
   const interactions = definitions();
-  return { interactions, compiled: await compileInteractions(interactions) };
+  return { interactions, compiled: compileInteractions(interactions) };
 }
 
 describe("shared Host lifecycle v1 vectors", () => {
@@ -146,13 +146,13 @@ describe("shared Host lifecycle v1 vectors", () => {
 
   it("keeps the desired Projection durable before any Installation exists", async () => {
     const { compiled } = await compiledVector();
-    const first = await projectInteractions(compiled, {
+    const first = projectInteractions(compiled, {
       create: {
         interaction: compiled.handles.create,
         modes: vector.projection.modes,
       },
     });
-    const second = await projectInteractions(compiled, {
+    const second = projectInteractions(compiled, {
       create: {
         interaction: compiled.handles.create,
         modes: vector.projection.modes,
@@ -185,7 +185,7 @@ describe("shared Host lifecycle v1 vectors", () => {
       "modes",
     ]);
 
-    const renamed = await projectInteractions(compiled, {
+    const renamed = projectInteractions(compiled, {
       [vector.projection.renamedAlias]: {
         interaction: compiled.handles.create,
         modes: vector.projection.modes,
@@ -214,7 +214,7 @@ describe("shared Host lifecycle v1 vectors", () => {
         changes: vector.interaction.changes,
       }),
     } as const;
-    const actualCompiled = await compileInteractions(actualInteractions);
+    const actualCompiled = compileInteractions(actualInteractions);
     expect(actualCompiled.handles.create.contractDigest).toBe(
       vector.compatibleActual.contractDigest,
     );
@@ -222,13 +222,13 @@ describe("shared Host lifecycle v1 vectors", () => {
       vector.compatibleActual.programDigest,
     );
 
-    const expectedProjection = await projectInteractions(expected.compiled, {
+    const expectedProjection = projectInteractions(expected.compiled, {
       create: {
         interaction: expected.compiled.handles.create,
         modes: ["direct"],
       },
     });
-    const { installation: actualInstallation } = await installInteractions(actualCompiled, {
+    const { installation: actualInstallation } = installInteractions(actualCompiled, {
       installationId: `${vector.installation.installationId}:compatible`,
       implementations: implementInteractions(actualInteractions, {
         create: (input) => ({ id: "todo-actual", title: input.title }),
@@ -237,7 +237,7 @@ describe("shared Host lifecycle v1 vectors", () => {
         create: { direct: vector.installation.realizationIds.direct },
       },
     });
-    const forward = await bindProjection(
+    const forward = bindProjection(
       expectedProjection,
       actualInstallation,
       { admit: () => ({ decision: "allow" }) },
@@ -258,13 +258,13 @@ describe("shared Host lifecycle v1 vectors", () => {
       ],
     });
 
-    const actualProjection = await projectInteractions(actualCompiled, {
+    const actualProjection = projectInteractions(actualCompiled, {
       create: {
         interaction: actualCompiled.handles.create,
         modes: ["direct"],
       },
     });
-    const { installation: expectedInstallation } = await installInteractions(expected.compiled, {
+    const { installation: expectedInstallation } = installInteractions(expected.compiled, {
       installationId: `${vector.installation.installationId}:expected`,
       implementations: implementInteractions(expected.interactions, {
         create: (input) => ({ id: "todo-expected", title: input.title }),
@@ -273,7 +273,7 @@ describe("shared Host lifecycle v1 vectors", () => {
         create: { direct: vector.installation.realizationIds.direct },
       },
     });
-    const reverse = await bindProjection(
+    const reverse = bindProjection(
       actualProjection,
       expectedInstallation,
       { admit: () => ({ decision: "allow" }) },
@@ -292,20 +292,20 @@ describe("shared Host lifecycle v1 vectors", () => {
     const implementations = implementInteractions(interactions, {
       create: (input) => ({ id: "todo-1", title: input.title }),
     });
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: vector.installation.installationId,
       implementations,
       realizationIds: {
         create: { direct: vector.installation.realizationIds.direct },
       },
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: {
         interaction: compiled.handles.create,
         modes: vector.projection.modes,
       },
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
 
@@ -332,7 +332,7 @@ describe("shared Host lifecycle v1 vectors", () => {
 
   it("consumes exact shared Installation, Binding, and Handoff artifacts", async () => {
     const interactions = definitions();
-    const compiled = await compileInteractions(interactions);
+    const compiled = compileInteractions(interactions);
     const Preview = portableSchema<Readonly<{ kind: "todo-create"; title: string }>>({
       type: "object",
       properties: { kind: { const: "todo-create" }, title: { type: "string" } },
@@ -349,7 +349,7 @@ describe("shared Host lifecycle v1 vectors", () => {
         },
       },
     });
-    const { installation } = await installInteractions(compiled, {
+    const { installation } = installInteractions(compiled, {
       installationId: vector.installation.installationId,
       implementations: implementInteractions(interactions, {
         create: (input) => ({ id: "todo-1", title: input.title }),
@@ -361,10 +361,10 @@ describe("shared Host lifecycle v1 vectors", () => {
       vector.artifacts.installation,
     );
 
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       create: { interaction: compiled.handles.create, modes: ["direct", "request"] },
     });
-    const bound = await bindProjection(projection, installation, {
+    const bound = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(bound.status).toBe("bound");
@@ -372,8 +372,8 @@ describe("shared Host lifecycle v1 vectors", () => {
     expect(JSON.parse(JSON.stringify(bound.binding.manifest))).toEqual(
       vector.artifacts.binding,
     );
-    await expect(validateProjectionBindingManifest(vector.artifacts.binding))
-      .resolves.toEqual(vector.artifacts.binding);
+    expect(validateProjectionBindingManifest(vector.artifacts.binding))
+      .toEqual(vector.artifacts.binding);
 
     const checked = await createCheckedHandoff(bound.binding);
     const invocation = await createHandoffInvocation(
@@ -417,7 +417,7 @@ describe("shared Host lifecycle v1 vectors", () => {
     ]);
     for (const outcomeVector of vector.outcomes) {
       const interactions = definitions();
-      const compiled = await compileInteractions(interactions);
+      const compiled = compileInteractions(interactions);
       const implementations = implementInteractions(interactions, {
         create(input) {
           if (outcomeVector.behavior === "throw") {
@@ -439,13 +439,13 @@ describe("shared Host lifecycle v1 vectors", () => {
           },
         },
       });
-      const { installation } = await installInteractions<ReturnType<typeof definitions>, void>(compiled, {
+      const { installation } = installInteractions<ReturnType<typeof definitions>, void>(compiled, {
         installationId: vector.installation.installationId,
         implementations,
         requests,
         realizationIds: { create: vector.installation.realizationIds },
       });
-      const projection = await projectInteractions(compiled, {
+      const projection = projectInteractions(compiled, {
         create: {
           interaction: compiled.handles.create,
           modes: [outcomeVector.mode],
@@ -455,7 +455,7 @@ describe("shared Host lifecycle v1 vectors", () => {
         outcomeVector.behavior === "deny"
           ? { decision: "deny", reason: "vector denial" }
           : { decision: "allow" };
-      const result = await bindProjection(projection, installation, {
+      const result = bindProjection(projection, installation, {
         admit: admission,
       });
       expect(result.status, outcomeVector.name).toBe("bound");
@@ -494,7 +494,7 @@ describe("shared Host lifecycle v1 vectors", () => {
 
  it("matches the independently reviewed presentation digest", async () => {
   const { compiled } = await compiledVector();
-  const projection = await projectInteractions(compiled, { create: { interaction: compiled.handles.create, modes: ["direct", "request"] } });
+  const projection = projectInteractions(compiled, { create: { interaction: compiled.handles.create, modes: ["direct", "request"] } });
   const vector = JSON.parse(readFileSync(new URL("../conformance/v1/composition.json", import.meta.url), "utf8"));
-  expect(await presentProjection(projection, { create: { title: "Create todo", description: "Propose or create a todo." } })).toEqual(vector.presentation);
+  expect(presentProjection(projection, { create: { title: "Create todo", description: "Propose or create a todo." } })).toEqual(vector.presentation);
 });

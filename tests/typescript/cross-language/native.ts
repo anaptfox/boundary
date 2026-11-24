@@ -29,7 +29,7 @@ export async function nativeTodo() {
     if (index < 0) throw declaredInteractionError(interaction, "todo_not_found", { id });
     return index;
   }
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions(interactions, {
     list: ({ filter }) => ({ items: rows.filter((row) => filter === "all" || row.completed === (filter === "completed")) }),
     create({ title }) { const row = { completed: false, id: `todo-${next++}`, title }; rows.push(row); return row; },
@@ -49,17 +49,17 @@ export async function nativeTodo() {
       return { count: String(before - rows.length) };
     },
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "fixture/ts-todo/v1", implementations,
     realizationIds: directRealizationIds(compiled, "v1"),
   });
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     list: direct(compiled.handles.list), create: direct(compiled.handles.create),
     rename: direct(compiled.handles.rename), setCompleted: direct(compiled.handles.setCompleted),
     remove: direct(compiled.handles.remove), setAllCompleted: direct(compiled.handles.setAllCompleted),
     clearCompleted: direct(compiled.handles.clearCompleted),
   });
-  const result = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
+  const result = bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
   if (result.status !== "bound") throw new Error("native fixture did not bind");
   return { compiled, projection, binding: result.binding };
 }

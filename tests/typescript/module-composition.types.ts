@@ -41,9 +41,9 @@ async function selectedModuleInterfaces() {
   // @ts-expect-error the task interface cannot accept a capacity handle
   await host.callers.taskEditor.call(host.projections.capacityReader.handles.query, { project: "public" }, context);
 
-  const composed = await composeCompiledInteractions(
-    await compileInteractions({ taskMutate: taskModule.mutate }),
-    await compileInteractions({ capacityMutate: capacityModule.mutate }),
+  const composed = composeCompiledInteractions(
+    compileInteractions({ taskMutate: taskModule.mutate }),
+    compileInteractions({ capacityMutate: capacityModule.mutate }),
   );
   composed.handles.taskMutate.interactionId satisfies "tasks.mutate";
   composed.handles.capacityMutate.interactionId satisfies "capacity.mutate";

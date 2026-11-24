@@ -134,7 +134,7 @@ describe("drafts.accept", () => {
         items: { type: "string" },
       }),
     });
-    const compiled = await compileInteractions({ list: unrelated });
+    const compiled = compileInteractions({ list: unrelated });
     const programBefore = compiled.program;
 
     const output = await acceptDraft(store, {
@@ -247,7 +247,7 @@ describe("drafts.reject", () => {
 
 describe("Draft Projection presets", () => {
   it("expose exactly the authority they claim and nothing more", async () => {
-    const compiled = await compileInteractions(draftsInteractions);
+    const compiled = compileInteractions(draftsInteractions);
 
     const proposer = await proposerProjection(compiled);
     expect(Object.keys(proposer.handles)).toEqual(["propose"]);
@@ -283,7 +283,7 @@ describe("a decision names a digest, and the content behind it must be that dige
     approvedDigest: string;
   }> {
     const approved = await sampleDraft();
-    const substituted = await createDraft({
+    const substituted = createDraft({
       contract: widenedContract,
       gap: "no interaction renders a document today",
       proposer: "bot-1",

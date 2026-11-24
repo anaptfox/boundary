@@ -48,20 +48,20 @@ describe("Boundary Program v1 descriptors", () => {
   it("preserves the canonical domain-separated SHA-256 vector", async () => {
     expect(canonicalJson({ z: 1, a: "é" })).toBe('{"a":"é","z":1}');
     expect(
-      await hashJson("test-vector/v1", { z: 1, a: "é" }),
+      hashJson("test-vector/v1", { z: 1, a: "é" }),
     ).toBe(
       "sha256:f7a25a391ec012c3dd01b6deea68ee8d2ade5aae3ffe6d32da2b8febac338469",
     );
     expect(
-      await hashJson("other-test-vector/v1", { z: 1, a: "é" }),
+      hashJson("other-test-vector/v1", { z: 1, a: "é" }),
     ).not.toBe(
       "sha256:c94612a5298a96f78cd70ad10baa8a2e5bb779b37752d0cd32175660a49b9ff9",
     );
   });
 
   it("keeps docs and annotations outside contract and program identity", async () => {
-    const original = await createInteractionDescriptor(readSource);
-    const renamed = await createInteractionDescriptor({
+    const original = createInteractionDescriptor(readSource);
+    const renamed = createInteractionDescriptor({
       ...readSource,
       docs: {
         summary: "Read one workspace path",
@@ -74,13 +74,13 @@ describe("Boundary Program v1 descriptors", () => {
 
     expect(original.contract.reads).toEqual(["workspace"]);
     expect(renamed.contractDigest).toBe(original.contractDigest);
-    expect((await createProgram([renamed])).programDigest).toBe(
-      (await createProgram([original])).programDigest,
+    expect((createProgram([renamed])).programDigest).toBe(
+      (createProgram([original])).programDigest,
     );
   });
 
   it("does not require machine-synthesized documentation", async () => {
-    const descriptor = await createInteractionDescriptor({
+    const descriptor = createInteractionDescriptor({
       contract: readSource.contract,
     });
 
@@ -94,8 +94,8 @@ describe("Boundary Program v1 descriptors", () => {
     ["error schema", { errorSchema: { type: "string" } }],
     ["changes", { changes: ["workspace"] }],
   ])("changes contract identity when %s changes", async (_name, change) => {
-    const original = await createInteractionDescriptor(readSource);
-    const changed = await createInteractionDescriptor({
+    const original = createInteractionDescriptor(readSource);
+    const changed = createInteractionDescriptor({
       ...readSource,
       contract: { ...readSource.contract, ...change },
     });
@@ -104,8 +104,8 @@ describe("Boundary Program v1 descriptors", () => {
   });
 
   it("changes contract identity when reads change", async () => {
-    const original = await createInteractionDescriptor(readSource);
-    const changed = await createInteractionDescriptor({
+    const original = createInteractionDescriptor(readSource);
+    const changed = createInteractionDescriptor({
       ...readSource,
       contract: { ...readSource.contract, reads: ["workspace", "clock"] },
     });
@@ -123,7 +123,7 @@ describe("Boundary Program v1 descriptors", () => {
       "op0_6Jx-V~9",
       "a".repeat(128),
     ]) {
-      const descriptor = await createInteractionDescriptor({
+      const descriptor = createInteractionDescriptor({
         ...readSource,
         contract: { ...readSource.contract, id },
       });
@@ -131,12 +131,10 @@ describe("Boundary Program v1 descriptors", () => {
     }
 
     for (const id of ["", ".workspace", "workspace/read", "workspace!read", "a".repeat(129)]) {
-      await expect(
-        createInteractionDescriptor({
+      expect(() => createInteractionDescriptor({
           ...readSource,
           contract: { ...readSource.contract, id },
-        }),
-      ).rejects.toMatchObject({ code: "INVALID_INTERACTION_ID" });
+        })).toThrow(expect.objectContaining({ code: "INVALID_INTERACTION_ID" }));
     }
   });
 
@@ -195,29 +193,25 @@ describe("Boundary Program v1 descriptors", () => {
       ["reads", extraPropertyReads],
       ["changes", hiddenPropertyChanges],
     ] as const) {
-      await expect(
-        createInteractionDescriptor({
+      expect(() => createInteractionDescriptor({
           ...readSource,
           contract: {
             ...readSource.contract,
             [field]: value,
           } as never,
-        }),
-      ).rejects.toMatchObject({
+        })).toThrow(expect.objectContaining({
         code: "INVALID_INTERACTION_FOOTPRINT",
         path: `workspace.inspect.contract.${field}`,
-      });
+      }));
     }
 
-    await expect(
-      createInteractionDescriptor({
+    expect(() => createInteractionDescriptor({
         ...readSource,
         contract: accessorContract as never,
-      }),
-    ).rejects.toMatchObject({
+      })).toThrow(expect.objectContaining({
       code: "INVALID_INTERACTION_FOOTPRINT",
       path: "workspace.inspect.contract.reads",
-    });
+    }));
     expect(getterCalls).toBe(0);
   });
 
@@ -230,7 +224,7 @@ describe("Boundary Program v1 descriptors", () => {
         }),
       ),
     );
-    const program = await createProgram(descriptors);
+    const program = createProgram(descriptors);
 
     expect(program.interactions.map((interaction) => interaction.contract.id)).toEqual([
       "boundary.Z",
@@ -243,15 +237,15 @@ describe("Boundary Program v1 descriptors", () => {
   });
 
   it("keeps program identity stable across docs and declaration order", async () => {
-    const inspect = await createInteractionDescriptor(readSource);
-    const patch = await createInteractionDescriptor(changeSource);
-    const renamedInspect = await createInteractionDescriptor({
+    const inspect = createInteractionDescriptor(readSource);
+    const patch = createInteractionDescriptor(changeSource);
+    const renamedInspect = createInteractionDescriptor({
       ...readSource,
       docs: { summary: "Inspect one path" },
     });
 
-    const original = await createProgram([patch, inspect]);
-    const renamed = await createProgram([renamedInspect, patch]);
+    const original = createProgram([patch, inspect]);
+    const renamed = createProgram([renamedInspect, patch]);
 
     expect(renamed.programDigest).toBe(original.programDigest);
   });

@@ -91,12 +91,12 @@ describe("control realization identity", () => {
       interactionId: "documents.replace",
       contractDigest: digest("c"),
     };
-    const first = await digestControlRealization(
+    const first = digestControlRealization(
       compiler,
       identity,
       hook(digest("a")),
     );
-    const second = await digestControlRealization(
+    const second = digestControlRealization(
       compiler,
       identity,
       hook(digest("b")),
@@ -160,7 +160,7 @@ describe("control realization identity", () => {
       },
     };
 
-    const resolved = await digestControlRealization(
+    const resolved = digestControlRealization(
       mutatingCompiler,
       {
         interactionId: "documents.replace",
@@ -190,11 +190,9 @@ describe("control realization identity", () => {
       { interactionId: "documents.replace", contractDigest: "sha256:invalid" },
     ],
   ])("rejects a malformed control %s", async (_label, identity) => {
-    await expect(
-      digestControlRealization(compiler, identity as never, hook()),
-    ).rejects.toMatchObject({
+    expect(() => digestControlRealization(compiler, identity as never, hook())).toThrow(expect.objectContaining({
       code: "CONTROL_INVALID_REALIZATION",
-    });
+    }));
   });
 });
 

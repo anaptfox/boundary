@@ -59,18 +59,18 @@ describe("hot-path skip laws", () => {
         changes: [],
       }),
     } as const;
-    const compiled = await compileInteractions(interactions);
-    const { installation } = await installInteractions(compiled, {
+    const compiled = compileInteractions(interactions);
+    const { installation } = installInteractions(compiled, {
       installationId: "installation:skips-equal:1",
       implementations: implementInteractions(interactions, {
         echo: () => ({ n: "bad" as unknown as number }),
       }),
       realizationIds: directRealizationIds(compiled, "v1"),
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       echo: direct(compiled.handles.echo),
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -102,22 +102,22 @@ describe("hot-path skip laws", () => {
         changes: [],
       }),
     } as const;
-    const expectedCompiled = await compileInteractions(expected);
-    const actualCompiled = await compileInteractions(actual);
+    const expectedCompiled = compileInteractions(expected);
+    const actualCompiled = compileInteractions(actual);
     expect(expectedCompiled.handles.echo.contractDigest).not.toBe(
       actualCompiled.handles.echo.contractDigest,
     );
-    const { installation } = await installInteractions(actualCompiled, {
+    const { installation } = installInteractions(actualCompiled, {
       installationId: "installation:skips-wider:1",
       implementations: implementInteractions(actual, {
         echo: (input) => ({ n: input.n }),
       }),
       realizationIds: directRealizationIds(actualCompiled, "v1"),
     });
-    const projection = await projectInteractions(expectedCompiled, {
+    const projection = projectInteractions(expectedCompiled, {
       echo: direct(expectedCompiled.handles.echo),
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
@@ -143,30 +143,28 @@ describe("hot-path skip laws", () => {
         changes: [],
       }),
     } as const;
-    const compiled = await compileInteractions(interactions);
-    const { installation } = await installInteractions(compiled, {
+    const compiled = compileInteractions(interactions);
+    const { installation } = installInteractions(compiled, {
       installationId: "installation:skips-handoff:1",
       implementations: implementInteractions(interactions, {
         echo: (input) => input,
       }),
       realizationIds: directRealizationIds(compiled, "v1"),
     });
-    const projection = await projectInteractions(compiled, {
+    const projection = projectInteractions(compiled, {
       echo: direct(compiled.handles.echo),
     });
-    const result = await bindProjection(projection, installation, {
+    const result = bindProjection(projection, installation, {
       admit: () => ({ decision: "allow" }),
     });
     expect(result.status).toBe("bound");
     if (result.status !== "bound") return;
-    const validated = await validateProjectionBindingManifest(result.binding.manifest);
-    await expect(
-      validateProjectionBindingManifest(validated),
-    ).resolves.toBe(validated);
+    const validated = validateProjectionBindingManifest(result.binding.manifest);
+    expect(validateProjectionBindingManifest(validated)).toBe(validated);
     const tampered = { ...validated, bindingDigest: digest("f") };
-    await expect(validateProjectionBindingManifest(tampered)).rejects.toMatchObject({
+    expect(() => validateProjectionBindingManifest(tampered)).toThrow(expect.objectContaining({
       code: "INVALID_MANIFEST",
-    });
+    }));
   });
 
   it("rejects a string that does not match a cached pattern", () => {

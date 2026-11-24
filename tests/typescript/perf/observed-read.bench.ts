@@ -31,8 +31,8 @@ async function fixture(policy: Policy, size: number, points: number) {
   const definitions = { read: defineInteraction({ id: "perf.observed.read",
     input: portableSchema<string>({ type: "string" }),
     output: portableSchema<string>({ type: "string" }), reads: ["values"], changes: [] }) };
-  const compiled = await compileInteractions(definitions);
-  const projection = await projectAllDirect(compiled);
+  const compiled = compileInteractions(definitions);
+  const projection = projectAllDirect(compiled);
   const implementations = implementInteractions<typeof definitions, Context>(definitions, {
     read: observedRead(definitions.read, {
       snapshots: source, scope: ctx => ({ actorId: ctx.actorId }),
@@ -50,11 +50,11 @@ async function fixture(policy: Policy, size: number, points: number) {
       },
     }),
   });
-  const { installation } = await installInteractions<typeof definitions, Context>(compiled, {
+  const { installation } = installInteractions<typeof definitions, Context>(compiled, {
     installationId: `perf:observed:${policy}:${size}:${points}`, implementations,
     realizationIds: directRealizationIds(compiled, "v1"),
   });
-  const bound = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
+  const bound = bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
   if (bound.status !== "bound") throw new Error("unbound observed fixture");
   const caller = bound.binding.connect();
   const context = { actorId: "benchmark" };

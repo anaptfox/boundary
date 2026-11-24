@@ -1,3 +1,4 @@
+export type { AsyncInteractionLowering } from "./async-lowering";
 export {
   DeclaredInteractionError,
   declaredInteractionError,
@@ -6,6 +7,7 @@ export {
 } from "./definitions";
 export {
   compileInteractions,
+  compileInteractionsAsync,
   composeCompiledInteractions,
   diffCompiledInteractions,
 } from "./compile";

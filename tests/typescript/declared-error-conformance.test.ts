@@ -19,12 +19,12 @@ const definitions = {
     errors: { not_found: details("id"), unavailable: details("reason") } }),
 };
 async function fixture() {
-  const compiled = await compileInteractions(definitions);
-  const { installation } = await installInteractions(compiled, { installationId: "errors/reviewed/v1",
+  const compiled = compileInteractions(definitions);
+  const { installation } = installInteractions(compiled, { installationId: "errors/reviewed/v1",
     implementations: implementInteractions(definitions, { probe: value => value }),
     realizationIds: directRealizationIds(compiled, "v1") });
-  const projection = await projectInteractions(compiled, { probe: direct(compiled.handles.probe) });
-  const bound = await bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
+  const projection = projectInteractions(compiled, { probe: direct(compiled.handles.probe) });
+  const bound = bindProjection(projection, installation, { admit: () => ({ decision: "allow" }) });
   if (bound.status !== "bound") throw new Error("reviewed error fixture did not bind");
   const invocation = await createHandoffInvocation(bound.binding.manifest, "errors.probe", "direct", "probe");
   const outcome = await executeHandoff(bound.binding, invocation, undefined);

@@ -27,7 +27,7 @@ export function assertProjectionBinding(value: unknown): void {
   }
 }
 
-export async function bindProjection<
+export function bindProjection<
   const Selections extends ProjectionSelections,
   Context = void,
 >(
@@ -38,7 +38,7 @@ export async function bindProjection<
     observation?: InvocationObserver<Context>;
     coordinate?: InvocationCoordinator<Context>;
   }>,
-): Promise<BindResult<Projection<Selections>["handles"], Context>> {
+): BindResult<Projection<Selections>["handles"], Context> {
   const projectionMeta = metadataForProjection(projection);
   const installationMeta = metadataForInstallation(installation);
   const admission = options?.admit;
@@ -103,7 +103,7 @@ export async function bindProjection<
 }
 
 /** Derive a caller capability without discarding its inherited admission or revocation. */
-export async function restrictBinding<
+export function restrictBinding<
   const Selections extends ProjectionSelections,
   Context,
 >(
@@ -112,7 +112,7 @@ export async function restrictBinding<
     projection: Projection<Selections>;
     admit: Admission<Context>;
   }>,
-): Promise<BindResult<Projection<Selections>["handles"], Context>> {
+): BindResult<Projection<Selections>["handles"], Context> {
   assertProjectionBinding(parent);
   const metadata = bindingMetadata.get(parent)! as BindingMetadata<Context>;
   const projection = options.projection;
@@ -188,7 +188,7 @@ export async function restrictBinding<
   );
 }
 
-async function constructBinding<Selections extends ProjectionSelections, Context>(
+function constructBinding<Selections extends ProjectionSelections, Context>(
   projection: Projection<Selections>,
   installation: InteractionInstallation<Context>,
   admission: Admission<Context>,
@@ -196,7 +196,7 @@ async function constructBinding<Selections extends ProjectionSelections, Context
   modeEntries: readonly ModeEntry<Context>[],
   parent?: BindingMetadata<Context>,
   coordinator: InvocationCoordinator<Context> | undefined = parent?.coordinator,
-): Promise<BindResult<Projection<Selections>["handles"], Context>> {
+): BindResult<Projection<Selections>["handles"], Context> {
   const projectionMeta = metadataForProjection(projection);
   const installationMeta = metadataForInstallation(installation);
 
@@ -208,7 +208,7 @@ async function constructBinding<Selections extends ProjectionSelections, Context
       ]),
     ).values(),
   ];
-  const actualProgram = await createProgram(actualDescriptors);
+  const actualProgram = createProgram(actualDescriptors);
   const actualAvailability: CatalogEntry[] = [];
   for (const descriptor of actualProgram.interactions) {
     const entries = modeEntries.filter(
@@ -269,7 +269,7 @@ async function constructBinding<Selections extends ProjectionSelections, Context
     actualCatalog,
     interactions: Object.freeze(manifestInteractions),
   });
-  const bindingDigest = await hashJson(
+  const bindingDigest = hashJson(
     PROJECTION_BINDING_DOMAIN,
     identity as unknown as JsonObject,
   );

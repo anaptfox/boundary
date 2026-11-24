@@ -25,8 +25,8 @@ const definitions = {
     properties: { uncertain: { type: "boolean" } },
   }), output: portableSchema<number>({ type: "number" }), reads: ["counter"], changes: ["counter"] }),
 };
-const compiled = await compileInteractions(definitions);
-const projection = await projectAllDirect(compiled);
+const compiled = compileInteractions(definitions);
+const projection = projectAllDirect(compiled);
 const implementations = implementInteractions<typeof definitions, Context>(definitions, {
   read: (context) => state[context.tenant].value,
   increment: (input, context) => {
@@ -49,10 +49,10 @@ const observation = {
   },
 };
 async function protocol(path: string, installationId: string) {
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId, implementations, realizationIds: directRealizationIds(compiled, "v1"),
   });
-  const result = await bindProjection(projection, installation, {
+  const result = bindProjection(projection, installation, {
     admit: () => ({ decision: "allow" }), observation,
   });
   if (result.status !== "bound") throw new Error("example could not bind");

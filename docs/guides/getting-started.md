@@ -152,8 +152,8 @@ creation for our two initial callers:
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#projection -->
 ```ts
-const compiled = await compileInteractions(interactions);
-const thumbnailSurface = await projectInteractions(compiled, {
+const compiled = compileInteractions(interactions);
+const thumbnailSurface = projectInteractions(compiled, {
   makeThumbnail: direct(compiled.handles.makeThumbnail),
 });
 // No implementation or live installation is needed to select this surface.
@@ -189,7 +189,7 @@ const implementations = implementInteractions<typeof interactions, Context>(inte
     return { deleted: images.delete(imageId) };
   },
 });
-const { installation } = await installInteractions(compiled, {
+const { installation } = installInteractions(compiled, {
   installationId: "images:local:release-1",
   implementations,
   realizationIds: directRealizationIds(compiled, "release-1"),
@@ -212,7 +212,7 @@ const admitScreenOrScript = admitWhen(
   (context: Context) => context.kind === "screen" || context.kind === "script",
   "This connection admits the screen and script",
 );
-const result = await bindProjection(thumbnailSurface, installation, {
+const result = bindProjection(thumbnailSurface, installation, {
   admit: admitScreenOrScript,
 });
 if (result.status !== "bound") {
@@ -258,12 +258,12 @@ Keep the required surface fixed and change the installation:
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#replacement -->
 ```ts
 // A new local installation, not a remote-worker implementation.
-const { installation: replacement } = await installInteractions(compiled, {
+const { installation: replacement } = installInteractions(compiled, {
   installationId: "images:local:release-2",
   implementations,
   realizationIds: directRealizationIds(compiled, "release-2"),
 });
-const replacementResult = await bindProjection(thumbnailSurface, replacement, {
+const replacementResult = bindProjection(thumbnailSurface, replacement, {
   admit: admitScreenOrScript,
 });
 if (replacementResult.status !== "bound") {
@@ -299,9 +299,9 @@ const queuedInteractions = {
     changes: ["images"],
   }),
 };
-const queued = await compileInteractions(queuedInteractions);
+const queued = compileInteractions(queuedInteractions);
 const queuedDispatches: string[] = [];
-const { installation: queuedInstallation } = await installInteractions(queued, {
+const { installation: queuedInstallation } = installInteractions(queued, {
   installationId: "images:queued:release-1",
   implementations: implementInteractions<typeof queuedInteractions, Context>(queuedInteractions, {
     makeThumbnail() {
@@ -311,7 +311,7 @@ const { installation: queuedInstallation } = await installInteractions(queued, {
   }),
   realizationIds: directRealizationIds(queued, "release-1"),
 });
-const mismatch = await bindProjection(thumbnailSurface, queuedInstallation, {
+const mismatch = bindProjection(thumbnailSurface, queuedInstallation, {
   admit: admitScreenOrScript,
 });
 // mismatch.status === "unrealized": a job ID does not satisfy ImageInfo.
@@ -342,11 +342,11 @@ Predict which definitions must change before looking at the code.
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#agent -->
 ```ts
-const agentSurface = await projectInteractions(compiled, {
+const agentSurface = projectInteractions(compiled, {
   makeThumbnail: direct(compiled.handles.makeThumbnail),
   inspectImage: direct(compiled.handles.inspectImage),
 });
-const agentResult = await bindProjection(agentSurface, installation, {
+const agentResult = bindProjection(agentSurface, installation, {
   admit: admitWhen((context: Context) => context.kind === "agent", "Agent connection required"),
 });
 if (agentResult.status !== "bound") {

@@ -155,7 +155,7 @@ function computeReachDigest(
   bindingDigest: string,
   installationId: string,
   transports: readonly Transport[],
-): Promise<Sha256Digest> {
+): Sha256Digest {
   return hashJson(REACH_DOMAIN, {
     version: 1,
     bindingDigest,

@@ -69,15 +69,15 @@ explicit host aliases before composing the records:
 
 <!-- snippet:examples/snippets/typescript/module-composition.ts#assembly -->
 ```ts
-const tasks = await compileInteractions({
+const tasks = compileInteractions({
   taskMutate: taskModule.mutate,
   taskQuery: taskModule.query,
 });
-const capacity = await compileInteractions({
+const capacity = compileInteractions({
   capacityMutate: capacityModule.mutate,
   capacityQuery: capacityModule.query,
 });
-const compiled = await composeCompiledInteractions(tasks, capacity);
+const compiled = composeCompiledInteractions(tasks, capacity);
 ```
 
 The aliases make the assembly readable while preserving each declared
@@ -162,13 +162,13 @@ Local aliases remain convenient even though installation aliases differ:
 <!-- snippet:examples/snippets/typescript/module-composition.ts#selected-projections -->
 ```ts
 const localCompiled = {
-  tasks: await compileInteractions(taskModule),
-  capacity: await compileInteractions(capacityModule),
+  tasks: compileInteractions(taskModule),
+  capacity: compileInteractions(capacityModule),
 };
-const taskEditor = await projectAllDirect(localCompiled.tasks);
-const taskReader = await pickProjection(taskEditor, "query");
-const capacityReader = await pickProjection(
-  await projectAllDirect(localCompiled.capacity), "query",
+const taskEditor = projectAllDirect(localCompiled.tasks);
+const taskReader = pickProjection(taskEditor, "query");
+const capacityReader = pickProjection(
+  projectAllDirect(localCompiled.capacity), "query",
 );
 ```
 

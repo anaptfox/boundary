@@ -140,7 +140,7 @@ const interactions = {
     description: "Resolve only from an exact stored app-owned review.",
   }),
 } as const;
-const compiled = await compileInteractions(interactions);
+const compiled = compileInteractions(interactions);
 const implementations = implementInteractions<typeof interactions, TriageContext>(
   interactions,
   {
@@ -279,7 +279,7 @@ const implementations = implementInteractions<typeof interactions, TriageContext
     },
   },
 );
-const { installation } = await installInteractions(compiled, {
+const { installation } = installInteractions(compiled, {
   installationId: "next-native:triage:3",
   implementations,
   realizationIds: {
@@ -291,7 +291,7 @@ const { installation } = await installInteractions(compiled, {
     resolve: { direct: "triage-resolve-3" },
   },
 });
-export const triageProjection = await projectInteractions(compiled, {
+export const triageProjection = projectInteractions(compiled, {
   list: { interaction: compiled.handles.list, modes: ["direct"] },
   inspect: { interaction: compiled.handles.inspect, modes: ["direct"] },
   create: { interaction: compiled.handles.create, modes: ["direct"] },
@@ -299,7 +299,7 @@ export const triageProjection = await projectInteractions(compiled, {
   review: { interaction: compiled.handles.review, modes: ["direct"] },
   resolve: { interaction: compiled.handles.resolve, modes: ["direct"] },
 });
-const bound = await bindProjection(triageProjection, installation, {
+const bound = bindProjection(triageProjection, installation, {
   admit: ({ context, handle }) => {
     const allowed = (context.actor === "human" &&
       ["triage.tickets.list", "triage.tickets.create"].includes(

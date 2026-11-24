@@ -86,7 +86,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("reports activity only for live registered tools and removes listeners on disposal", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, { list: { interaction: fixture.compiled.handles.list, modes: ["direct"] } });
+    const projection = projectInteractions(fixture.compiled, { list: { interaction: fixture.compiled.handles.list, modes: ["direct"] } });
     const host = createFakeHost();
     const events = new EventTarget();
     host.addEventListener = (type, listener) => events.addEventListener(type, listener as EventListener);
@@ -149,7 +149,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("registers explicit handles with names, schema/docs annotations, and v1 outcomes", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
       create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
     });
@@ -230,7 +230,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("registers a remote Binding through an explicit transport", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
       create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
     });
@@ -275,7 +275,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("forwards exposedTo and re-registers when the origin allowlist changes", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     });
     const binding = await fixture.bind(projection);
@@ -321,7 +321,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("requires an explicit WebMCP-safe name for a valid versioned interaction id", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       invalidName: {
         interaction: fixture.compiled.handles.invalidName,
         modes: ["direct"],
@@ -358,7 +358,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("fails the complete preflight when a selected tool has no description", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       untitled: {
         interaction: fixture.compiled.handles.untitled,
         modes: ["direct"],
@@ -380,7 +380,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("keeps request proposals powerless and returns denied, fault, and cancellation evidence", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       create: {
         interaction: fixture.compiled.handles.create,
         modes: ["direct", "request"],
@@ -464,10 +464,10 @@ describe("WebMCP Binding adapter", () => {
 
   it("syncs explicit Binding/tool sets without churning retained tools, then disposes", async () => {
     const first = await createAdapterFixture();
-    const listed = await projectInteractions(first.compiled, {
+    const listed = projectInteractions(first.compiled, {
       list: { interaction: first.compiled.handles.list, modes: ["direct"] },
     });
-    const writable = await projectInteractions(first.compiled, {
+    const writable = projectInteractions(first.compiled, {
       list: { interaction: first.compiled.handles.list, modes: ["direct"] },
       create: { interaction: first.compiled.handles.create, modes: ["direct"] },
     });
@@ -515,10 +515,10 @@ describe("WebMCP Binding adapter", () => {
 
   it("rolls back every newly added tool when an explicit sync only partly registers", async () => {
     const fixture = await createAdapterFixture();
-    const listed = await projectInteractions(fixture.compiled, {
+    const listed = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     });
-    const wider = await projectInteractions(fixture.compiled, {
+    const wider = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
       create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
       explode: { interaction: fixture.compiled.handles.explode, modes: ["direct"] },
@@ -557,10 +557,10 @@ describe("WebMCP Binding adapter", () => {
 
   it("skips stale queued syncs before disposal", async () => {
     const fixture = await createAdapterFixture();
-    const listed = await projectInteractions(fixture.compiled, {
+    const listed = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     });
-    const writable = await projectInteractions(fixture.compiled, {
+    const writable = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
       create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
     });
@@ -594,7 +594,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("republishes presentation changes so browser metadata and the local summary agree", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     });
     const binding = await fixture.bind(projection);
@@ -651,7 +651,7 @@ describe("WebMCP Binding adapter", () => {
     "rejects a non-boolean %s before publishing a tool",
     async (annotation) => {
       const fixture = await createAdapterFixture();
-      const projection = await projectInteractions(fixture.compiled, {
+      const projection = projectInteractions(fixture.compiled, {
         list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
       });
       expect(() => webMcpTool(projection.handles.list, { [annotation]: "true" } as never))
@@ -664,7 +664,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("snapshots host-selected annotation values before registration", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     });
     const options = { consequentialHint: true, debugging: true };
@@ -688,7 +688,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("registers every projected interaction without a second Binding handshake", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
       create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
     });
@@ -736,7 +736,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("stamps per-invoke transport headers from a host frame", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       create: { interaction: fixture.compiled.handles.create, modes: ["direct"] },
     });
     const binding = await fixture.bind(projection);
@@ -771,7 +771,7 @@ describe("WebMCP Binding adapter", () => {
 
   it("rejects a live-name collision instead of silently replacing another owner", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     });
     const binding = await fixture.bind(projection);
@@ -809,7 +809,7 @@ function deferred() {
 describe("WebMCP publication lifetime across awaits", () => {
   it("disposal during a pending handshake prevents publication", async () => {
     const fixture = await createAdapterFixture();
-    const projection = await projectInteractions(fixture.compiled, {
+    const projection = projectInteractions(fixture.compiled, {
       list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
     });
     const binding = await fixture.bind(projection);
@@ -836,7 +836,7 @@ describe("WebMCP publication lifetime across awaits", () => {
   for (const action of ["dispose", "supersede"] as const) {
     it(`${action} during pending registration aborts publication ownership`, async () => {
       const fixture = await createAdapterFixture();
-      const projection = await projectInteractions(fixture.compiled, {
+      const projection = projectInteractions(fixture.compiled, {
         list: { interaction: fixture.compiled.handles.list, modes: ["direct"] },
       });
       const binding = await fixture.bind(projection);

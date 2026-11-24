@@ -49,7 +49,7 @@ export function journalLaws(name: string, factory: () => JournalFixture) {
       for (const [id, tenant] of [["a", "inbox"], ["b", "elsewhere"], ["c", "inbox"], ["é", "inbox"]]) {
         const { proposalDigest: _digest, ...identity } = base;
         const raw = { ...identity, id, subject: { kind: "todo-list", id: tenant } };
-        await fixture.journal.createProposal({ ...raw, proposalDigest: await proposalDigest(raw) });
+        await fixture.journal.createProposal({ ...raw, proposalDigest: proposalDigest(raw) });
       }
       const reader = createControlReader({ journal: fixture.journal }, { interactionIds: [base.interactionId], tenant: base.subject });
       const first = await reader.page({ limit: 2 });

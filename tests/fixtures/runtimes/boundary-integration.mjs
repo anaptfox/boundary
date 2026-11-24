@@ -18,7 +18,7 @@ const definitions = {
   change: defineInteraction({ id: "boundary.change", input: StringSchema, output: StringSchema, changes: ["documents"] }),
   inspect: defineInteraction({ id: "boundary.inspect", output: StringSchema, reads: ["documents"] }),
 };
-const compiled = await compileInteractions(definitions);
+const compiled = compileInteractions(definitions);
 const bindings = bindNativeInteractions(compiled, { change: "native-change", inspect: "native-inspect" }, {
   change({ input, target, outcomes }) {
     assert.equal(target, "native-change");
@@ -28,7 +28,7 @@ const bindings = bindNativeInteractions(compiled, { change: "native-change", ins
   },
   inspect({ outcomes }) { return outcomes.returned(String(journal.effects)); },
 });
-const installed = await installInteractions(compiled, {
+const installed = installInteractions(compiled, {
   installationId: "boundary:e2e:installation", bindings,
   requests: createControlRequestContributions(compiled, {
     change: { interaction: compiled.handles.change, controlDigest: compiled.handles.change.contractDigest, previewSchema: StringSchema,
@@ -36,14 +36,14 @@ const installed = await installInteractions(compiled, {
   }),
   realizationIds: { change: { direct: "boundary:change:direct", request: "boundary:change:request" }, inspect: { direct: "boundary:inspect:direct" } },
 });
-const projection = await projectInteractions(compiled, {
+const projection = projectInteractions(compiled, {
   change: { interaction: compiled.handles.change, modes: ["direct", "request"] }, inspect: "direct",
 });
-const explicit = await projectInteractions(compiled, { inspect: { interaction: compiled.handles.inspect, modes: ["direct"] } });
-assert.equal((await projectInteractions(compiled, { inspect: "direct" })).projectionDigest, explicit.projectionDigest);
+const explicit = projectInteractions(compiled, { inspect: { interaction: compiled.handles.inspect, modes: ["direct"] } });
+assert.equal((projectInteractions(compiled, { inspect: "direct" })).projectionDigest, explicit.projectionDigest);
 let hooks = 0;
 const observations = [];
-const bound = await bindProjection(projection, installed.installation, {
+const bound = bindProjection(projection, installed.installation, {
   admit: ({ context }) => context.authorized ? { decision: "allow" } : { decision: "deny", reason: "owner required" },
   async coordinate(request, proceed) {
     hooks++;
@@ -91,8 +91,8 @@ if (phase === "lost-ack") {
   const stale = await createHandoffInvocation(bound.binding.manifest, "boundary.change", "direct", "once");
   await assert.rejects(executeHandoff(bound.binding, { ...stale, realizationId: "stale" }, context("same-request")), error => error.code === "STALE_REALIZATION");
   assert.equal(journal.effects, 1);
-  const requestProjection = await projectInteractions(compiled, { change: "request" });
-  const child = await restrictBinding(bound.binding, { projection: requestProjection, admit: admitAll });
+  const requestProjection = projectInteractions(compiled, { change: "request" });
+  const child = restrictBinding(bound.binding, { projection: requestProjection, admit: admitAll });
   assert.equal(child.status, "bound");
   const descriptions = describeBinding(child.binding);
   assert.equal(descriptions.length, 1);

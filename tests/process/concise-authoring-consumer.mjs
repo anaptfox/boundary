@@ -23,7 +23,7 @@ const definitions = {
   render: defineInteraction({ id: "consumer.render", output: Text, reads: ["canvas"] }),
 };
 let position = { x: 0, y: 0 };
-const result = await bindInteractions(definitions, {
+const result = bindInteractions(definitions, {
   installationId: "consumer:canvas:1",
   realizationVersion: "consumer-build-1",
   handlers: {

@@ -36,7 +36,7 @@ export async function installTrustedProjection(input: {
   onObservation?(workspaceId: WorkspaceId, event: unknown): void;
 }): Promise<Readonly<{ main: ProjectionElectronMain; binding: ProjectionBinding<any, WorkspaceContext>; state: ReadonlyMap<WorkspaceId, number>; revokeWindow(sender: ElectronIpcSender): void }>> {
   const state = new Map<WorkspaceId, number>([["alpha", 0], ["beta", 10]]);
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions<typeof interactions, WorkspaceContext>(interactions, {
     read: (context) => ({ workspaceId: context.workspaceId, count: state.get(context.workspaceId)! }),
     increment: (input, context) => {
@@ -45,15 +45,15 @@ export async function installTrustedProjection(input: {
       return { workspaceId: context.workspaceId, count };
     },
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "electron:workspaces:1", implementations,
     realizationIds: { read: { direct: "workspace:read:1" }, increment: { direct: "workspace:increment:1" } },
   });
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     read: { interaction: compiled.handles.read, modes: ["direct"] },
     increment: { interaction: compiled.handles.increment, modes: ["direct"] },
   });
-  const bound = await bindProjection(projection, installation, {
+  const bound = bindProjection(projection, installation, {
     admit: () => ({ decision: "allow" }),
     observation: {
       correlate: (context) => ({ workspaceId: context.workspaceId }),

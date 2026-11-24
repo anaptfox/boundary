@@ -44,7 +44,7 @@ async function fixture() {
       changes: [],
     }),
   } as const;
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions<typeof interactions, Context>(
     interactions,
     {
@@ -59,7 +59,7 @@ async function fixture() {
       },
     },
   );
-  const { installation } = await installInteractions<typeof interactions, Context>(
+  const { installation } = installInteractions<typeof interactions, Context>(
     compiled,
     {
       installationId: "installation:handoff:2",
@@ -67,10 +67,10 @@ async function fixture() {
       realizationIds: { echo: { direct: "realization:echo:2" } },
     },
   );
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     echo: { interaction: compiled.handles.echo, modes: ["direct"] },
   });
-  const result = await bindProjection(projection, installation, {
+  const result = bindProjection(projection, installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (result.status !== "bound") throw new Error("fixture did not bind");
@@ -80,7 +80,7 @@ async function fixture() {
 describe("Handoff protocol v1", () => {
   it("validates every identity pin and passes exact context once", async () => {
     const { binding, contexts } = await fixture();
-    const manifest = await validateProjectionBindingManifest(binding.manifest);
+    const manifest = validateProjectionBindingManifest(binding.manifest);
     const invocation = await createHandoffInvocation(
       manifest,
       "handoff.echo",
@@ -125,12 +125,10 @@ describe("Handoff protocol v1", () => {
     (entry.direct as { realizationId: string }).realizationId =
       "realization:echo:drifted";
 
-    await expect(
-      validateProjectionBindingManifest(tampered),
-    ).rejects.toMatchObject({
+    expect(() => validateProjectionBindingManifest(tampered)).toThrow(expect.objectContaining({
       code: "INVALID_MANIFEST",
       path: "manifest.interactions[0].realizationId",
-    });
+    }));
   });
 
   it("returns frozen nested validation issues before Host dispatch", async () => {
@@ -266,7 +264,7 @@ describe("Handoff protocol v1", () => {
 
   it("sanitizes invalid Host outcomes after dispatch", async () => {
     const { binding, contexts } = await fixture();
-    const manifest = await validateProjectionBindingManifest(binding.manifest);
+    const manifest = validateProjectionBindingManifest(binding.manifest);
     const interaction = manifest.interactions[0]!;
     const invocation = await createHandoffInvocation(
       manifest,

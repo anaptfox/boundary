@@ -72,21 +72,21 @@ async function hostFixture() {
       changes: [],
     }),
   } as const;
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
   const implementations = implementInteractions(interactions, {
     list: () => [{ n: 1 }],
     echo: (input) => input,
   });
-  const { installation } = await installInteractions(compiled, {
+  const { installation } = installInteractions(compiled, {
     installationId: "installation:bench:1",
     implementations,
     realizationIds: directRealizationIds(compiled, "v1"),
   });
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     list: direct(compiled.handles.list),
     echo: direct(compiled.handles.echo),
   });
-  const result = await bindProjection(projection, installation, {
+  const result = bindProjection(projection, installation, {
     admit: () => ({ decision: "allow" }),
   });
   if (result.status !== "bound") {
@@ -149,7 +149,7 @@ async function seedProposals(count: number) {
     };
     const record = {
       ...identity,
-      proposalDigest: await proposalDigest(identity),
+      proposalDigest: proposalDigest(identity),
     } as ProposalRecord;
     await journal.createProposal(record);
   }
@@ -193,16 +193,16 @@ describe("boundary performance baseline", () => {
       })),
     });
 
-    const compiledSmall = await compileInteractions(small);
+    const compiledSmall = compileInteractions(small);
     const implementations = implementInteractions(small, {
       list: () => ({ n: 1 }),
     });
-    const installed = await installInteractions(compiledSmall, {
+    const installed = installInteractions(compiledSmall, {
       installationId: "installation:bench-small:1",
       implementations,
       realizationIds: directRealizationIds(compiledSmall, "v1"),
     });
-    const projection = await projectInteractions(compiledSmall, {
+    const projection = projectInteractions(compiledSmall, {
       list: direct(compiledSmall.handles.list),
     });
     recordCase({
@@ -362,7 +362,7 @@ describe("boundary performance baseline", () => {
     });
 
     const adapter = await createAdapterFixture();
-    const adapterProjection = await projectInteractions(adapter.compiled, {
+    const adapterProjection = projectInteractions(adapter.compiled, {
       list: direct(adapter.compiled.handles.list),
       create: direct(adapter.compiled.handles.create),
     });

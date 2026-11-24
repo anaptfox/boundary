@@ -64,7 +64,7 @@ After loading, the build path calls the ordinary library compiler:
 
 ```ts
 const loaded = await loadInteractionsEntry({ entry });
-const compiled = await compileInteractions(loaded.interactions);
+const compiled = compileInteractions(loaded.interactions);
 ```
 
 `compileInteractions` snapshots, validates, canonicalizes, and hashes the inert

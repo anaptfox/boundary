@@ -31,10 +31,10 @@ export async function runWalkthroughExample() {
   ]);
 
   // #region project
-  const compiled = await compileInteractions(interactions);
+  const compiled = compileInteractions(interactions);
 
-  const screen = await projectAllDirect(compiled);
-  const agent = await pickProjection(screen, "complete");
+  const screen = projectAllDirect(compiled);
+  const agent = pickProjection(screen, "complete");
   // #endregion project
 
   // #region install
@@ -53,7 +53,7 @@ export async function runWalkthroughExample() {
     },
   });
 
-  const { installation, controller } = await installInteractions<typeof interactions, Actor>(
+  const { installation, controller } = installInteractions<typeof interactions, Actor>(
     compiled,
     {
       installationId: "todos:local:v1",
@@ -64,10 +64,10 @@ export async function runWalkthroughExample() {
   // #endregion install
 
   // #region bind
-  const screenBound = await bindProjection(screen, installation, {
+  const screenBound = bindProjection(screen, installation, {
     admit: admitWhen((actor) => actor.kind === "screen", "screen caller required"),
   });
-  const agentBound = await bindProjection(agent, installation, {
+  const agentBound = bindProjection(agent, installation, {
     admit: admitWhen((actor) => actor.kind === "agent", "agent caller required"),
   });
   if (screenBound.status !== "bound" || agentBound.status !== "bound") {
@@ -116,8 +116,8 @@ export async function runWalkthroughExample() {
 
   // #region unrealized
   const partialInteractions = { complete: interactions.complete } as const;
-  const partial = await compileInteractions(partialInteractions);
-  const { installation: partialInstallation } = await installInteractions<
+  const partial = compileInteractions(partialInteractions);
+  const { installation: partialInstallation } = installInteractions<
     typeof partialInteractions,
     Actor
   >(partial, {
@@ -128,7 +128,7 @@ export async function runWalkthroughExample() {
     realizationIds: directRealizationIds(partial, "v1"),
   });
 
-  const unrealized = await bindProjection(screen, partialInstallation, {
+  const unrealized = bindProjection(screen, partialInstallation, {
     admit: admitWhen((actor: Actor) => actor.kind === "screen"),
   });
   // unrealized.status === "unrealized"; unrealized.report.issues names "clear"
@@ -145,10 +145,10 @@ export async function runWalkthroughExample() {
       changes: ["todos"],
     }),
   } as const;
-  const staleCompiled = await compileInteractions(staleInteractions);
-  const staleAgent = await projectAllDirect(staleCompiled);
+  const staleCompiled = compileInteractions(staleInteractions);
+  const staleAgent = projectAllDirect(staleCompiled);
 
-  const stale = await bindProjection(staleAgent, installation, {
+  const stale = bindProjection(staleAgent, installation, {
     admit: admitWhen((actor: Actor) => actor.kind === "agent"),
   });
   // stale.status === "unrealized": same id, different contract, refused before dispatch

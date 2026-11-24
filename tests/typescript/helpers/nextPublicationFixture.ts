@@ -79,7 +79,7 @@ export async function createPublicationFixture(options: {
     : mkdtempSync(join(tmpdir(), "boundary-next-publication-"));
   const database = options.database ?? join(directory!, "publication.sqlite");
   let document = options.document ?? initialDocument;
-  const compiled = await compileInteractions(definitions);
+  const compiled = compileInteractions(definitions);
   let installation: InteractionInstallation<DemoContext>;
   const publication = await createPublicationControl({
     interaction: compiled.handles.publish,
@@ -98,7 +98,7 @@ export async function createPublicationFixture(options: {
       },
     },
   );
-  const installed = await installInteractions<typeof definitions, DemoContext>(
+  const installed = installInteractions<typeof definitions, DemoContext>(
     compiled,
     {
       installationId: "next-publication-sidecar:v1",
@@ -127,10 +127,10 @@ export async function createPublicationFixture(options: {
     },
   );
   installation = installed.installation;
-  const projection = await projectInteractions(compiled, {
+  const projection = projectInteractions(compiled, {
     publish: { interaction: compiled.handles.publish, modes: ["request"] },
   });
-  const bound = await bindProjection(projection, installation, {
+  const bound = bindProjection(projection, installation, {
     admit: ({ context }) =>
       context.delegation?.workspace && context.delegation.workspace !== "folio"
         ? {
