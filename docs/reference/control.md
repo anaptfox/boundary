@@ -13,10 +13,9 @@ identities.
 
 Control is not part of the direct `@foxworth/boundary` root. Control itself depends
 on `@foxworth/boundary/program` only; Host is an optional peer of the
-`@foxworth/boundary/control/host` bridge. The bridge alone consumes the narrow
-`@foxworth/boundary/host/control` contribution seam; application and adapter authors
-should not construct request contributions through that lower-level subpath.
-That support export is not a same-process security boundary: JavaScript cannot
+`@foxworth/boundary/control/host` bridge. The bridge alone consumes the narrow package-private contribution seam; application and adapter authors
+should not construct request contributions through internal package plumbing.
+That seam is not a same-process security boundary: JavaScript cannot
 authenticate the package that called an exported function. Code that calls it
 directly is part of the application Host's trusted computing base. Its opaque
 artifact prevents accidental structural forgery and post-construction identity
@@ -279,7 +278,7 @@ output behavior; this addition makes no new cross-language typing claim.
 ## Test adapters
 
 `MemoryJournal`, `TestClock`, and `TestIds` from
-`@foxworth/boundary/control/testing` are deterministic test adapters. `MemoryJournal`
+`@foxworth/boundary/testing` are deterministic test adapters. `MemoryJournal`
 is process-local; production recovery requires a host-owned durable journal.
 
 Continue with [Host](./host.md), [Handoff](./handoff.md), and the

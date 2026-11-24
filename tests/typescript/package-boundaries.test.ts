@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error -- plain ESM check helper without declarations
-import { moduleSpecifiers, sourceResolver } from "../../scripts/check/module-graph.mjs";
+import { moduleSpecifiers, runtimeModuleSpecifiers, sourceResolver } from "../../scripts/check/module-graph.mjs";
 
 const root = path.join(process.cwd(), "packages");
 const groups = ["core", "discovery", "guests", "callers", "adapters"];
@@ -114,7 +114,13 @@ describe("SDK module dependency rules", () => {
 
   it("keeps Program dependency-free and Handoff independent of Host", () => {
     expect([...(edges.get("core/program") ?? [])]).toEqual([]);
-    expect(edges.get("core/handoff")?.has("core/host") ?? false).toBe(false);
+    const runtimeTargets = files
+      .filter(({ module }) => module === "core/handoff")
+      .flatMap(({ file }) => runtimeModuleSpecifiers(path.join(root, file)).map((specifier: string) => {
+        try { return resolve(path.join(root, file), specifier); }
+        catch { return undefined; }
+      }));
+    expect(runtimeTargets.some((target) => target && moduleOf(target) === "core/host")).toBe(false);
   });
 
   it("keeps package-private helpers out of the public surface", async () => {

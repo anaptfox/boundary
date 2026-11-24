@@ -38,6 +38,32 @@ export function moduleSpecifiers(file, source = readFileSync(file, "utf8")) {
   return specifiers;
 }
 
+/** Runtime module specifiers, excluding imports and exports erased by TypeScript. */
+export function runtimeModuleSpecifiers(file, source = readFileSync(file, "utf8")) {
+  const { program, module, errors } = parseSync(file, source, { lang: languageOf(file) });
+  if (errors.length > 0) throw new Error(`${file}: ${errors[0].message}`);
+  const specifiers = [];
+  for (const node of program.body) {
+    if (node.type === "ImportDeclaration") {
+      if (node.importKind !== "type" && (node.specifiers.length === 0 || node.specifiers.some((entry) => entry.importKind !== "type"))) {
+        specifiers.push(node.source.value);
+      }
+    } else if (node.type === "ExportAllDeclaration") {
+      if (node.exportKind !== "type") specifiers.push(node.source.value);
+    } else if (node.type === "ExportNamedDeclaration" && node.source) {
+      if (node.exportKind !== "type" && node.specifiers.some((entry) => entry.exportKind !== "type")) {
+        specifiers.push(node.source.value);
+      }
+    }
+  }
+  for (const dynamic of module.dynamicImports) {
+    const text = source.slice(dynamic.moduleRequest.start, dynamic.moduleRequest.end);
+    const literal = /^("|')(.*)\1$/su.exec(text);
+    if (literal) specifiers.push(literal[2]);
+  }
+  return specifiers;
+}
+
 /** A resolver for TypeScript source inside this repository. */
 export function sourceResolver() {
   const resolver = new ResolverFactory({

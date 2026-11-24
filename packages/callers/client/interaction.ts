@@ -7,9 +7,9 @@ import type {
   ProjectedInteractionHandle,
 } from "@foxworth/boundary";
 import type { ProjectionClient } from "./client";
-import { AdapterError, type RemoteInteractionError } from "@foxworth/boundary/remote";
+import { AdapterError, type RemoteInteractionError } from "#remote";
 import { invalidateReadsForChange, type InteractionCacheScope } from "./cache";
-import { snapshotProjectedHandle, type AnyProjectedInteractionHandle } from "@foxworth/boundary/remote";
+import { snapshotProjectedHandle, type AnyProjectedInteractionHandle } from "#remote";
 
 type DefinitionOf<Handle> = Handle extends ProjectedInteractionHandle<
   InteractionHandle<infer Definition>,

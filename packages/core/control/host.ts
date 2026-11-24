@@ -11,7 +11,7 @@ import {
   type ControlRequestContributionSources,
   type ControlRequestContributions as HostControlRequestContributions,
   type RequestInvocationPolicy,
-} from "@foxworth/boundary/host/control";
+} from "#host/control";
 import { cloneJson, isInteractionId, isSha256Digest, validatePortableSchema, type JsonObject, type JsonSchema } from "@foxworth/boundary/program";
 import { exactObject } from "#program/internal";
 import { controlError } from "./errors";

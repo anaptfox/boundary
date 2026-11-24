@@ -10,9 +10,9 @@ import {
   createInvocationState,
   createProposalInteraction,
 } from "@foxworth/boundary/client";
-import { RemoteInvocationError } from "@foxworth/boundary/remote";
+import { RemoteInvocationError } from "@foxworth/boundary/client";
 import type { ProjectionClient } from "@foxworth/boundary/client";
-import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http";
 import { createProjectionClient } from "@foxworth/boundary/client";
 import { createAdapterFixture } from "./helpers/adapter";
 

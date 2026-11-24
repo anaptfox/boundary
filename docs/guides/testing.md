@@ -350,7 +350,7 @@ infer admission from visibility.
 
 ## Control tests
 
-The current `@foxworth/boundary/control/testing` package provides deterministic
+The `@foxworth/boundary/testing` subpath provides deterministic
 `MemoryJournal`, `TestClock`, and `TestIds`; the memory journal is not durable
 production storage.
 

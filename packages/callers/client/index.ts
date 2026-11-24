@@ -39,3 +39,17 @@ export {
 export { subscribeToObservations, type ObservationSubscription, type ObservationClientOptions } from "./observations";
 
 export type { ClientInvokeFraming, ClientTransport } from "./transport";
+
+export {
+  AdapterError,
+  isDomainErrorFor,
+  RemoteDomainError,
+  RemoteInvocationError,
+  RemoteProtocolRejection,
+  RemoteExecutionError,
+  RemoteProtocolError,
+  type AdapterDiagnosticCode,
+  type InteractionDeclaredError,
+  type RemoteInteractionDomainError,
+  type RemoteInteractionError,
+} from "#remote";

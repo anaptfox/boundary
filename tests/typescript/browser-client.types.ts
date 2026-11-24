@@ -6,7 +6,7 @@ import {
   isDomainErrorFor,
   type InteractionDeclaredError,
   type RemoteInteractionDomainError,
-} from "@foxworth/boundary/remote";
+} from "@foxworth/boundary/client";
 import type {
   InteractionDefinition,
   InteractionHandle,

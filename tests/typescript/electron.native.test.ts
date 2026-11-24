@@ -8,7 +8,7 @@ import {
   installInteractions,
   projectInteractions,
 } from "@foxworth/boundary";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 import { createHandoffInvocation } from "@foxworth/boundary/handoff";
 import {
   allowElectronSender,

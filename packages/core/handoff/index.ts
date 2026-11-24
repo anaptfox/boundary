@@ -18,3 +18,7 @@ export type {
   ProjectionBindingManifest,
   ProjectionBindingInteraction,
 } from "@foxworth/boundary/program";
+
+// Adapter authors use the handoff boundary for protocol resolution and execution helpers.
+
+export * from "./remote/index";

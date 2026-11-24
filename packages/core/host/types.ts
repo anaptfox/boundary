@@ -1,3 +1,4 @@
+import type { AliasProjectionSelections, DirectProjectionSelections, FluentProjection } from "./projection";
 import type {
   InstallationId,
   InstallationManifest,
@@ -48,12 +49,10 @@ export interface StandardSchema<Output extends JsonValue = JsonValue> {
     };
   };
 }
-
 /** Schema families may vary, but their inferred wire value must stay JSON. */
 export type AuthoringSchema =
   | PortableSchema<any>
   | StandardSchema<any>;
-
 export type SchemaValue<Schema> = Schema extends PortableSchema<infer Value>
   ? Value
   : Schema extends {
@@ -63,13 +62,11 @@ export type SchemaValue<Schema> = Schema extends PortableSchema<infer Value>
       }
     ? Extract<Output, JsonValue>
     : never;
-
 /** Host-selectable adapter from one authoring schema family to Program data. */
 export interface SchemaAdapter<Schema = unknown>
   extends ProgramSchemaAdapter<Schema> {
   supports(value: unknown): value is Schema;
 }
-
 export interface CompileInteractionsOptions {
   readonly schemas?: readonly SchemaAdapter<any>[];
 }
@@ -184,6 +181,9 @@ export interface CompiledInteractions<
 > {
   readonly program: Program;
   readonly handles: HandlesOf<Definitions>;
+  project<const Selections extends ProjectionSelections>(selections: Selections): FluentProjection<Selections>;
+  project<const Selections extends Readonly<Record<string, InteractionMode | ProjectionSelection>>>(selections: Selections): FluentProjection<AliasProjectionSelections<Definitions, Selections>>;
+  projectAll(mode: "direct"): FluentProjection<DirectProjectionSelections<Definitions>>;
 }
 
 export interface InteractionLowering<

@@ -7,7 +7,7 @@ import type {
 } from "@foxworth/boundary";
 import type { JsonValue } from "@foxworth/boundary/program";
 import { createNextServerCaller } from "@foxworth/boundary/frameworks/next";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 import { createAdapterFixture } from "./helpers/adapter";
 
 async function nextNativeTypes() {

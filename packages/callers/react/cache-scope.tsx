@@ -6,7 +6,7 @@ import {
   useContext,
   type ReactNode,
 } from "react";
-import type { InteractionCacheScope } from "@foxworth/boundary/client/cache";
+import type { InteractionCacheScope } from "@foxworth/boundary/client";
 
 const CacheScopeContext = createContext<InteractionCacheScope | undefined>(
   undefined,

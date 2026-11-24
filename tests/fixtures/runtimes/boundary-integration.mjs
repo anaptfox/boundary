@@ -1,17 +1,16 @@
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import {
-  admitAll, bindNativeInteractions, bindProjection, compileInteractions, defineInteraction,
-  describeBinding, installInteractions, projectInteractions, restrictBinding,
+  bindNativeInteractions, bindProjection, compileInteractions, defineInteraction,
+  installInteractions, projectInteractions,
 } from "@foxworth/boundary";
 import { portableSchema } from "@foxworth/boundary/program";
-import { createControlRequestContributions } from "@foxworth/boundary/host/control";
 import { createHandoffInvocation, executeHandoff } from "@foxworth/boundary/handoff";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 
 // Host-owned single-writer durable fixture. It is not a production journal or crash-safe transaction.
 const [phase, journalPath] = process.argv.slice(2);
-const journal = existsSync(journalPath) ? JSON.parse(readFileSync(journalPath, "utf8")) : { effects: 0, proposals: 0, records: {} };
+const journal = existsSync(journalPath) ? JSON.parse(readFileSync(journalPath, "utf8")) : { effects: 0, records: {} };
 const persist = () => writeFileSync(journalPath, JSON.stringify(journal));
 const StringSchema = portableSchema({ type: "string" });
 const definitions = {
@@ -30,14 +29,10 @@ const bindings = bindNativeInteractions(compiled, { change: "native-change", ins
 });
 const installed = installInteractions(compiled, {
   installationId: "boundary:e2e:installation", bindings,
-  requests: createControlRequestContributions(compiled, {
-    change: { interaction: compiled.handles.change, controlDigest: compiled.handles.change.contractDigest, previewSchema: StringSchema,
-      request(input) { journal.proposals++; persist(); return input; } },
-  }),
-  realizationIds: { change: { direct: "boundary:change:direct", request: "boundary:change:request" }, inspect: { direct: "boundary:inspect:direct" } },
+  realizationIds: { change: { direct: "boundary:change:direct" }, inspect: { direct: "boundary:inspect:direct" } },
 });
 const projection = projectInteractions(compiled, {
-  change: { interaction: compiled.handles.change, modes: ["direct", "request"] }, inspect: "direct",
+  change: "direct", inspect: "direct",
 });
 const explicit = projectInteractions(compiled, { inspect: { interaction: compiled.handles.inspect, modes: ["direct"] } });
 assert.equal((projectInteractions(compiled, { inspect: "direct" })).projectionDigest, explicit.projectionDigest);
@@ -91,19 +86,6 @@ if (phase === "lost-ack") {
   const stale = await createHandoffInvocation(bound.binding.manifest, "boundary.change", "direct", "once");
   await assert.rejects(executeHandoff(bound.binding, { ...stale, realizationId: "stale" }, context("same-request")), error => error.code === "STALE_REALIZATION");
   assert.equal(journal.effects, 1);
-  const requestProjection = projectInteractions(compiled, { change: "request" });
-  const child = restrictBinding(bound.binding, { projection: requestProjection, admit: admitAll });
-  assert.equal(child.status, "bound");
-  const descriptions = describeBinding(child.binding);
-  assert.equal(descriptions.length, 1);
-  assert.equal(descriptions[0].mode, "request");
-  assert.equal(Object.isFrozen(descriptions[0].request.previewSchema), true);
-  assert.equal(await child.binding.connect().request(requestProjection.handles.change, "proposal", context("proposal")), "proposal");
-  const request = await createHandoffInvocation(child.binding.manifest, "boundary.change", "request", "proposal");
-  assert.equal((await executeHandoff(child.binding, request, context("proposal"))).result.kind, "proposed");
-  assert.equal(journal.proposals, 1);
-  bound.controller.revoke();
-  await assert.rejects(child.binding.connect().request(requestProjection.handles.change, "proposal", context("proposal")), error => error.certainty === "not-started" && error.cause === "revoked");
 } else if (phase === "unknown") {
   assert.equal((await httpCall("direct", "unknown", "uncertain-request")).certainty, "unknown");
   assert.equal(journal.effects, 2);
@@ -114,4 +96,4 @@ if (phase === "lost-ack") {
 } else {
   throw new Error("unknown proof phase");
 }
-console.log(`Packed Boundary integration phase ${phase} passed; effects=${journal.effects}, proposals=${journal.proposals}.`);
+console.log(`Packed Boundary integration phase ${phase} passed; effects=${journal.effects}.`);

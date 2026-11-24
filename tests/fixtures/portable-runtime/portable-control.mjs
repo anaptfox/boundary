@@ -1,7 +1,7 @@
 // Runs against installed public artifacts, without a framework or source aliases.
 // The memory journal and host below are test fixtures, not durable storage.
 import { createControlCapabilities } from "@foxworth/boundary/control";
-import { MemoryJournal, TestClock } from "@foxworth/boundary/control/testing";
+import { MemoryJournal, TestClock } from "@foxworth/boundary/testing";
 
 function assert(value, message) {
   if (!value) throw new Error(message);

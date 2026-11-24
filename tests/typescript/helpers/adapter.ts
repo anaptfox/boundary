@@ -10,7 +10,7 @@ import {
   type Projection,
   type ProjectionSelections,
 } from "@foxworth/boundary";
-import { createControlRequestContributions } from "@foxworth/boundary/host/control";
+import { createControlRequestContributions } from "../../../packages/core/host/control";
 
 export type AdapterContext = Readonly<{
   role: "owner" | "viewer";

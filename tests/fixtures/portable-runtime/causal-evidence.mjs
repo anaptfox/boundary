@@ -8,7 +8,7 @@ import {
   projectAllDirect, publishExecutionEvidence,
 } from "@foxworth/boundary";
 import { createHandoffInvocation, validateHandoffResponse, validateProjectionBindingManifest } from "@foxworth/boundary/handoff";
-import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http";
 import { toFetchRequest, sendFetchResponse } from "@foxworth/boundary/http/node";
 import {
   contractChanges, contractCompatibility, digestInteractionContract,

@@ -1,6 +1,6 @@
 import { createProjectionWorkerFetchWithContext } from "@foxworth/boundary/cloudflare";
 import { createHttpHandler, route, type HttpHandler } from "@foxworth/boundary/http";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 import {
   createTodoHost,
   type TodoCaller,

@@ -7,8 +7,8 @@ import type {
   ProjectedInteractionHandle,
   ProjectionBinding,
 } from "@foxworth/boundary";
-import { AdapterError } from "@foxworth/boundary/remote";
-import { indexInteractionFootprints, isReadInteraction } from "@foxworth/boundary/client/cache";
+import { AdapterError } from "#remote";
+import { indexInteractionFootprints, isReadInteraction } from "@foxworth/boundary/client";
 import type { HttpHandler } from "@foxworth/boundary/http";
 
 type AnyProjectedInteractionHandle = ProjectedInteractionHandle<any, any, any>;

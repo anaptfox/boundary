@@ -4,7 +4,7 @@ import {
   CONTROL_RECORD_VERSION, listControl, proposalDigest,
   type ControlJournal, type ProposalRecord,
 } from "@foxworth/boundary/control";
-import { MemoryJournal } from "@foxworth/boundary/control/testing";
+import { MemoryJournal } from "@foxworth/boundary/testing";
 import { measure, recordCase } from "./measure";
 
 const digest = (character: string) => `sha256:${character.repeat(64)}` as const;

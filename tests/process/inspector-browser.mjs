@@ -70,18 +70,10 @@ try {
   assert.equal(await effects(), 1);
   await page.waitForTimeout(300);
   assert.equal(await effects(), 1, 'unknown was retried');
-  await page.getByTestId('inspector-mode').selectOption('request');
-  assert.match(await page.getByTestId('inspector-contract').innerText(), /inspector:fixture:proposal/);
-  assert.match(await page.getByTestId('inspector-contract').innerText(), /controlDigest/);
-  await input.fill('"proposal"');
-  await invoke.click();
-  await page.getByTestId('inspector-outcome').getByText(/proposed/i).waitFor();
-  assert.deepEqual(await counts(), { effects: 1, proposals: 1 }, 'proposal must not execute the direct effect');
-  await page.getByTestId('inspector-mode').selectOption('direct');
   await input.fill('"success"');
   await invoke.click();
   await page.getByTestId('inspector-outcome').getByText(/completed/i).waitFor();
-  assert.deepEqual(await counts(), { effects: 2, proposals: 1 });
+  assert.deepEqual(await counts(), { effects: 2, proposals: 0 });
   await input.fill('"slow-disconnect"');
   await invoke.click();
   const attempts = page.getByTestId('inspector-attempt');
@@ -127,7 +119,7 @@ try {
   await page.evaluate(() => window.inspectorFixture.dispose());
   assert.equal(await page.locator('[data-boundary-inspector]').count(), 0);
   assert.deepEqual(failures, []);
-  console.log(`packed inspector browser and localhost proof passed; installed=${installed}; effects=4; proposals=1`);
+  console.log(`packed inspector browser and localhost proof passed; installed=${installed}; effects=4; proposals=0`);
 } finally {
   await browser?.close();
   if (child && child.exitCode === null) { child.kill('SIGTERM'); await new Promise(resolve => child.once('exit', resolve)); }

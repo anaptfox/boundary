@@ -7,7 +7,7 @@ runtimes are peer dependencies loaded only by the selected subpath.
 
 ```text
 packages/
-  core/        program, host, drafts, artifact, handoff, remote, control
+  core/        program, host, drafts, artifact, handoff, control
   discovery/   reach, bus
   guests/      plugin
   callers/     client, inspector, react, mcp, webmcp
@@ -32,10 +32,10 @@ Their APIs may change incompatibly; see the
 [experimental integration status](../docs/concepts/current-status.md#experimental-integrations).
 
 Each module is one folder of source files; there is no per-module `src/`.
-`/host/control` is Host's request-contribution seam and lives in `core/host`.
-`/control/host` is Control's contribution that plugs into it and lives in
-`core/control`. Cross-module imports go through the owner's public subpath,
-never into another module's files.
+Host's request-contribution seam is package-private under `core/host`.
+`/control/host` is Control's public contribution bridge in `core/control`.
+Cross-module imports use the owning public subpath or an explicit package-private
+`#` import for internal composition.
 
 Subpaths whose built module graph imports a `node:` builtin publish only a
 `node` condition, so a browser or worker bundle fails at resolution.
@@ -60,12 +60,9 @@ docs check fails when it drifts.
 | `@foxworth/boundary/build` | `core/host` | `core/host/build/index.ts` |
 | `@foxworth/boundary/bus` | `discovery/bus` | `discovery/bus/index.ts` |
 | `@foxworth/boundary/client` | `callers/client` | `callers/client/index.ts` |
-| `@foxworth/boundary/client/cache` | `callers/client` | `callers/client/cache.ts` |
-| `@foxworth/boundary/client/observations` | `callers/client` | `callers/client/observations.ts` |
 | `@foxworth/boundary/cloudflare` | `adapters/cloudflare` | `adapters/cloudflare/index.ts` |
 | `@foxworth/boundary/control` | `core/control` | `core/control/index.ts` |
 | `@foxworth/boundary/control/host` | `core/control` | `core/control/host.ts` |
-| `@foxworth/boundary/control/testing` | `core/control` | `core/control/testing.ts` |
 | `@foxworth/boundary/drafts` | `core/drafts` | `core/drafts/index.ts` |
 | `@foxworth/boundary/electron` | `adapters/electron` | `adapters/electron/index.ts` |
 | `@foxworth/boundary/electron/ipc` | `adapters/electron` | `adapters/electron/ipc.ts` |
@@ -74,22 +71,18 @@ docs check fails when it drifts.
 | `@foxworth/boundary/frameworks/trpc` | `adapters/frameworks` | `adapters/frameworks/trpc.ts` |
 | `@foxworth/boundary/frameworks/vite` | `adapters/frameworks` | `adapters/frameworks/vite.ts` |
 | `@foxworth/boundary/handoff` | `core/handoff` | `core/handoff/index.ts` |
-| `@foxworth/boundary/host/control` | `core/host` | `core/host/control.ts` |
 | `@foxworth/boundary/http` | `adapters/http` | `adapters/http/index.ts` |
-| `@foxworth/boundary/http/compose` | `adapters/http` | `adapters/http/compose.ts` |
 | `@foxworth/boundary/http/node` | `adapters/http` | `adapters/http/node.ts` |
-| `@foxworth/boundary/http/observations` | `adapters/http` | `adapters/http/observations.ts` |
-| `@foxworth/boundary/http/openapi` | `adapters/http` | `adapters/http/openapi.ts` |
-| `@foxworth/boundary/http/protocol` | `adapters/http` | `adapters/http/protocol.ts` |
 | `@foxworth/boundary/inspector` | `callers/inspector` | `callers/inspector/index.ts` |
 | `@foxworth/boundary/mcp` | `callers/mcp` | `callers/mcp/index.ts` |
 | `@foxworth/boundary/observations` | `core/host` | `core/host/observations/index.ts` |
+| `@foxworth/boundary/plan` | `core/plan` | `core/plan/index.ts` |
 | `@foxworth/boundary/plugin` | `guests/plugin` | `guests/plugin/index.ts` |
 | `@foxworth/boundary/program` | `core/program` | `core/program/index.ts` |
 | `@foxworth/boundary/program/zod` | `core/program` | `core/program/zod.ts` |
 | `@foxworth/boundary/reach` | `discovery/reach` | `discovery/reach/index.ts` |
 | `@foxworth/boundary/react` | `callers/react` | `callers/react/index.ts` |
-| `@foxworth/boundary/remote` | `core/remote` | `core/remote/index.ts` |
+| `@foxworth/boundary/testing` | `core/testing` | `core/testing/index.ts` |
 | `@foxworth/boundary/webmcp` | `callers/webmcp` | `callers/webmcp/index.ts` |
 | `@foxworth/boundary/yjs` | `adapters/yjs` | `adapters/yjs/index.ts` |
 | `@foxworth/boundary/react/styles.css` | `callers/react` | `callers/react/styles.css` |

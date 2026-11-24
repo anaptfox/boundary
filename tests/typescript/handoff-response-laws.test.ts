@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { projectInteractions } from "@foxworth/boundary";
 import { createHandoffInvocation, executeHandoff, validateHandoffInvocation, validateHandoffOutcome, validateHandoffResponse, validateProjectionBindingManifest } from "@foxworth/boundary/handoff";
-import { RemoteDomainError } from "@foxworth/boundary/remote";
+import { RemoteDomainError } from "@foxworth/boundary/client";
 import { createProjectionClient } from "@foxworth/boundary/client";
 import type { ClientTransport } from "@foxworth/boundary/client";
-import { snapshotProjectedHandle } from "@foxworth/boundary/remote";
+import { snapshotProjectedHandle } from "@foxworth/boundary/handoff";
 import { registerWebMcpTransport, webMcpTool, type ModelContextTool } from "@foxworth/boundary/webmcp";
 import { createAdapterFixture } from "./helpers/adapter";
 

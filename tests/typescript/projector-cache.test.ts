@@ -11,13 +11,13 @@ import {
   invalidateReadsForChange,
   mountRead,
   watchInteraction,
-} from "@foxworth/boundary/client/cache";
+} from "@foxworth/boundary/client";
 import { createHandoffInvocation } from "@foxworth/boundary/handoff";
 import { createProjectionClient } from "@foxworth/boundary/client";
 import {
   createProtocolHandler,
   fetchTransport,
-} from "@foxworth/boundary/http/protocol";
+} from "@foxworth/boundary/http";
 import { createAdapterFixture } from "./helpers/adapter";
 
 const DIGEST = `sha256:${"a".repeat(64)}` as const;

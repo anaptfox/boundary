@@ -66,9 +66,11 @@ with `@foxworth/boundary`; existing frameworks can lower their own declarations.
 | `@foxworth/boundary/artifact` | Node-only verification and supplied artifact comparison | [Artifacts](./reference/artifact.md) |
 | `@foxworth/boundary/drafts` | Propose, accept, and reject Drafts over a host-supplied store | [Host](./reference/host.md) |
 | `@foxworth/boundary/program` | Portable contracts, identity, compatibility | [Program](./reference/program.md) |
+| `@foxworth/boundary/plan` | Validate plans and derive required projections | [Host](./reference/host.md) |
+| `@foxworth/boundary/testing` | Deterministic test adapters and contract-verification harnesses | [Testing](./guides/testing.md) |
 | `@foxworth/boundary/observations` | Capture and validate point/query evidence for host read reuse | [Observed reads](./reference/observations.md) |
 | `@foxworth/boundary/handoff` | Checked invocations across process seams | [Handoff](./reference/handoff.md) |
-| `@foxworth/boundary/remote` | Remote invocation errors, Binding resolution and result envelopes for adapters | [Adapters](./reference/adapters.md) |
+| `@foxworth/boundary/client` and `@foxworth/boundary/handoff` | Remote errors, Binding resolution and result envelopes for adapters | [Adapters](./reference/adapters.md) |
 | `@foxworth/boundary/control` and `@foxworth/boundary/control/host` | Controlled effects and their Host contribution | [Control](./reference/control.md) |
 | `@foxworth/boundary/http` | HTTP, clients, and interface projections | [Adapters](./reference/adapters.md) |
 | `@foxworth/boundary/mcp` and `@foxworth/boundary/webmcp` | Agent and browser tools | [Adapters](./reference/adapters.md) |

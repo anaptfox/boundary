@@ -28,8 +28,8 @@ import {
   snapshotProjectedHandle,
   type AnyProjectedInteractionHandle,
   type ResolvedBindingInteraction,
-} from "@foxworth/boundary/remote";
-import { AdapterError } from "@foxworth/boundary/remote";
+} from "#remote";
+import { AdapterError } from "#remote";
 
 export type McpTool<
   Value extends AnyProjectedInteractionHandle = AnyProjectedInteractionHandle,

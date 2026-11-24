@@ -10,9 +10,9 @@ import {
   type HandoffInvocation,
   type HandoffOutcome,
 } from "@foxworth/boundary/handoff";
-import { AdapterError, RemoteProtocolRejection } from "@foxworth/boundary/remote";
+import { AdapterError, RemoteProtocolRejection } from "#remote";
 import type { HttpHandler } from "./handler";
-import { statusForRemoteResult } from "@foxworth/boundary/remote";
+import { statusForRemoteResult } from "#remote";
 
 export type ProgramHandshake = ProjectionBindingManifest;
 

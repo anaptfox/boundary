@@ -1,5 +1,5 @@
 import { createMcpHandler, tool } from "@foxworth/boundary/mcp";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 import { demoContextFromCookie, type DemoContext } from "./context";
 import { requireBearerAuth, requireScopes, type AuthInfo, type OAuthTokenVerifier } from "@modelcontextprotocol/server";
 import { localTokenVerifier } from "./local-auth";

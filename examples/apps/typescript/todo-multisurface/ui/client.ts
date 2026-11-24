@@ -9,7 +9,7 @@ import {
   handlesFromBinding,
   pinProjectionReferences,
 } from "@foxworth/boundary/client";
-import { fetchTransport } from "@foxworth/boundary/http/protocol";
+import { fetchTransport } from "@foxworth/boundary/http";
 import { screenReferences } from "../references";
 
 const SCREEN_PROTOCOL = "/_boundary/screen";

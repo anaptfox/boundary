@@ -8,3 +8,7 @@ export {
   type RouteInputContext,
   type RouteOptions,
 } from "./handler";
+export * from "./compose";
+export * from "./observations";
+export * from "./openapi";
+export * from "./protocol";

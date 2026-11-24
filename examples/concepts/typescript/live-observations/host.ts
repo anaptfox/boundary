@@ -3,8 +3,8 @@ import { once } from "node:events";
 import { portableSchema, type InvocationObservation } from "@foxworth/boundary/program";
 import { bindProjection, compileInteractions, defineInteraction, directRealizationIds,
   implementInteractions, installInteractions, projectAllDirect } from "@foxworth/boundary";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
-import { createObservationHttpHandler } from "@foxworth/boundary/http/observations";
+import { createProtocolHandler } from "@foxworth/boundary/http";
+import { createObservationHttpHandler } from "@foxworth/boundary/http";
 
 type Tenant = "a" | "b";
 type Context = { tenant: Tenant };
