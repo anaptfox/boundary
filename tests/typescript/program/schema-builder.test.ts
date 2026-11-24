@@ -79,7 +79,7 @@ describe("portable schema builder (b.*)", () => {
     expect(validateSchemaValue(unionVal, false)).not.toEqual([]);
   });
 
-  it("integrates directly with defineInteraction, compileInteractions, and contractCompatibility", async () => {
+  it("integrates directly with defineInteraction, compileInteractions, and contractCompatibility", () => {
     const rename = defineInteraction({
       id: "docs.rename",
       input: b.object({ id: b.string({ minLength: 1 }), title: b.string({ minLength: 1 }) }),
@@ -91,7 +91,7 @@ describe("portable schema builder (b.*)", () => {
       changes: ["documents"],
     });
 
-    const compiled = await compileInteractions({ rename });
+    const compiled = compileInteractions({ rename });
     expect(compiled.program.interactions).toHaveLength(1);
 
     const common = {

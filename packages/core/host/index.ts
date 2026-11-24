@@ -1,3 +1,4 @@
+export { b, type InferSchema } from "@foxworth/boundary/program";
 export type { AsyncInteractionLowering } from "./async-lowering";
 export {
   DeclaredInteractionError,

@@ -44,6 +44,14 @@ export {
 } from "./validation";
 
 export { validateSchemaValue } from "./schema-value";
+export {
+  b,
+  type ArraySchemaOptions,
+  type InferSchema,
+  type NumberSchemaOptions,
+  type OptionalPortableSchema,
+  type StringSchemaOptions,
+} from "./schema-builder";
 
 export {
   contractCompatibility,
