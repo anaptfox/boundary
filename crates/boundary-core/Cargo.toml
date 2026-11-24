@@ -46,6 +46,10 @@ required-features = ["schemars"]
 name = "rebind"
 required-features = ["schemars"]
 
+[[test]]
+name = "authorized_context"
+required-features = ["schemars"]
+
 [dependencies]
 boundary-macros = { workspace = true, optional = true }
 regress.workspace = true
