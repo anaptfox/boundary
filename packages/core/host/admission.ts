@@ -9,6 +9,7 @@ export async function admitted<Context>(
   context: Context,
 ): Promise<AdmissionDecision | undefined> {
   const lineage: BindingMetadata<Context>[] = [];
+  let authorizedContext: unknown = context;
   let current: BindingMetadata<Context> | undefined = metadata;
   while (current !== undefined) {
     lineage.push(current);
@@ -22,8 +23,11 @@ export async function admitted<Context>(
     if (stageResolution === undefined) return undefined;
     const decision = await admitOne(stage, stageResolution, input, context);
     if (decision?.decision !== "allow") return decision;
+    if ("context" in decision) authorizedContext = decision.context;
   }
-  return { decision: "allow" };
+  return Object.is(authorizedContext, context)
+    ? { decision: "allow" }
+    : { decision: "allow", context: authorizedContext } as AdmissionDecision;
 }
 
 async function admitOne<Context>(

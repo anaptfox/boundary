@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  bindInteractions,
+  createHost,
   declaredInteractionError,
   defineInteraction,
 } from "@foxworth/boundary";
@@ -151,7 +151,7 @@ export async function runSceneHostProof(engine: SceneEngineDriver) {
 
   try {
     storage = await mkdtemp(join(tmpdir(), `boundary-${engine.engine}-scene-`));
-    const boundary = bindInteractions(interactions, {
+    const boundary = createHost(interactions, {
       installationId: `example:crdt:${engine.engine}:one`,
       realizationVersion: `${engine.engine}-scene:v1`,
       handlers: {

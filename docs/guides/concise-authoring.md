@@ -7,7 +7,7 @@ description: "Expose a small application scene to separate callers with one nati
 
 Boundary's usual TypeScript lifecycle is explicit: define interactions, compile
 them, install handlers, select a Projection for each caller, then bind each
-Projection. `bindInteractions` is a shorter native TypeScript entry for the
+Projection. `createHost` is a shorter native TypeScript entry for the
 same direct-call path. It runs those lifecycle steps and returns their actual
 artifacts alongside named methods.
 
@@ -17,7 +17,7 @@ declaration does not contain them.
 
 ```ts
 import { z } from "zod";
-import { bindInteractions, defineInteraction } from "@foxworth/boundary";
+import { createHost, defineInteraction } from "@foxworth/boundary";
 
 type Actor = Readonly<{ role: "editor" | "assistant" }>;
 const Position = z.strictObject({
@@ -56,7 +56,7 @@ zero-input interaction such as `capture` takes only its actor; `move` and
 `render` take input followed by actor.
 
 ```ts
-const api = bindInteractions(scene, {
+const api = createHost(scene, {
   installationId: "scene:local:v1",
   realizationVersion: "scene-handlers:v1",
   handlers: {
@@ -114,7 +114,7 @@ inspectable artifacts; revocation controls live execution.
 The host chooses `installationId` and supplies `realizationVersion`; Boundary
 does not derive the version from function source. Change that version when the
 executable behavior changes. Caller-specific setup failures are collected in
-`BindInteractionsError.issues`, each tagged with the caller name. Such a setup
+`CreateHostError.issues`, each tagged with the caller name. Such a setup
 failure exposes no usable caller and revokes bindings and the installation it
 created. Invalid global definitions or handlers can fail earlier with their
 own construction errors.

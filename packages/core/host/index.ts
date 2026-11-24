@@ -14,16 +14,19 @@ export {
 } from "./compile";
 export { implementInteractions } from "./implement";
 export { bindNativeInteractions, type NativeDispatchers } from "./native-bindings";
-export { bindInteractions, BindInteractionsError } from "./bind-interactions";
+export { createHost, CreateHostError } from "./bind-interactions";
+export { bindAuthorizedProjection, type AuthorizedAdmission, type AuthorizedAdmissionDecision } from "./authorized";
+export { unwrapOutcome, type DeclaredErrorOutcome, type DirectOutcome, type RequestOutcome } from "./caller-outcomes";
 export type {
-  BindInteractionCallerConfig,
-  BindInteractionCallers,
-  BindInteractionsOptions,
-  BindInteractionsResult,
-  BindInteractionsIssue,
+  CreateHostCallerConfig,
+  CreateHostCallers,
+  CreateHostOptions,
+  CreateHostResult,
+  CreateHostIssue,
   NamedCallArguments,
   NamedCallerMethods,
   NamedCallers,
+  NamedTryCallers,
 } from "./bind-interactions-types";
 export { installInteractions } from "./install";
 export { pickProjection, projectAllDirect, projectInteractions } from "./projection";

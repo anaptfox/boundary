@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  BindInteractionsError,
-  bindInteractions,
+  CreateHostError,
+  createHost,
   bindProjection,
   compileInteractions,
   defineInteraction,
@@ -37,11 +37,11 @@ const definitions = {
 
 const keys = (record: object) => Object.keys(record).sort();
 
-describe("bindInteractions", () => {
+describe("createHost", () => {
   it("composes the native pipeline and lets a human read the live state after a mutation", async () => {
     let position = { x: 2, y: 4 };
     const seenActors: string[] = [];
-    const result = bindInteractions(definitions, {
+    const result = createHost(definitions, {
       installationId: "canvas:local:1",
       realizationVersion: "build-7",
       handlers: {
@@ -73,7 +73,7 @@ describe("bindInteractions", () => {
   });
 
   it("preserves zero-input, one-input, and contextless handler conventions", async () => {
-    const result = bindInteractions(definitions, {
+    const result = createHost(definitions, {
       installationId: "canvas:arity:1",
       realizationVersion: "arity-1",
       handlers: {
@@ -93,7 +93,7 @@ describe("bindInteractions", () => {
   it("evaluates admission on every call with the current actor and does not dispatch a denied call", async () => {
     let allowed = true;
     let calls = 0;
-    const result = bindInteractions(definitions, {
+    const result = createHost(definitions, {
       installationId: "canvas:admission:1",
       realizationVersion: "admission-1",
       handlers: {
@@ -113,7 +113,7 @@ describe("bindInteractions", () => {
   it("awaits asynchronous admission and preserves rejected admission as not started", async () => {
     let decision: "allow" | "deny" | "reject" = "allow";
     let calls = 0;
-    const result = bindInteractions(definitions, {
+    const result = createHost(definitions, {
       installationId: "canvas:async-admission:1",
       realizationVersion: "async-admission-1",
       handlers: {
@@ -143,7 +143,7 @@ describe("bindInteractions", () => {
 
   it("keeps selected methods narrow while exposing an authentic native Binding", async () => {
     let moveCalls = 0;
-    const result = bindInteractions(definitions, {
+    const result = createHost(definitions, {
       installationId: "canvas:narrow:1",
       realizationVersion: "narrow-1",
       handlers: {
@@ -182,7 +182,7 @@ describe("bindInteractions", () => {
         admit: (actor: Actor) => actor.role === "human",
       },
     };
-    const pending = bindInteractions(definitions, {
+    const pending = createHost(definitions, {
       installationId: "canvas:snapshot:1",
       realizationVersion: "snapshot-1",
       handlers,
@@ -203,7 +203,7 @@ describe("bindInteractions", () => {
   });
 
   it("revokes both a caller binding and the shared installation", async () => {
-    const result = bindInteractions(definitions, {
+    const result = createHost(definitions, {
       installationId: "canvas:revoke:1",
       realizationVersion: "revoke-1",
       handlers: {
@@ -234,7 +234,7 @@ describe("bindInteractions", () => {
     const unknown = new Error("acknowledgement lost");
     let declaredCalls = 0;
     let unknownCalls = 0;
-    const result = bindInteractions(source, {
+    const result = createHost(source, {
       installationId: "canvas:failure:1", realizationVersion: "failure-1",
       handlers: {
         fail(input) {
@@ -260,7 +260,7 @@ describe("bindInteractions", () => {
       capture(_actor: Actor) { return revision; },
       render(_actor: Actor) { return `frame:${revision}`; },
     };
-    const combined = bindInteractions(definitions, {
+    const combined = createHost(definitions, {
       installationId: "canvas:equivalence:1", realizationVersion: "equivalence-1", handlers,
       callers: { editor: { direct: ["move", "capture", "render"], admit: () => true } },
     });
@@ -300,7 +300,7 @@ describe("bindInteractions", () => {
     } as const;
     let caught: unknown;
     try {
-      bindInteractions(withReservedAlias, {
+      createHost(withReservedAlias, {
       installationId: "canvas:aggregate:1", realizationVersion: "aggregate-1",
       handlers: { move: input => input, capture: () => "captured", render: () => "rendered", then: () => "then" },
       callers: {
@@ -310,8 +310,8 @@ describe("bindInteractions", () => {
       },
       });
     } catch (error) { caught = error; }
-    expect(caught).toBeInstanceOf(BindInteractionsError);
-    const failure = caught as BindInteractionsError;
+    expect(caught).toBeInstanceOf(CreateHostError);
+    const failure = caught as CreateHostError;
     expect(failure.issues.map(issue => issue.caller).sort()).toEqual(["first", "second"]);
     expect(failure.issues.every(issue => issue.cause !== undefined)).toBe(true);
     expect(failure.issues.every(issue => Object.isFrozen(issue))).toBe(true);
@@ -323,7 +323,7 @@ describe("bindInteractions", () => {
     let calls = 0;
     let caught: unknown;
     try {
-      bindInteractions(definitions, {
+      createHost(definitions, {
         installationId: "canvas:aggregate-preflight:1",
         realizationVersion: "aggregate-preflight-1",
         handlers: {
@@ -338,8 +338,8 @@ describe("bindInteractions", () => {
         },
       });
     } catch (error) { caught = error; }
-    expect(caught).toBeInstanceOf(BindInteractionsError);
-    const failure = caught as BindInteractionsError;
+    expect(caught).toBeInstanceOf(CreateHostError);
+    const failure = caught as CreateHostError;
     expect(failure.issues.map(issue => issue.caller).sort()).toEqual(["duplicate", "missingAdmission", "unknown"]);
     expect(calls).toBe(0);
   });
@@ -350,7 +350,7 @@ describe("bindInteractions", () => {
       constructor: { direct: ["capture"], admit: () => true },
       toString: { direct: ["render"], admit: () => true },
     } as const;
-    const started = bindInteractions(definitions, {
+    const started = createHost(definitions, {
       installationId: "canvas:prototype:1", realizationVersion: "prototype-1",
       handlers: {
         move: input => { calls += 1; return input; },
@@ -372,11 +372,11 @@ describe("bindInteractions", () => {
       ...definitions,
       then: defineInteraction({ id: "canvas.then", output: Text }),
     } as const;
-    expect(() => bindInteractions(withReservedAlias, {
+    expect(() => createHost(withReservedAlias, {
       installationId: "canvas:then:1", realizationVersion: "then-1",
       handlers: { move: input => input, capture: () => "captured", render: () => "rendered", then: () => "then" },
       callers: { editor: { direct: ["capture"], admit: () => true }, secondary: { direct: ["then"], admit: () => true } },
-    })).toThrow(BindInteractionsError);
+    })).toThrow(CreateHostError);
   });
 
   it("rejects getters, symbols, sparse aliases, and malformed closed caller records before invoking code", async () => {
@@ -389,15 +389,15 @@ describe("bindInteractions", () => {
       callers: { enumerable: true, get() { getterCalls += 1; return {}; } },
       [marker]: { enumerable: true, value: true },
     });
-    expect(() => bindInteractions(definitions, badOptions as never)).toThrow();
+    expect(() => createHost(definitions, badOptions as never)).toThrow();
     expect(getterCalls).toBe(0);
     const sparse = new Array<string>(1);
-    expect(() => bindInteractions(definitions, {
+    expect(() => createHost(definitions, {
       installationId: "canvas:sparse:1", realizationVersion: "sparse-1",
       handlers: { move: () => ({ x: 0, y: 0 }), capture: () => "x", render: () => "x" },
       callers: { editor: { direct: sparse, admit: () => true } },
     } as never)).toThrow();
-    expect(() => bindInteractions(definitions, {
+    expect(() => createHost(definitions, {
       installationId: "canvas:extra:1", realizationVersion: "extra-1",
       handlers: { move: () => ({ x: 0, y: 0 }), capture: () => "x", render: () => "x" },
       callers: { editor: { direct: ["capture"], admit: () => true, extra: true } },

@@ -38,7 +38,7 @@ The root exports the host lifecycle functions and their directly owned types:
 
 - `defineInteraction`
 - `compileInteractions`
-- `bindInteractions`
+- `createHost`
 - `composeCompiledInteractions`
 - `diffCompiledInteractions`
 - `implementInteractions`
@@ -55,7 +55,7 @@ The root exports the host lifecycle functions and their directly owned types:
 - `admitAll`
 - `declaredInteractionError`
 - `isDeclaredInteractionError`
-- `BindInteractionsError`
+- `CreateHostError`
 
 Lifecycle transformations are free functions. Methods belong only to values
 that already own a live capability: `binding.connect`, `binding.invoke`,
@@ -161,9 +161,9 @@ correlates the inert definition-owned error schema. A typed caller receives a
 `isDeclaredInteractionError(error, projectedHandle, code)` to narrow it. An
 arbitrary throw is not a declared error.
 
-## `bindInteractions`
+## `createHost`
 
-`bindInteractions(definitions, options)` is the compact TypeScript authoring
+`createHost(definitions, options)` is the compact TypeScript authoring
 entry for direct callers. It runs the existing compile, implementation,
 installation, projection, and binding steps, then returns those authentic
 values with named methods over each connected caller. It does not create a
@@ -172,7 +172,7 @@ second dispatch or authorization path.
 ```ts
 type EditorActor = Readonly<{ role: "editor" | "assistant" }>;
 
-const api = bindInteractions(interactions, {
+const api = createHost(interactions, {
   installationId: "editor:local:v1",
   realizationVersion: "editor-handlers:v3",
   handlers: {
@@ -219,7 +219,7 @@ Both `installationId` and `realizationVersion` are required and supplied by the
 host. Change the realization version when handlers change; Boundary does not
 hash function source. Interaction alias `then` is reserved when exposed as a
 named method. A malformed or unrealizable caller makes setup throw
-`BindInteractionsError`; its `issues`
+`CreateHostError`; its `issues`
 identify caller-specific setup failures and their causes, and setup revokes any
 bindings and installation it already created without exposing a partial caller
 map. Invalid global definitions or handlers can fail earlier with their own

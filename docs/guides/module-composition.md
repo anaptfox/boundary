@@ -256,7 +256,7 @@ projection. Type tests reject a capacity input passed to a task handle,
 excluded mutation handles on a reader, wrong output fields and unknown assembly
 aliases. Runtime tests also refuse excluded and foreign selected handles.
 
-`bindInteractions` remains useful for a fixed direct-call surface whose
+`createHost` remains useful for a fixed direct-call surface whose
 admission only needs context. This recipe keeps the explicit lifecycle because
 it binds module-local surfaces to a shared installation and inspects input in
 admission. Application scheduling, dependency rules and storage stay local.

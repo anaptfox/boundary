@@ -33,7 +33,7 @@ portable Projections, native implementations, live Installations, atomic
 Binding, per-call context, and host-held revocation. Its optional Control
 bridge creates requests for consequential effects.
 
-The TypeScript root also provides `bindInteractions`, a concise native helper
+The TypeScript root also provides `createHost`, a concise native helper
 for direct callers. It returns named methods over the normal compiled,
 installed, projected, and bound values. This convenience does not change
 portable contracts or add Rust support; use the lower-level lifecycle when

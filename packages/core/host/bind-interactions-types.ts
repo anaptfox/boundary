@@ -11,16 +11,17 @@ import type {
   ProjectionBinding,
   MaybePromise,
 } from "./types";
+import type { DirectOutcome } from "./caller-outcomes";
 
-export type BindInteractionCallerConfig<Context, Alias extends string> = Readonly<{
+export type CreateHostCallerConfig<Context, Alias extends string> = Readonly<{
   direct: readonly Alias[];
   admit: (actor: Context) => boolean | PromiseLike<boolean>;
 }>;
 
-export type BindInteractionCallers<
+export type CreateHostCallers<
   Definitions extends InteractionDefinitions,
   Context,
-> = Readonly<Record<string, BindInteractionCallerConfig<Context, keyof Definitions & string>>>;
+> = Readonly<Record<string, CreateHostCallerConfig<Context, keyof Definitions & string>>>;
 
 export type NamedCallArguments<Definition, Context> = DefinitionArity<Definition> extends 0
   ? [Context] extends [void]
@@ -52,6 +53,12 @@ export type NamedCallers<
     : never;
 }>;
 
+export type NamedTryCallers<Definitions extends InteractionDefinitions, Context, Callers extends Readonly<Record<string, { readonly direct: readonly (keyof Definitions & string)[] }>>> = Readonly<{
+  [Name in keyof Callers]: Callers[Name] extends { readonly direct: infer Aliases extends readonly (keyof Definitions & string)[] }
+    ? Readonly<{ [Alias in Aliases[number]]: (...args: NamedCallArguments<Definitions[Alias], Context>) => Promise<DirectOutcome<DefinitionOutput<Definitions[Alias]>, import("./types").DefinitionErrors<Definitions[Alias]>>> }>
+    : never;
+}>;
+
 export type CallerSelections<
   Definitions extends InteractionDefinitions,
   Aliases extends readonly (keyof Definitions & string)[],
@@ -67,7 +74,7 @@ export type CallerProjection<
   Aliases extends readonly (keyof Definitions & string)[],
 > = Projection<CallerSelections<Definitions, Aliases>>;
 
-export type BindInteractionsResult<
+export type CreateHostResult<
   Definitions extends InteractionDefinitions,
   Context,
   Callers extends Readonly<Record<string, { readonly direct: readonly (keyof Definitions & string)[] }>>,
@@ -87,17 +94,18 @@ export type BindInteractionsResult<
   }>;
   bindingControllers: Readonly<Record<keyof Callers & string, import("./types").BindingController>>;
   callers: NamedCallers<Definitions, Context, Callers>;
+  tryCallers: NamedTryCallers<Definitions, Context, Callers>;
 }>;
 
-export interface BindInteractionsIssue {
+export interface CreateHostIssue {
   readonly caller: string;
   readonly cause: unknown;
 }
 
-export interface BindInteractionsOptions<
+export interface CreateHostOptions<
   Definitions extends InteractionDefinitions,
   Context,
-  Callers extends BindInteractionCallers<Definitions, Context> = BindInteractionCallers<Definitions, Context>,
+  Callers extends CreateHostCallers<Definitions, Context> = CreateHostCallers<Definitions, Context>,
 > {
   readonly installationId: string;
   readonly realizationVersion: string;
@@ -107,7 +115,7 @@ export interface BindInteractionsOptions<
 
 export type ExactCallerAliases<
   Definitions extends InteractionDefinitions,
-  Callers extends BindInteractionCallers<Definitions, any>,
+  Callers extends CreateHostCallers<Definitions, any>,
 > = {
   readonly [Name in keyof Callers]: Callers[Name] extends { readonly direct: infer Aliases extends readonly string[] }
     ? Exclude<Aliases[number], keyof Definitions> extends never ? unknown : never
