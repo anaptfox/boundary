@@ -36,6 +36,7 @@ import type {
   RealizationIds,
   RequestInvocationPolicy,
 } from "./types";
+import { isDirectRealization, isRequestRealization, isRealizationPair, type CoLocatedInstallOptions } from "./realizations";
 
 export const INSTALLATION_DOMAIN = "boundary.installation/v1";
 
@@ -71,6 +72,7 @@ export type InstallInteractionsOptions<
   Definitions extends InteractionDefinitions,
   Context,
 > =
+  | CoLocatedInstallOptions<Definitions, Context>
   | BareInstallOptions<Definitions, Context>
   | NativeInstallOptions<Definitions, Context>;
 
@@ -185,15 +187,40 @@ export function installInteractions<
     );
   }
   const installationId = requireInstallationId(options.installationId);
-  const ids = realizationRecord(options.realizationIds);
-  const requests = requestEntries<Context>(options.requests);
+  const colocated = "realizations" in options && options.realizations !== undefined;
+  const ids: RealizationIds = colocated ? Object.create(null) : realizationRecord("realizationIds" in options ? options.realizationIds : undefined);
+  const requests = requestEntries<Context>("requests" in options ? options.requests : undefined);
   const observedExecutors: { clear(): void }[] = [];
   const direct = new Map<
     string,
     (input: JsonValue, context: Context) => Promise<unknown>
   >();
 
-  if ("implementations" in options && options.implementations !== undefined) {
+  if (colocated) {
+    const generated: Record<string, { direct?: string; request?: string }> = Object.create(null);
+    for (const [alias, raw] of Object.entries(options.realizations)) {
+      const directCandidate = isDirectRealization(raw) ? raw : isRealizationPair(raw) ? raw.direct : undefined;
+      const requestCandidate = isRequestRealization(raw) ? raw : isRealizationPair(raw) ? raw.request : undefined;
+      const directPart = directCandidate === undefined ? undefined : isDirectRealization(directCandidate) ? directCandidate : failHost("INVALID_INSTALLATION", `realizations.${alias}.direct`, "direct entry must be created by realizeDirect");
+      const requestPart = requestCandidate === undefined ? undefined : isRequestRealization(requestCandidate) ? requestCandidate : failHost("INVALID_INSTALLATION", `realizations.${alias}.request`, "request entry must be created by realizeRequest");
+      if (directPart) {
+        const definition = compiledMeta.definitions[alias];
+        if (!definition || typeof directPart.handler !== "function") failHost("INVALID_INSTALLATION", `realizations.${alias}.direct`, "direct realization requires a compiled alias and handler");
+        const observed = installObservedRead(directPart.handler, definition, compiledMeta.descriptors.get(definition.id)!.contract, { installationId, realizationId: directPart.realizationId });
+        if (observed) observedExecutors.push(observed);
+        direct.set(alias, observed?.execute ?? implementationExecutor(definition, directPart.handler));
+        generated[alias] ??= {};
+        generated[alias]!.direct = directPart.realizationId;
+      }
+      if (requestPart) {
+        if (!compiledMeta.definitions[alias]) failHost("INVALID_INSTALLATION", `realizations.${alias}.request`, "request realization requires a compiled alias");
+        requests.set(alias, requestPart.contribution as ControlRequestEntry<Context>);
+        generated[alias] ??= {};
+        generated[alias]!.request = requestPart.realizationId;
+      }
+    }
+    Object.assign(ids as object, generated);
+  } else if ("implementations" in options && options.implementations !== undefined) {
     const implementationMeta = metadataForImplementations(options.implementations);
     for (const [alias, definition] of Object.entries(
       implementationMeta.definitions,

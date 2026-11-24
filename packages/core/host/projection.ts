@@ -18,6 +18,10 @@ import type {
   ProjectionSelection,
   ProjectionSelections,
 } from "./types";
+import type { ProjectionAlgebraMethods } from "./projection-algebra";
+import { intersectProjections, omitProjection, unionProjections, pickProjectionAlgebra } from "./projection-algebra";
+
+export type FluentProjection<Selections extends ProjectionSelections = ProjectionSelections> = Projection<Selections> & ProjectionAlgebraMethods;
 
 export const PROJECTION_DOMAIN = "boundary.projection/v1";
 
@@ -81,7 +85,7 @@ export type AliasProjectionSelections<
 export function projectInteractions<
   Definitions extends InteractionDefinitions,
   const Selections extends ProjectionSelections,
->(compiled: CompiledInteractions<Definitions>, selections: Selections): Projection<Selections>;
+>(compiled: CompiledInteractions<Definitions>, selections: Selections): FluentProjection<Selections>;
 export function projectInteractions<
   Definitions extends InteractionDefinitions,
   const Selections extends Readonly<Record<string, InteractionMode | ProjectionSelection>>,
@@ -92,11 +96,11 @@ export function projectInteractions<
       ? Alias extends keyof Definitions ? Selections[Alias] : never
       : Selections[Alias];
   },
-): Projection<AliasProjectionSelections<Definitions, Selections>>;
+): FluentProjection<AliasProjectionSelections<Definitions, Selections>>;
 export function projectInteractions(
   compiled: CompiledInteractions<any>,
   selections: Readonly<Record<string, InteractionMode | ProjectionSelection>>,
-): Projection<any> {
+): FluentProjection<any> {
   metadataForCompiled(compiled);
   if (selections === null || typeof selections !== "object" || Array.isArray(selections)) {
     return failHost("INVALID_PROJECTION", "selections", "projection selections must be a closed record");
@@ -127,7 +131,7 @@ function projectExplicit<
 >(
   compiled: CompiledInteractions<Definitions>,
   selections: Selections,
-): Projection<Selections> {
+): FluentProjection<Selections> {
   const compiledMeta = metadataForCompiled(compiled);
   if (
     selections === null ||
@@ -265,7 +269,11 @@ function projectExplicit<
     projectionDigest,
     handles,
     manifest,
-  }) as Projection<Selections>;
+    pick: (...keys: readonly string[]) => pickProjectionAlgebra(projection as Projection<any>, ...keys),
+    omit: (...keys: readonly string[]) => omitProjection(projection as Projection<any>, ...keys),
+    union: (other: Projection<any>) => unionProjections(projection as Projection<any>, other),
+    intersect: (other: Projection<any>) => intersectProjections(projection as Projection<any>, other),
+  }) as Projection<Selections> & ProjectionAlgebraMethods;
   projectionMetadata.set(projection, {
     compiled,
     aliases: byAlias,
@@ -299,6 +307,19 @@ export function metadataForProjection(value: unknown): ProjectionMetadata {
   return metadata;
 }
 
+export function registerProjectionAlgebraResult(
+  projection: object,
+  aliases: ReadonlyMap<string, { alias: string; handle: ProjectedInteractionHandle; interaction: ProjectionInteraction }>,
+  sources: readonly { alias: string; source: object }[],
+): void {
+  const first = sources[0] && metadataForHandle(sources[0].source);
+  projectionMetadata.set(projection, { compiled: first?.compiled ?? {}, aliases });
+  for (const { alias, source } of sources) {
+    const handle = aliases.get(alias)!.handle;
+    projectedHandleMetadata.set(handle, { projection, alias, source });
+  }
+}
+
 export function metadataForProjectedHandle(value: unknown) {
   if (value === null || typeof value !== "object") return undefined;
   return projectedHandleMetadata.get(value);
@@ -315,7 +336,7 @@ export type DirectProjectionSelections<Definitions extends InteractionDefinition
 /** Project every compiled handle in direct mode. */
 export function projectAllDirect<Definitions extends InteractionDefinitions>(
   compiled: CompiledInteractions<Definitions>,
-): Projection<DirectProjectionSelections<Definitions>> {
+): FluentProjection<DirectProjectionSelections<Definitions>> {
   metadataForCompiled(compiled);
   const selections = Object.fromEntries(
     Object.entries(compiled.handles).map(([alias, handle]) => [
@@ -324,20 +345,6 @@ export function projectAllDirect<Definitions extends InteractionDefinitions>(
     ]),
   ) as DirectProjectionSelections<Definitions>;
   return projectInteractions(compiled, selections);
-}
-
-function resolvePickEntry(
-  aliases: ProjectionMetadata["aliases"],
-  key: string,
-): ProjectionMetadata["aliases"] extends ReadonlyMap<string, infer Entry>
-  ? Entry | undefined
-  : never {
-  const byAlias = aliases.get(key);
-  if (byAlias) return byAlias;
-  for (const entry of aliases.values()) {
-    if (entry.handle.interactionId === key) return entry;
-  }
-  return undefined;
 }
 
 /**
@@ -351,51 +358,14 @@ export function pickProjection<
 >(
   projection: Projection<Selections>,
   ...keys: Keys
-): Projection<Pick<Selections, Keys[number]>>;
+): FluentProjection<Pick<Selections, Keys[number]>>;
 export function pickProjection<Selections extends ProjectionSelections>(
   projection: Projection<Selections>,
   ...keys: readonly string[]
-): Projection<Selections>;
+): FluentProjection<Selections>;
 export function pickProjection(
   projection: Projection<ProjectionSelections>,
   ...keys: readonly string[]
-): Projection<ProjectionSelections> {
-  const meta = metadataForProjection(projection);
-
-  if (new Set(keys).size !== keys.length) {
-    return failHost(
-      "INVALID_PROJECTION",
-      "pickProjection",
-      "pickProjection aliases must be unique",
-    );
-  }
-  const selections = {} as Record<string, ProjectionSelection>;
-  const seen = new Set<string>();
-  for (const key of keys) {
-    const entry = resolvePickEntry(meta.aliases, key);
-    const source = metadataForProjectedHandle(entry?.handle)?.source;
-    if (!entry || source === undefined || typeof source !== "object") {
-      return failHost(
-        "INVALID_PROJECTION",
-        `pickProjection.${key}`,
-        "alias is not in this Projection",
-      );
-    }
-    if (seen.has(entry.alias)) {
-      return failHost(
-        "INVALID_PROJECTION",
-        "pickProjection",
-        "pickProjection aliases must be unique",
-      );
-    }
-    seen.add(entry.alias);
-    selections[entry.alias] = Object.freeze({
-      interaction: source as ProjectionSelection["interaction"],
-      modes: entry.handle.modes,
-    });
-  }
-  return projectInteractions(
-    meta.compiled as CompiledInteractions,
-    selections as ProjectionSelections,
-  );
+): FluentProjection<ProjectionSelections> {
+  return pickProjectionAlgebra(projection, ...keys) as FluentProjection<ProjectionSelections>;
 }
