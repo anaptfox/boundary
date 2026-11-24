@@ -7,6 +7,7 @@ mod drafts;
 mod identity;
 mod installation;
 mod projection;
+mod rebind;
 
 pub(crate) use binding::PortableInvocationOutcome;
 // Shared between sibling lifecycle modules; not public API.
@@ -48,6 +49,7 @@ pub use projection::{
     ProjectionHandles, ProjectionManifest, ProjectionModes, ProjectionSelection, project, select,
     select_native,
 };
+pub use rebind::{BindingSlot, RebindResult, RebindTransition, Rebound, rebind};
 
 mod observation;
 mod presentation;

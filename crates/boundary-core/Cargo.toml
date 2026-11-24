@@ -42,6 +42,10 @@ required-features = ["schemars"]
 name = "declared_error_conformance"
 required-features = ["schemars"]
 
+[[test]]
+name = "rebind"
+required-features = ["schemars"]
+
 [dependencies]
 boundary-macros = { workspace = true, optional = true }
 regress.workspace = true
