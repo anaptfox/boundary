@@ -23,7 +23,7 @@ pub use program::{
     InteractionDescriptor, InteractionDescriptorBuilder, InteractionDocumentation, InteractionId,
     PortableSchema, Program, ProgramBuilder, ProgramDigest, ProgramError, ProgramErrorCode,
     SchemaType, StaticInteractionId, canonical_json, contract_changes, contract_compatibility,
-    parse_portable_json,
+    footprint_subsumes, parse_portable_json, resolve_footprints,
 };
 
 #[cfg(feature = "derive")]
