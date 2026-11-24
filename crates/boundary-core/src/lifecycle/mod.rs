@@ -1,6 +1,7 @@
 //! Durable projections, immutable installations, and atomic caller bindings.
 
 mod artifact;
+mod authorized;
 mod binding;
 mod compiled;
 mod drafts;
@@ -9,6 +10,10 @@ mod installation;
 mod projection;
 mod rebind;
 
+pub use authorized::{
+    AuthorizationDecision, AuthorizationRequest, AuthorizedBindResult, AuthorizedBinding,
+    AuthorizedBound, AuthorizedCaller, Authorizer, AuthorizerFn, authorize_fn, bind_authorized,
+};
 pub(crate) use binding::PortableInvocationOutcome;
 // Shared between sibling lifecycle modules; not public API.
 pub use binding::{
