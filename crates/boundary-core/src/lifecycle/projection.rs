@@ -12,8 +12,10 @@ use super::{
 };
 use crate::{ContractDigest, Interaction, InteractionId, Program, ProgramBuilder};
 
+mod algebra;
 mod artifact;
 mod native;
+pub(super) use algebra::valid_alias;
 pub use native::select_native;
 
 use artifact::projection_digest;
@@ -98,6 +100,15 @@ pub enum ProjectError {
     /// One interaction was selected under more than one alias.
     #[error("interaction `{0}` is selected more than once")]
     DuplicateInteraction(InteractionId),
+    /// One selection key did not identify a projection alias or interaction.
+    #[error("unknown projection selection `{0}`")]
+    UnknownSelection(String),
+    /// One selection key or alias was supplied more than once.
+    #[error("duplicate projection selection `{0}`")]
+    DuplicateSelection(String),
+    /// One alias identifies different interactions or contracts across projections.
+    #[error("projection alias `{0}` identifies conflicting interactions")]
+    ConflictingAlias(String),
     /// One interaction id was compiled with conflicting contracts.
     #[error("projection contains conflicting contracts for interaction `{0}`")]
     ContractMismatch(InteractionId),
@@ -482,13 +493,4 @@ impl<O: Interaction> fmt::Debug for ProjectionHandle<O> {
             .field("modes", &self.modes)
             .finish_non_exhaustive()
     }
-}
-
-pub(super) fn valid_alias(alias: &str) -> bool {
-    let bytes = alias.as_bytes();
-    !bytes.is_empty()
-        && (bytes[0].is_ascii_alphabetic() || matches!(bytes[0], b'_' | b'$'))
-        && bytes[1..]
-            .iter()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$'))
 }
