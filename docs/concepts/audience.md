@@ -1,71 +1,47 @@
 ---
 title: "Who Boundary is for"
-description: "When an application interaction outlives its first caller, realization, or execution path."
+description: "When an application interaction needs to outlive its first caller, implementation, or deployment."
 ---
 
 # Who Boundary is for
 
-Boundary is for engineers who expect a meaningful application interaction to outlive
-its first caller, realization, or execution path.
-
-> **Current status:** The ordinary `@foxworth/boundary` workflow described here is
-> implemented in this workspace. Program, Handoff, Control, and adapter
-> packages remain directly available lower-level capabilities.
-
-## 1. Framework, runtime, and domain-library authors
-
-This is the first public audience. A framework can keep its native interaction
-syntax and provide one lowering Adapter plus native dispatch integration. Boundary
-then derives deterministic Programs, caller Projections, live Installations,
-atomic Bindings, and portable manifests without taking over application policy,
-state, or execution.
-
-Application authors continue to use the framework's natural models, interactions,
-routes, tools, or sessions. They should not need to understand Program,
-Catalog, Handoff, or serialized intent.
-
-See the [adapter reference](../reference/adapters.md) and the
-[native application guides](../README.md#native-application-guides).
-
-## 2. Platform and protocol Adapter authors
-
-Platform teams often see one action redefined across an operator UI, HTTP API,
-CLI, desktop channel, worker, and agent tool. A Projection gives each caller an
-explicit exact expected surface; a Binding gives serving Adapters only the
-selected live capability they need.
-
-Documentation and build Adapters can consume a portable Projection without any
-Installation. Serving Adapters consume a Binding or Binding manifest. They do
-not receive the whole host dispatcher or infer policy from visibility.
-
-See [adding a caller](../guides/adding-a-caller.md).
-
-## 3. Bare TypeScript library and application authors
-
-When no framework owns interaction authoring, `defineInteraction` supplies a small
-first-party path. Authors assemble definitions in a plain record, compile them,
-project caller surfaces, pair them with exact implementations, install them,
-and bind explicitly.
-
-The library remains host-neutral: it does not own models, state, policy,
-transactions, lifecycle, deployment, jobs, or workflows.
-
-See the [thumbnail walkthrough](../guides/getting-started.md).
-
-## Other strong fits
-
-- [Add a caller](../guides/adding-a-caller.md) when native interactions already
-  exist behind a dispatcher.
-- [Controlled effects](../guides/controlled-effects.md) when publish, deploy,
-  delete, charge, or mutate needs explicit authority and recovery truth.
+Boundary is for teams whose meaningful application actions will outlive their first caller, implementation, or runtime.
 
 ## The fit test
 
-Ask: **must this interaction's identity survive a change in caller, realization,
-execution path, deployment, review, package, process, language, or recovery?**
+Ask one question about an action:
 
-If yes, an interaction contract may be worth making explicit. If the work is a
-private helper with one disposable caller and realization, an ordinary function
-is probably enough.
+> **Does this action's contract need to survive a change in caller, implementation, process, language, review flow, or deployment?**
 
-Continue with the [TypeScript guide](../guides/getting-started.md).
+- **Yes** (a UI + CLI + AI agent, a plugin seam, a worker split, a human-reviewed mutation) → make it an **Interaction**.
+- **No** (a private helper whose caller and implementation always change together) → keep it an ordinary function.
+
+## Three primary audiences
+
+### 1. Application & library authors (TypeScript or Rust)
+
+You want one source of truth for your application's capabilities—without marrying a heavy framework. Start with zero-dependency `b.*` schemas (or Zod), wire callers synchronously with `createHost`, get typed `caller.try.*` outcomes instead of untyped exceptions, and grow into Plans, HTTP/MCP adapters, or Control only where needed.
+
+Start with [Build a thumbnail tool](../guides/getting-started.md) or [Concise native authoring](../guides/concise-authoring.md).
+
+### 2. Platform, agent, and protocol adapter authors
+
+You are tired of redefining the same action separately for a web UI, an HTTP API, a CLI, a desktop IPC bridge, and an MCP tool server. A **Projection** gives each caller an exact, narrow contract; a **Binding** gives each adapter only the live capability it was granted—never the full host dispatcher.
+
+Start with [Add another caller](../guides/adding-a-caller.md) and [Humans and agents](../guides/humans-and-agents.md).
+
+### 3. Framework and runtime authors
+
+You already have great native authoring syntax and a native dispatcher. Lower your declarations into Boundary once to get deterministic Programs, caller Projections, atomic Bindings, portable manifests, and multi-caller adapters—without forcing your users to abandon your native API.
+
+See the [adapter reference](../reference/adapters.md) and the [native application guides](../README.md#native-application-guides).
+
+## Strongest problem fits
+
+- **Human + AI agent workspaces** where both read and draft, while humans approve consequential changes ([Humans and agents](../guides/humans-and-agents.md)).
+- **High-stakes side effects** (billing, publishing, deploys, deletions) that need explicit approval and honest uncertainty/reconciliation ([Controlled effects](../guides/controlled-effects.md)).
+- **Multi-language hosts and plugins** where Rust, TypeScript, C/C++, or WASM components must agree on exact contracts ([Plugins](../guides/plugins.md), [Native embedding](../guides/native-embedding.md)).
+
+---
+
+**Next:** [Build the thumbnail example →](../guides/getting-started.md)

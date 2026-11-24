@@ -6,28 +6,26 @@
 // #region imports
 import {
   admitWhen,
+  b,
   bindProjection,
   compileInteractions,
-  direct,
-  directRealizationIds,
-  implementInteractions,
+  defineInteraction,
   installInteractions,
-  projectInteractions,
+  pickProjection,
+  realizeDirect,
+  type InferSchema,
 } from "@foxworth/boundary";
 // #endregion imports
 
 // #region thumbnail-contract
-import { z } from "zod";
-import { defineInteraction } from "@foxworth/boundary";
-
-const ThumbnailInput = z.strictObject({
-  imageId: z.string(),
-  maxWidth: z.number().int().positive(),
+const ThumbnailInput = b.object({
+  imageId: b.string(),
+  maxWidth: b.integer({ minimum: 1 }),
 });
-const ImageInfo = z.strictObject({
-  imageId: z.string(),
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
+const ImageInfo = b.object({
+  imageId: b.string(),
+  width: b.integer({ minimum: 1 }),
+  height: b.integer({ minimum: 1 }),
 });
 export const makeThumbnailInteraction = defineInteraction({
   id: "images.makeThumbnail",
@@ -43,22 +41,22 @@ export const interactions = {
   makeThumbnail: makeThumbnailInteraction,
   inspectImage: defineInteraction({
     id: "images.inspect",
-    input: z.strictObject({ imageId: z.string() }),
+    input: b.object({ imageId: b.string() }),
     output: ImageInfo,
     reads: ["images"],
   }),
   deleteImage: defineInteraction({
     id: "images.delete",
-    input: z.strictObject({ imageId: z.string() }),
-    output: z.strictObject({ deleted: z.boolean() }),
+    input: b.object({ imageId: b.string() }),
+    output: b.object({ deleted: b.boolean() }),
     changes: ["images"],
   }),
-};
+} as const;
 // #endregion definitions
 
 // #region application
 type Context = Readonly<{ kind: "screen" | "script" | "agent" }>;
-type StoredImage = z.infer<typeof ImageInfo> & { svg: string };
+type StoredImage = InferSchema<typeof ImageInfo> & { svg: string };
 const content = '<rect width="800" height="600" fill="coral"/>'
   + '<circle cx="400" cy="300" r="180" fill="navy"/>';
 function svg(width: number, height: number) {
@@ -66,13 +64,12 @@ function svg(width: number, height: number) {
 }
 // #endregion application
 
-export async function createThumbnailExample() {
+export function createThumbnailExample() {
   // #region projection
   const compiled = compileInteractions(interactions);
-  const thumbnailSurface = projectInteractions(compiled, {
-    makeThumbnail: direct(compiled.handles.makeThumbnail),
-  });
-  // No implementation or live installation is needed to select this surface.
+  const allDirect = compiled.projectAll("direct");
+  const thumbnailSurface = pickProjection(allDirect, "makeThumbnail");
+  // Pure, synchronous values — no implementation or live installation needed yet.
   // #endregion projection
 
   // #region rendering-storage
@@ -86,7 +83,7 @@ export async function createThumbnailExample() {
     return found;
   }
   // Application-owned rendering remains an ordinary function.
-  function makeThumbnail(input: z.infer<typeof ThumbnailInput>) {
+  function makeThumbnail(input: InferSchema<typeof ThumbnailInput>) {
     const original = lookup(input.imageId);
     const width = Math.min(original.width, input.maxWidth);
     const height = Math.max(1, Math.round(original.height * width / original.width));
@@ -94,29 +91,31 @@ export async function createThumbnailExample() {
     images.set(imageId, { imageId, width, height, svg: svg(width, height) });
     return { imageId, width, height };
   }
-
   // #endregion rendering-storage
 
   // #region installation
-  const implementations = implementInteractions<typeof interactions, Context>(interactions, {
-    makeThumbnail(input) {
+  const handlers = {
+    makeThumbnail(input: InferSchema<typeof ThumbnailInput>) {
       dispatches.push("makeThumbnail");
       return makeThumbnail(input);
     },
-    inspectImage({ imageId }) {
+    inspectImage({ imageId }: { imageId: string }) {
       dispatches.push("inspectImage");
       const { width, height } = lookup(imageId);
       return { imageId, width, height };
     },
-    deleteImage({ imageId }) {
+    deleteImage({ imageId }: { imageId: string }) {
       dispatches.push("deleteImage");
       return { deleted: images.delete(imageId) };
     },
-  });
-  const { installation } = installInteractions(compiled, {
+  };
+  const { installation } = installInteractions<typeof interactions, Context>(compiled, {
     installationId: "images:local:release-1",
-    implementations,
-    realizationIds: directRealizationIds(compiled, "release-1"),
+    realizations: {
+      makeThumbnail: realizeDirect(handlers.makeThumbnail, "makeThumbnail:release-1"),
+      inspectImage: realizeDirect(handlers.inspectImage, "inspectImage:release-1"),
+      deleteImage: realizeDirect(handlers.deleteImage, "deleteImage:release-1"),
+    },
   });
   // #endregion installation
 
@@ -149,10 +148,13 @@ export async function createThumbnailExample() {
 
   // #region replacement
   // A new local installation, not a remote-worker implementation.
-  const { installation: replacement } = installInteractions(compiled, {
+  const { installation: replacement } = installInteractions<typeof interactions, Context>(compiled, {
     installationId: "images:local:release-2",
-    implementations,
-    realizationIds: directRealizationIds(compiled, "release-2"),
+    realizations: {
+      makeThumbnail: realizeDirect(handlers.makeThumbnail, "makeThumbnail:release-2"),
+      inspectImage: realizeDirect(handlers.inspectImage, "inspectImage:release-2"),
+      deleteImage: realizeDirect(handlers.deleteImage, "deleteImage:release-2"),
+    },
   });
   const replacementResult = bindProjection(thumbnailSurface, replacement, {
     admit: admitScreenOrScript,
@@ -169,22 +171,21 @@ export async function createThumbnailExample() {
     makeThumbnail: defineInteraction({
       id: "images.makeThumbnail",
       input: ThumbnailInput,
-      output: z.strictObject({ jobId: z.string() }),
+      output: b.object({ jobId: b.string() }),
       reads: ["images"],
       changes: ["images"],
     }),
-  };
+  } as const;
   const queued = compileInteractions(queuedInteractions);
   const queuedDispatches: string[] = [];
-  const { installation: queuedInstallation } = installInteractions(queued, {
+  const { installation: queuedInstallation } = installInteractions<typeof queuedInteractions, Context>(queued, {
     installationId: "images:queued:release-1",
-    implementations: implementInteractions<typeof queuedInteractions, Context>(queuedInteractions, {
-      makeThumbnail() {
+    realizations: {
+      makeThumbnail: realizeDirect(() => {
         queuedDispatches.push("makeThumbnail");
         return { jobId: "job-1" };
-      },
-    }),
-    realizationIds: directRealizationIds(queued, "release-1"),
+      }, "makeThumbnail:queued-1"),
+    },
   });
   const mismatch = bindProjection(thumbnailSurface, queuedInstallation, {
     admit: admitScreenOrScript,
@@ -194,10 +195,7 @@ export async function createThumbnailExample() {
   // #endregion mismatch
 
   // #region agent
-  const agentSurface = projectInteractions(compiled, {
-    makeThumbnail: direct(compiled.handles.makeThumbnail),
-    inspectImage: direct(compiled.handles.inspectImage),
-  });
+  const agentSurface = pickProjection(allDirect, "makeThumbnail", "inspectImage");
   const agentResult = bindProjection(agentSurface, installation, {
     admit: admitWhen((context: Context) => context.kind === "agent", "Agent connection required"),
   });
@@ -218,7 +216,7 @@ export async function createThumbnailExample() {
 
 // #region overview
 export async function runThumbnailExample() {
-  const example = await createThumbnailExample();
+  const example = createThumbnailExample();
   const screen = await example.fromScreen();
   const script = await example.fromScript();
   // Both return { imageId: "original:w200", width: 200, height: 150 }.

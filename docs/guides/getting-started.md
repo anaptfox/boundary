@@ -1,57 +1,57 @@
 ---
 title: "Build a thumbnail tool, then change it"
-description: "Run a thumbnail tool, replace an implementation, and see which connections still hold."
+description: "Run a thumbnail tool, swap implementations, deliberately break a contract, and add an AI agent—without changing a single definition."
 ---
 
 # Build a thumbnail tool, then change it
 
-Start with a button and a script that both make a thumbnail. Connect the same
-caller surface to a replacement installation. Then predict what happens when
-an implementation returns a job ID instead of a finished thumbnail. Add an
-agent at the end.
+Start with a button and a nightly script that both resize an image. Swap in a new implementation explicitly. Deliberately break the contract and watch Boundary catch it before a single handler runs. Then add an AI agent at the end without touching your definitions.
 
 ```text
 button ──┐
-         ├── make thumbnail ──> [ 200 × 150 image ]
+         ├──▶ makeThumbnail ──▶ [ 200 × 150 image ]
 script ──┘
 ```
 
-The complete [executable example](../../examples/snippets/typescript/thumbnail.ts) generates
-a small SVG in memory. It uses the same geometry as resizing a photograph,
-without requiring uploads, an image decoder, a database, or a worker service.
-The [tests](../../tests/typescript/thumbnail-docs.test.ts) execute the calls and
-check the resulting SVG and refusal behavior.
+The complete [executable example](../../examples/snippets/typescript/thumbnail.ts) generates a small SVG in memory—same resizing geometry, zero external setup. Every TypeScript block below is verified directly against that source by [its tests](../../tests/typescript/thumbnail-docs.test.ts).
 
-From this checkout, run:
+Run it from this checkout:
 
 ```console
-pnpm exec vitest run tests/typescript/thumbnail-docs.test.ts
+pnpm exec vitest run --config config/vitest.config.ts tests/typescript/thumbnail-docs.test.ts
 ```
 
-The packages are unpublished; see [availability](../concepts/current-status.md).
-Every TypeScript fence below is synchronized with the executable source.
-The source groups the setup inside `createThumbnailExample()`; use that file
-as the runnable version while following its parts here.
+*(Boundary packages are not yet published; see [Availability and support](../concepts/current-status.md).)*
 
-## 1. State what making a thumbnail means
+## 1. Declare what making a thumbnail promises
 
-A caller supplies an image ID and a maximum width. It expects the resulting
-image ID and dimensions. This interaction also declares which application state
-it reads and changes.
+Start by lifting the contract out of the renderer. Notice we use Boundary's built-in zero-dependency `b` schema builder—no Zod required *(though `z.strictObject(...)` works directly too)*:
+
+<!-- snippet:examples/snippets/typescript/thumbnail.ts#imports -->
+```ts
+import {
+  admitWhen,
+  b,
+  bindProjection,
+  compileInteractions,
+  defineInteraction,
+  installInteractions,
+  pickProjection,
+  realizeDirect,
+  type InferSchema,
+} from "@foxworth/boundary";
+```
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#thumbnail-contract -->
 ```ts
-import { z } from "zod";
-import { defineInteraction } from "@foxworth/boundary";
-
-const ThumbnailInput = z.strictObject({
-  imageId: z.string(),
-  maxWidth: z.number().int().positive(),
+const ThumbnailInput = b.object({
+  imageId: b.string(),
+  maxWidth: b.integer({ minimum: 1 }),
 });
-const ImageInfo = z.strictObject({
-  imageId: z.string(),
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
+const ImageInfo = b.object({
+  imageId: b.string(),
+  width: b.integer({ minimum: 1 }),
+  height: b.integer({ minimum: 1 }),
 });
 export const makeThumbnailInteraction = defineInteraction({
   id: "images.makeThumbnail",
@@ -62,10 +62,7 @@ export const makeThumbnailInteraction = defineInteraction({
 });
 ```
 
-An interaction definition contains no renderer or store. Changing the button
-that invokes it does not change this contract.
-
-The image application also has inspection and deletion interactions:
+There is no renderer, database, or transport in that definition—only what a caller passes in, what it gets back, and which state it touches. Now add `inspectImage` and `deleteImage` to complete the application's vocabulary:
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#definitions -->
 ```ts
@@ -73,35 +70,33 @@ export const interactions = {
   makeThumbnail: makeThumbnailInteraction,
   inspectImage: defineInteraction({
     id: "images.inspect",
-    input: z.strictObject({ imageId: z.string() }),
+    input: b.object({ imageId: b.string() }),
     output: ImageInfo,
     reads: ["images"],
   }),
   deleteImage: defineInteraction({
     id: "images.delete",
-    input: z.strictObject({ imageId: z.string() }),
-    output: z.strictObject({ deleted: z.boolean() }),
+    input: b.object({ imageId: b.string() }),
+    output: b.object({ deleted: b.boolean() }),
     changes: ["images"],
   }),
-};
+} as const;
 ```
 
-## 2. Keep rendering in ordinary application code
+## 2. Keep your rendering code completely ordinary
 
-These types and SVG helper belong to the example application:
+Your app's own types, store, and resizing function don't know Boundary exists:
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#application -->
 ```ts
 type Context = Readonly<{ kind: "screen" | "script" | "agent" }>;
-type StoredImage = z.infer<typeof ImageInfo> & { svg: string };
+type StoredImage = InferSchema<typeof ImageInfo> & { svg: string };
 const content = '<rect width="800" height="600" fill="coral"/>'
   + '<circle cx="400" cy="300" r="180" fill="navy"/>';
 function svg(width: number, height: number) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 800 600">${content}</svg>`;
 }
 ```
-
-Inside `createThumbnailExample()`, the application creates its store and renderer:
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#rendering-storage -->
 ```ts
@@ -115,7 +110,7 @@ function lookup(imageId: string) {
   return found;
 }
 // Application-owned rendering remains an ordinary function.
-function makeThumbnail(input: z.infer<typeof ThumbnailInput>) {
+function makeThumbnail(input: InferSchema<typeof ThumbnailInput>) {
   const original = lookup(input.imageId);
   const width = Math.min(original.width, input.maxWidth);
   const height = Math.max(1, Math.round(original.height * width / original.width));
@@ -125,86 +120,61 @@ function makeThumbnail(input: z.infer<typeof ThumbnailInput>) {
 }
 ```
 
-Both a button and script could call this function directly. Shared functions
-work well while the callers and implementation change together. Boundary becomes
-useful when they need to exchange an explicit contract and connect independently.
+## 3. Slice what the caller needs (no handlers yet)
 
-## 3. Select what the caller needs
-
-Import the remaining Host functions used in the setup:
-
-<!-- snippet:examples/snippets/typescript/thumbnail.ts#imports -->
-```ts
-import {
-  admitWhen,
-  bindProjection,
-  compileInteractions,
-  direct,
-  directRealizationIds,
-  implementInteractions,
-  installInteractions,
-  projectInteractions,
-} from "@foxworth/boundary";
-```
-
-Inside the same async setup, compile the definitions and select thumbnail
-creation for our two initial callers:
+Compile your definitions into a deterministic **Program** and slice a **Projection** containing only `makeThumbnail`. Notice everything here is **pure and synchronous**—no `await`, no running server needed:
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#projection -->
 ```ts
 const compiled = compileInteractions(interactions);
-const thumbnailSurface = projectInteractions(compiled, {
-  makeThumbnail: direct(compiled.handles.makeThumbnail),
-});
-// No implementation or live installation is needed to select this surface.
+const allDirect = compiled.projectAll("direct");
+const thumbnailSurface = pickProjection(allDirect, "makeThumbnail");
+// Pure, synchronous values — no implementation or live installation needed yet.
 ```
 
 ```text
 caller needs                   application declares
-[ makeThumbnail ]              [ makeThumbnail, inspect, delete ]
+[ makeThumbnail ]              [ makeThumbnail, inspectImage, deleteImage ]
 ```
 
-The selected surface is a **Projection**. At this point, there is still no
-live connection. Its declaration can exist before any implementation is installed.
+*(You can also combine projections with `.pick(...)`, `.omit(...)`, `.union(...)`, and `.intersect(...)`.)*
 
-## 4. Supply the implementation
+## 4. Install your handlers
 
-Pair the definitions with application code, then install it. An **Installation**
-is the live host that makes those implementations available.
+Pair each compiled interaction with its handler and an explicit realization ID using `realizeDirect`, creating a live **Installation**:
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#installation -->
 ```ts
-const implementations = implementInteractions<typeof interactions, Context>(interactions, {
-  makeThumbnail(input) {
+const handlers = {
+  makeThumbnail(input: InferSchema<typeof ThumbnailInput>) {
     dispatches.push("makeThumbnail");
     return makeThumbnail(input);
   },
-  inspectImage({ imageId }) {
+  inspectImage({ imageId }: { imageId: string }) {
     dispatches.push("inspectImage");
     const { width, height } = lookup(imageId);
     return { imageId, width, height };
   },
-  deleteImage({ imageId }) {
+  deleteImage({ imageId }: { imageId: string }) {
     dispatches.push("deleteImage");
     return { deleted: images.delete(imageId) };
   },
-});
-const { installation } = installInteractions(compiled, {
+};
+const { installation } = installInteractions<typeof interactions, Context>(compiled, {
   installationId: "images:local:release-1",
-  implementations,
-  realizationIds: directRealizationIds(compiled, "release-1"),
+  realizations: {
+    makeThumbnail: realizeDirect(handlers.makeThumbnail, "makeThumbnail:release-1"),
+    inspectImage: realizeDirect(handlers.inspectImage, "inspectImage:release-1"),
+    deleteImage: realizeDirect(handlers.deleteImage, "deleteImage:release-1"),
+  },
 });
 ```
 
-The host supplies installation and realization identities. The release token
-identifies the declared implementation revision; it is not a hash of function
-source or proof of correct rendering. A different deployment needs deliberate
-host identity and lifecycle choices.
+Change the realization ID (`"makeThumbnail:release-2"`) whenever your handler's behavior changes; Boundary never hashes function source.
 
-## 5. Check the connection, then call
+## 5. Check the connection atomically, then call
 
-Predict the result: our surface requires thumbnail creation, and this
-installation provides it. Boundary can bind them if their contracts and modes agree.
+Now connect `thumbnailSurface` to `installation` with your per-call admission rule. Before anything runs, Boundary checks that every interaction in the Projection is compatibly realized:
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#binding -->
 ```ts
@@ -222,15 +192,12 @@ const caller = result.binding.connect();
 ```
 
 ```text
-required: makeThumbnail ── checked ── available: makeThumbnail
-                              |
-                            bound
+required: makeThumbnail ── checked ──▶ available: makeThumbnail
+                               │
+                             bound
 ```
 
-The **Binding** pins this complete selected surface to this installation.
-Admission still checks each invocation. In this local example the context is
-constructed by the application; a remote host must authenticate callers before
-creating trusted context.
+Invoke through the stateless **Caller**, supplying authenticated context on every call:
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#call -->
 ```ts
@@ -246,22 +213,22 @@ const fromScript = () => caller.call(
 );
 ```
 
-Calling `fromScreen()` and `fromScript()` both produces
-`{ imageId: "original:w200", width: 200, height: 150 }`. Both reach the same
-application renderer. The screen and script are represented by these functions;
-this fixture does not mount a browser button or scheduler.
+Both return `{ imageId: "original:w200", width: 200, height: 150 }`. *(Need exhaustive error handling without `try/catch`? Call `caller.try.makeThumbnail(...)` to get a discriminated `ok | declared-error | denied | fault` result, or use [createHost](./concise-authoring.md) for a 15-line shortcut.)*
 
-## 6. Connect to a replacement explicitly
+## 6. Swap in a replacement installation explicitly
 
-Keep the required surface fixed and change the installation:
+Keep `thumbnailSurface` fixed and bind it to a fresh installation (`release-2`):
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#replacement -->
 ```ts
 // A new local installation, not a remote-worker implementation.
-const { installation: replacement } = installInteractions(compiled, {
+const { installation: replacement } = installInteractions<typeof interactions, Context>(compiled, {
   installationId: "images:local:release-2",
-  implementations,
-  realizationIds: directRealizationIds(compiled, "release-2"),
+  realizations: {
+    makeThumbnail: realizeDirect(handlers.makeThumbnail, "makeThumbnail:release-2"),
+    inspectImage: realizeDirect(handlers.inspectImage, "inspectImage:release-2"),
+    deleteImage: realizeDirect(handlers.deleteImage, "deleteImage:release-2"),
+  },
 });
 const replacementResult = bindProjection(thumbnailSurface, replacement, {
   admit: admitScreenOrScript,
@@ -274,19 +241,15 @@ const replacementCaller = replacementResult.binding.connect();
 ```
 
 ```text
-same Projection ── old Binding ── release-1
-                └─ new Binding ── release-2
+same Projection ── old Binding ──▶ release-1
+                └─ new Binding ──▶ release-2
 ```
 
-The fixture reuses the renderer in a second local installation. This demonstrates
-explicit replacement binding, not remote execution or automatic failover. A real
-worker additionally needs a [host-chosen transport](./adding-a-caller.md).
-The old Binding does not silently move to the new installation.
+The old Binding stays pinned to `release-1`—it never silently drifts. For long-lived hosts that hot-swap installations safely, wrap the binding in `createBindingSlot`: a failed upgrade leaves the previous live binding intact.
 
-## 7. Predict a broken agreement
+## 7. Now break the contract on purpose
 
-Now change only the offered output contract. A queued implementation returns a
-job ID, while our callers expect a completed thumbnail. Will binding succeed?
+Predict what happens next. A new queued implementation accepts the same `ThumbnailInput`, but returns `{ jobId }` instead of `{ imageId, width, height }`. Should binding succeed?
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#mismatch -->
 ```ts
@@ -294,22 +257,21 @@ const queuedInteractions = {
   makeThumbnail: defineInteraction({
     id: "images.makeThumbnail",
     input: ThumbnailInput,
-    output: z.strictObject({ jobId: z.string() }),
+    output: b.object({ jobId: b.string() }),
     reads: ["images"],
     changes: ["images"],
   }),
-};
+} as const;
 const queued = compileInteractions(queuedInteractions);
 const queuedDispatches: string[] = [];
-const { installation: queuedInstallation } = installInteractions(queued, {
+const { installation: queuedInstallation } = installInteractions<typeof queuedInteractions, Context>(queued, {
   installationId: "images:queued:release-1",
-  implementations: implementInteractions<typeof queuedInteractions, Context>(queuedInteractions, {
-    makeThumbnail() {
+  realizations: {
+    makeThumbnail: realizeDirect(() => {
       queuedDispatches.push("makeThumbnail");
       return { jobId: "job-1" };
-    },
-  }),
-  realizationIds: directRealizationIds(queued, "release-1"),
+    }, "makeThumbnail:queued-1"),
+  },
 });
 const mismatch = bindProjection(thumbnailSurface, queuedInstallation, {
   admit: admitScreenOrScript,
@@ -320,32 +282,23 @@ const mismatch = bindProjection(thumbnailSurface, queuedInstallation, {
 
 ```text
 caller expects                     installation offers
-thumbnail ID + width + height  X    job ID
-                              |
+{ imageId, width, height }    ✗    { jobId }
+                              │
                            unrealized
-                      zero thumbnail dispatches
+                      zero handler dispatches
 ```
 
-`mismatch.status` is `unrealized`; `queuedDispatches` stays empty. Inspect
-`mismatch.report` when the status is `unrealized` for the incompatibility.
-Boundary checks declarations here without trial-running the interaction.
+`mismatch.status` is `"unrealized"`, `mismatch.report.issues` pinpoints the exact incompatibility, and `queuedDispatches` stays empty—not a single handler ran.
 
-A compatible declaration still cannot prove that the image looks good. If a
-renderer returns valid dimensions for an ugly image, application tests must
-catch that. If it returns an invalid value after starting, the consequence
-can be unknown. See [guarantees and counterexamples](../concepts/guarantees.md).
+Remember the limit too: a passing contract check cannot tell if your thumbnail looks blurry. Application tests and `@foxworth/boundary/testing` verify behavior. See [Guarantees and counterexamples](../concepts/guarantees.md).
 
-## Finally, add an agent
+## 8. Finally, add an AI agent
 
-An agent preparing images for an article needs inspection and thumbnail creation.
-Predict which definitions must change before looking at the code.
+An agent needs to inspect images and generate thumbnails—never delete originals. Which interaction definitions need to change? **None.**
 
 <!-- snippet:examples/snippets/typescript/thumbnail.ts#agent -->
 ```ts
-const agentSurface = projectInteractions(compiled, {
-  makeThumbnail: direct(compiled.handles.makeThumbnail),
-  inspectImage: direct(compiled.handles.inspectImage),
-});
+const agentSurface = pickProjection(allDirect, "makeThumbnail", "inspectImage");
 const agentResult = bindProjection(agentSurface, installation, {
   admit: admitWhen((context: Context) => context.kind === "agent", "Agent connection required"),
 });
@@ -358,17 +311,16 @@ const agent = agentResult.binding.connect();
 ```
 
 ```text
-application: [ inspect, makeThumbnail, delete ]
-agent:       [ inspect, makeThumbnail         ]
+application: [ inspectImage, makeThumbnail, deleteImage ]
+agent:       [ inspectImage, makeThumbnail              ]
 ```
 
-The existing definitions stay unchanged. The agent gets its own Projection,
-Binding, and admission rule. There is no deletion handle or bound deletion
-interaction on its surface. The tests also attempt a call with the wrong context
-and check that it never dispatches.
+`deleteImage` does not exist on the agent's surface, and calling with `{ kind: "screen" }` fails admission before dispatch. To expose that exact Binding to an LLM as tools, connect it to the [MCP or WebMCP adapter](../reference/adapters.md).
 
-This is the Host integration for an agent caller. [MCP and WebMCP adapters](../reference/adapters.md)
-can present that surface as tools; registering those transports is a separate step.
+---
 
-For a consequential action, continue with [controlled effects](./controlled-effects.md).
-For an existing renderer or framework, use the [native application guides](../README.md#native-application-guides).
+**Next steps:**
+- Want a shorter setup? See [Concise native authoring (`createHost`)](./concise-authoring.md).
+- Ready to wire another caller or transport? See [Add another caller](./adding-a-caller.md).
+- Need human approvals & crash recovery? See [Controlled effects](./controlled-effects.md).
+- Integrating with Next, Hono, Vite, Electron, or Workers? See [Native application guides](../README.md#native-application-guides).

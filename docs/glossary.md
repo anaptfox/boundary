@@ -1,187 +1,89 @@
 ---
 title: "Boundary glossary"
-description: "Host, Program, Handoff, Control, and related terms used throughout Boundary."
+description: "Crisp definitions of Boundary's concepts mapped to the APIs and portable artifacts that carry them."
 ---
 
 # Boundary glossary
 
-This page defines Boundary's concepts and maps them to the TypeScript APIs and
-artifacts that carry them.
+Every core term in Boundary, mapped to the artifact and API that represents it.
 
-## Host integration terms
+## Everyday host terms
 
 **Interaction**
+An application-owned action described as inspectable data: stable ID, input/output schemas, optional declared errors, `reads` and `changes` footprints (global or scoped templates like `document:{input.id}`), and optional declared `idempotencyKey` / `compensates` traits.
 
-Application-owned meaningful work with a stable explicit ID and portable
-input, output, declared-error, read, and change contracts.
+**Portable schema (`b.*`)**
+Boundary's zero-dependency schema builder (`b.object`, `b.string`, `b.integer`, `b.discriminatedUnion`, etc.) that emits strict, portable JSON Schema by construction. Zod (`z.strictObject`) compiles into the exact same portable schema profile.
 
 **Interaction definition**
-
-An inert author-owned value created by `defineInteraction`. It contains no
-handler, policy, state, lifecycle, or authority. A plain `as const` record of
-definitions is the normal bare-TypeScript source.
+An inert value created by `defineInteraction`. Contains no handler, policy, state, or authority.
 
 **Compiled interactions**
-
-The deterministic result of compiling a closed definition record or lowering
-native host declarations. It contains a Program and inert typed `.handles`.
-
-**Compiled handle**
-
-An inert typed reference to one compiled interaction contract. It is useful for
-constructing a Projection or Installation; it is not callable authority.
-
-**Interaction implementations**
-
-A process-local immutable Adapter created by `implementInteractions` for bare
-TypeScript. It gives every supplied definition exactly one correlated
-implementation and owns no availability, policy, Control, or lifecycle.
-
-**Interaction Installation**
-
-One live immutable availability snapshot that binds exact interaction handles to
-native targets and dispatchers or bare implementations. It has an opaque live
-identity and derives its Catalog. Its separately returned host controller owns
-revocation authority.
-
-**Installation manifest**
-
-A versioned portable Program-and-Catalog description of an Installation. It is
-not the live capability and does not prove implementation behavior.
+The synchronous, deterministic result of `compileInteractions` (or `compileInteractionsAsync` for async framework lowerings). Contains a canonical `Program`, inert `.handles`, and `.project(...)` / `.projectAll("direct")` helpers.
 
 **Projection**
-
-A portable exact expected caller surface: explicit aliases and interactions.
-Each selected interaction has a nonempty set of direct or request modes. The
-surface may select zero interactions and may remain unrealized indefinitely. It
-contains no Installation, admission, dispatcher, or context.
-
-**Projected handle**
-
-An inert caller-facing handle from `projection.handles`. Its type is restricted
-to the modes selected by that Projection.
-
-**Projection Binding**
-
-The atomic live conjunction of one Projection, one Installation, and one
-admission Adapter. Every selected entry binds or the result is `unrealized`;
-there is no partial Binding or automatic rebinding.
-
-**Projection Binding manifest**
-
-A versioned portable description of a Binding's expected-to-actual pins,
-durable aliases, selected modes, Realization IDs, live Installation identity,
-and binding digest. It carries no admission policy, context, execution
-capability, or liveness guarantee.
-
-**Revocation controller**
-
-A host-held capability returned beside an Installation or successful Binding.
-It can revoke that exact live value. Execution values passed to adapters do not
-carry the controller.
-
-**Caller**
-
-A stateless typed calling Interface obtained from a Binding. Each `call` or
-`request` receives context as its final argument; contextless callers omit it.
-
-**Admission**
-
-The host-owned per-invocation decision made after input validation and before
-dispatch or request planning. Admission may allow or deny; a broken admission
-Adapter is a fault, not a denial.
-
-**Declared interaction error**
-
-An expected domain alternative declared by the interaction contract and
-validated at runtime. It is distinct from denial, invalid realization output,
-or infrastructure failure.
-
-## Portable foundations
-
-**Interaction contract**
-
-The exact portable identity of one interaction: version, host-authored ID, input
-and output schemas, optional declared-error schema, `reads`, and `changes`.
-`boundary.interaction-contract/v1` hashes those fields. Runtime implementation, policy,
-documentation annotations, arity, modes, and context are excluded. Arity
-belongs to Projection and Binding artifacts.
-
-**Program**
-
-A serializable canonical set of interaction contracts and its digest. It
-contains no handlers, stores, credentials, policy, or ambient authority.
-
-**Draft**
-
-An inert artifact proposing one full interaction contract that does not yet
-exist. It wraps that complete contract plus a gap, opaque proposer, and
-host-supplied timestamp. It is not a Program entry and is not callable.
+A portable, handler-free slice of interactions and modes (`direct` / `request`) selected for a caller. Supports pure set algebra (`pick`, `omit`, `union`, `intersect`) and can exist before any Installation runs.
 
 **Realization**
+One live installed contribution for `(interactionId, mode)`, paired with a host-chosen realization ID via `realizeDirect` or `realizeRequest` (or via `implementInteractions` / framework native dispatchers).
 
-The exact installed contribution for one `(interactionId, mode)`. Direct and
-request modes have distinct host-issued Realization IDs. Changing that
-contribution requires a new Realization ID.
+**Interaction Installation**
+An immutable live snapshot pairing compiled handles with concrete realizations and an opaque live installation ID. Returns a separate host-held revocation controller.
+
+**Projection Binding**
+The atomic, checked connection pairing one Projection, one live Installation, and one admission rule. Every selected entry binds compatibly or `bindProjection` returns an exhaustive `unrealized` report—never a partial caller.
+
+**Binding slot (`createBindingSlot`)**
+A host-owned mutable handle over a live Binding that performs atomic rebinds (`slot.rebind(...)`): if the replacement Installation is incompatible, the previous live Binding stays intact.
+
+**Caller**
+A stateless typed calling interface obtained via `binding.connect()` (or returned as named `callers.*` / `tryCallers.*` from `createHost`). Supports `call(handle, ...)`, `direct.<alias>(...)`, typed-outcome `try.<alias>(...)`, and `request(handle, ...)` when request mode is bound.
+
+**Typed outcome (`DirectOutcome` / `RequestOutcome`)**
+The exhaustive discriminated union returned by `caller.try.<alias>(...)` and `createHost(...).tryCallers`: `ok`, `declared-error`, `denied` (`certainty: "not-started"`), or `fault` (carrying explicit `certainty`).
+
+**Admission & `AuthorizedContext`**
+The host-owned per-call decision made after input validation and before dispatch. With `bindAuthorizedProjection` (TS) or `bind_authorized` (Rust), admission narrows the raw caller context into a typed `AuthorizedContext` that flows directly into handlers and observed reads.
+
+**Declared interaction error**
+An expected domain alternative declared in the interaction contract, validated at runtime, and distinguished from denial or faults.
+
+**Revocation controller**
+A host-held handle returned alongside an Installation or Binding. Blocks future calls before dispatch without attaching revocation power to adapter-facing objects.
+
+## Portable foundations & plans
+
+**Interaction contract**
+The canonical portable identity of one interaction (`boundary.interaction-contract/v1` SHA-256 digest). Covers version, ID, schemas, footprints, and optional traits; excludes runtime handlers, policy, docs annotations, arity, modes, and context.
+
+**Program**
+A serializable canonical set of interaction contracts and its deterministic `programDigest`. Carries zero handlers or authority.
+
+**Plan (`@foxworth/boundary/plan`)**
+A portable, handler-free, acyclic DAG of symbolic interaction steps (`boundary.plan/v1`). Supports deriving its minimal Projection (`planRequiredProjection`), computing parallel execution waves from disjoint footprints (`planParallelWaves`), and atomic preflight against a live Binding (`preflightPlan`) before step 1 begins.
+
+**Draft (`@foxworth/boundary/drafts`)**
+An inert artifact proposing a complete interaction contract that does not yet exist in a Program. Not callable until implemented and compiled.
 
 **Catalog**
+A portable summary of direct and request realizations contributed by one Installation. Derived from installation entries; does not alter Program identity.
 
-A portable description of the direct and request availability contributed by
-one Installation. It is derived from exact installation entries and does not
-change Program identity.
-
-**Handoff**
-
-The foundation that accepts untrusted serialized invocation data, validates
-version, Binding identity, exact pins, mode, and input, and produces an opaque
-checked invocation. Transports only frame bytes around it.
+**Handoff (`@foxworth/boundary/handoff`)**
+The sole layer that accepts untrusted serialized invocations across a process boundary, verifying version, Binding pins, mode, and input before producing an opaque checked invocation.
 
 **Context**
+Opaque, ephemeral host data supplied on each invocation. Never persisted, hashed, or serialized by Boundary.
 
-Opaque ephemeral host data supplied to each invocation. The same reference
-reaches admission and native dispatch. Boundary does not serialize, hash, enrich,
-persist, or interpret it.
-
-## Control terms
-
-**Controlled execution**
-
-An optional path that separates request, review, authority, attempt,
-verification, and recovery. It is owned by Control, not Host.
-
-**Proposal**
-
-A durable reviewable plan for one exact interaction input before its effect is
-attempted.
-
-**Grant**
-
-Durable authority to execute one proposal under a recorded policy decision.
-
-**Attempt**
-
-The record persisted before applying one granted proposal.
-
-**Lease**
-
-The compare-and-swap claim on an active attempt, including expiry, renewal, and
-a fencing token.
-
-**Receipt**
-
-A record that apply returned, output validation passed, and the configured
-verifier passed. It is bounded application evidence, not proof of correctness.
-There is no generic Host Installation receipt in the target.
-
-**Uncertain**
-
-The durable Control outcome used when an effect may have started but its final
-result is not known. It is the persisted form of an invocation's `unknown`
-certainty. It must be reconciled rather than blindly retried.
+## Control & certainty terms
 
 **Certainty**
+What is known about an invocation's consequence: `not-started`, `not-completed`, `completed`, or `unknown`. Neither `not-completed` nor `unknown` is permission to retry.
 
-What is known about one invocation's consequence: `not-started`,
-`not-completed`, `completed`, or `unknown`. Binding outcomes, Handoff
-outcomes, native dispatch faults, and guest faults all use these four words.
-Neither `not-completed` nor `unknown` is permission to retry.
+**Controlled execution (`@foxworth/boundary/control`)**
+An optional lifecycle separating request, approval, grant, leased attempt, verification, and reconciliation for consequential side effects.
+
+**Proposal / Grant / Attempt / Lease / Receipt**
+The durable records of a controlled effect: a reviewable plan (`Proposal`), explicit execution authority (`Grant`), pre-apply execution record (`Attempt`), compare-and-swap exclusivity claim (`Lease`), and verified completion evidence (`Receipt`).
+
+**Uncertain**
+The durable Control state when an effect may have started and available evidence cannot prove the final result. Must be resolved through `reconcile` (which never reruns `apply`), never blindly retried.

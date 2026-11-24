@@ -1,19 +1,17 @@
 ---
 title: "Concise native authoring"
-description: "Expose a small application scene to separate callers with one native TypeScript setup."
+description: "Wire a complete application with multiple checked callers in one synchronous TypeScript call using createHost."
 ---
 
 # Concise native authoring
 
-Boundary's usual TypeScript lifecycle is explicit: define interactions, compile
-them, install handlers, select a Projection for each caller, then bind each
-Projection. `createHost` is a shorter native TypeScript entry for the
-same direct-call path. It runs those lifecycle steps and returns their actual
-artifacts alongside named methods.
+When your interactions, handlers, and direct callers all live in one TypeScript process, you don't need to assemble `compileInteractions`, `projectInteractions`, `installInteractions`, and `bindProjection` by hand.
 
-This guide uses a small in-memory scene. Its state and functions belong to the
-application. `move`, `capture`, and `render` are ordinary host handlers; the
-declaration does not contain them.
+`createHost` runs that exact lifecycle **synchronously** in one call—returning ergonomic named methods (`callers.*` and typed-outcome `tryCallers.*`) alongside every real underlying artifact (`compiled`, `installation`, `projections`, `bindings`, and host-held revocation controllers).
+
+## 1. Declare the scene's interactions
+
+This in-memory scene lets an editor move an orb, and lets both the editor and an assistant capture a frozen candidate and render it to SVG. You can use either zero-dependency `b.object(...)` or Zod (`z.strictObject(...)`)—the example below uses Zod to show it works out of the box:
 
 ```ts
 import { z } from "zod";
@@ -51,18 +49,18 @@ const scene = {
 } as const;
 ```
 
-The schema types flow into the handler map and each named caller method. A
-zero-input interaction such as `capture` takes only its actor; `move` and
-`render` take input followed by actor.
+Schema types flow automatically into both `handlers` and every caller method. Notice zero-input interactions like `capture` take only the actor—no dummy `{}` argument.
+
+## 2. Wire handlers and callers in one synchronous call
 
 ```ts
 const api = createHost(scene, {
   installationId: "scene:local:v1",
   realizationVersion: "scene-handlers:v1",
   handlers: {
-    move(input, _actor: Actor) { return application.move(input, _actor); },
-    capture(_actor: Actor) { return application.capture(_actor); },
-    render(reference, _actor: Actor) { return application.render(reference, _actor); },
+    move(input, actor: Actor) { return application.move(input, actor); },
+    capture(actor: Actor) { return application.capture(actor); },
+    render(reference, actor: Actor) { return application.render(reference, actor); },
   },
   callers: {
     editor: {
@@ -70,22 +68,18 @@ const api = createHost(scene, {
       admit: (actor) => actor.role === "editor",
     },
     assistant: {
-      direct: ["capture", "render"],
+      direct: ["capture", "render"], // `move` is absent at compile time and runtime
       admit: (actor) => actor.role === "assistant",
     },
   },
 });
 ```
 
-`application` above represents the host's own functions and state. The
-executable [scene fixture](../../examples/snippets/typescript/scene-authoring.ts)
-uses plain in-memory `Map` values. Capture validates and freezes a position in
-host-owned candidate storage, then returns only its ID. Render resolves that
-ID against the candidate map and returns a declared `missingCandidate` error if
-it is gone. It adds no collaboration or persistence dependency.
+`application` is your own ordinary code and state (see the executable [scene fixture](../../examples/snippets/typescript/scene-authoring.ts)).
 
-Each method still passes through its caller's native Binding and admission
-rule. The actor is supplied on every call. The assistant has no `move` method:
+## 3. Call with throwing methods or exhaustive typed outcomes
+
+Every method passes through its caller's checked Binding and admission rule. The assistant has no `move` method:
 
 <!-- snippet:examples/snippets/typescript/scene-authoring.ts#call-sequence -->
 ```ts
@@ -98,32 +92,34 @@ export async function runSceneAuthoringSequence() {
 }
 ```
 
-The SVG uses the captured coordinates, `18,24`, after the live scene has moved
-to `71,83`. The frozen candidate and its ID live only in the host's in-memory
-map. Its revision and coordinates are application data, not a durable receipt
-or CRDT history.
+Prefer handling declared errors, denials, and faults without `try/catch`? Use `api.tryCallers`:
 
-The result also exposes the compiled Program, Installation, Projections,
-Bindings, and host-held controllers. Use those native artifacts for inspection
-and lifecycle management; the named methods are a convenience over the same
-checked callers. `bindingControllers.assistant.revoke()` revokes that exact
-caller binding, and `installationController.revoke()` revokes the shared
-installation. Existing projections and bindings remain independently
-inspectable artifacts; revocation controls live execution.
+```ts
+const outcome = await api.tryCallers.assistant.render(captured, assistantActor);
+switch (outcome.kind) {
+  case "ok": return outcome.value;
+  case "declared-error": return `Missing: ${outcome.code}`; // exhaustive on declared errors
+  case "denied": return "Not allowed";
+  case "fault": return `Fault (${outcome.certainty})`;
+}
+```
 
-The host chooses `installationId` and supplies `realizationVersion`; Boundary
-does not derive the version from function source. Change that version when the
-executable behavior changes. Caller-specific setup failures are collected in
-`CreateHostError.issues`, each tagged with the caller name. Such a setup
-failure exposes no usable caller and revokes bindings and the installation it
-created. Invalid global definitions or handlers can fail earlier with their
-own construction errors.
+## 4. Keep full lifecycle control
 
-This convenience is TypeScript-only direct-call authoring. It does not change
-portable contracts or add a Rust law; applications that need request mode,
-independent persisted projections, or lower-level lifecycle control continue
-to use the existing functions. Boundary also provides experimental read-only
-Yjs and Automerge snapshot subpaths. They supply isolated projections of captured
-document versions; the host still owns synchronization, persistence, candidate
-IDs and storage, and policy. See [CRDT snapshots](./crdt-snapshots.md) for the
-current scope and executable replica examples.
+`createHost` is not a black box—it exposes every real artifact:
+- `api.compiled`, `api.installation`, `api.projections`, `api.bindings` for inspection, adapters (HTTP, MCP, React), and Plan preflight.
+- `api.bindingControllers.assistant.revoke()` to revoke one caller surface immediately.
+- `api.installationController.revoke()` to revoke the shared installation across all callers.
+- Setup is atomic: if any caller fails to bind, `CreateHostError` collects all tagged issues in `.issues` and revokes everything it created so no half-wired host escapes.
+
+Bump `realizationVersion` whenever handler behavior changes; Boundary never hashes function source.
+
+## When to step down to the explicit lifecycle
+
+`createHost` is a TypeScript convenience for in-process direct callers. Drop down to `compileInteractions` + `installInteractions` + `bindProjection` when you need:
+- `request` mode ([Controlled effects](./controlled-effects.md));
+- independent Projections persisted or shared across processes/Rust;
+- live hot-rebinding via `createBindingSlot`;
+- `bindAuthorizedProjection` to narrow auth context into handlers and observed reads.
+
+For experimental read-only Yjs and Automerge snapshot projections, see [CRDT snapshots](./crdt-snapshots.md).

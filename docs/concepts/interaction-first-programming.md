@@ -1,165 +1,141 @@
 ---
 title: "Interaction-first programming"
-description: "See what stays fixed when callers and implementations change."
+description: "Why separating what an action promises from the code that runs it unlocks checked interfaces, plans, and safe agents."
 ---
 
 # Interaction-first programming
 
-What should stay the same when we change how an application is used or where
-its work happens?
+What should stay fixed when how an application is used—or where its work runs—changes?
 
-Start with a small image editor. A person chooses a photograph, sets a maximum
-width, and presses **Make thumbnail**.
+Start with something tiny: an image editor. A person picks a photo, chooses a maximum width, and clicks **Make thumbnail**.
 
 ```text
-button ──> make thumbnail ──> small photograph
+button ──▶ makeThumbnail(imageId, maxWidth) ──▶ thumbnail
 ```
 
-An ordinary function can do this well. It receives an image ID and a maximum
-width, then returns a thumbnail ID and its dimensions.
+An ordinary function handles this effortlessly. It takes an image ID and a width, resizes the image, and returns the thumbnail ID and dimensions.
 
-## Change the caller
+## Step 1: Add a second caller
 
-A nightly script now needs thumbnails for recently uploaded photographs.
+A nightly script also needs thumbnails for new uploads:
 
 ```text
 button ──┐
-         ├──> make thumbnail ──> small photograph
+         ├──▶ makeThumbnail ──▶ thumbnail
 script ──┘
 ```
 
-Does the script need a second implementation? No. Both callers can use the
-same function. Shared functions already solve this part of the problem.
+Does the script need a new library or programming model? No. A shared function already solves this. **When callers and implementations live in one place and change together, plain functions are the right tool.**
 
-## Move the work
+## Step 2: Separate the caller from the work
 
-Large images make processing expensive, so the application moves the work to a
-worker. Keep the callers in place; move the implementation.
+Large images get slow, so you move thumbnail generation to a worker (or a plugin, or a separate service). Keep the callers in place; move the implementation:
 
 ```text
 button ──┐                       worker
-         ├──> make thumbnail ──> [ implementation ]
+         ├──▶ makeThumbnail ──▶ [ implementation ]
 script ──┘
 ```
 
-The callers and worker can now change on different schedules. They need an
-agreement that can be inspected separately from the code on either side:
+Now the callers and the worker change on different schedules. And notice a subtle problem: an ordinary function is **opaque**. You can *run* it, and that is all you can do with it. You cannot ask a function what it reads, what it mutates, whether a caller should only be allowed to propose it, or whether a replacement worker still honors the same contract—not without running it and hoping.
+
+So make **one move**: lift the description of the action out of the function and represent it as data:
 
 ```text
 images.makeThumbnail
-
-input:   image ID + maximum width
-output:  thumbnail ID + width + height
-reads:   images
-changes: images
+  input:   { imageId, maxWidth }
+  output:  { imageId, width, height }
+  reads:   ["images"]
+  changes: ["images"]
 ```
 
-This named, declared application action is an **interaction**. The application
-owns what it means and how it works. Boundary records its portable contract,
-including input, output, declared errors, and reads and changes.
+This named, inspectable description is an **Interaction**. Your application still owns what it means and writes the code that performs it. Boundary turns that description into a canonical, content-addressed contract—without pulling in your store, worker, or transport.
 
-Moving execution still requires the application's transport and deployment
-work. Declaring an interaction does not create a worker or route calls to it.
+*(If you like analogies: this is the same leap as moving from arithmetic to algebra. Once a concrete calculation becomes an explicit symbol with known rules, you can check equivalence, transform expressions, and build algorithms on top of it—before plugging in concrete numbers.)*
 
-## Predict the mismatch
+## Step 3: Predict the mismatch before running anything
 
-A replacement worker accepts the same input but returns a job ID. The image
-will be ready later.
+Suppose someone deploys a new worker. It takes the exact same input (`imageId`, `maxWidth`), but instead of returning a finished thumbnail, it enqueues work and returns `{ jobId }`.
 
-Before connecting it, ask: can the existing button display the promised
-thumbnail from that response?
+Before connecting anything, pause and ask: **can the existing button display a thumbnail from that response?**
 
-| The button expects | The worker returns |
+| What the button expects | What the worker offers |
 | --- | --- |
-| thumbnail ID, width, height | job ID |
+| `{ imageId, width, height }` | `{ jobId }` |
 
-It cannot. Matching the name `images.makeThumbnail` is not enough. The output
-contract no longer satisfies the caller's expectation.
+No. Sharing the name `images.makeThumbnail` is not enough—the contract changed.
 
-Boundary checks the declared agreement when connecting a caller surface to an
-installation. An incompatible surface produces an `unrealized` report instead
-of a partially connected caller. The application can deliberately change its
-interface to support jobs, or provide an implementation that fulfills the
-existing contract. Boundary does not invent that migration.
+Because both sides are inspectable values, Boundary checks their compatibility **before a single handler executes**. Instead of letting the button crash at runtime (or connecting half an interface), connecting them produces an exhaustive `unrealized` report explaining *which* contract disagreed and *why*. You can then deliberately update the caller for async jobs or fix the worker. Boundary never guesses or silently migrates a contract for you.
 
-## Name the pieces we have found
+## Step 4: Earn the five names
 
-The editor also knows how to inspect and delete images. The nightly script
-needs only thumbnail creation.
+Now expand the editor slightly: it can `inspect`, `makeThumbnail`, and `delete`. The nightly script only needs `makeThumbnail`.
 
 ```text
 editor: [ inspect, makeThumbnail, delete ]
 script: [          makeThumbnail         ]
-                         |
-                  checked connection
-                         |
+                         │
+                  atomic check
+                         │
 worker: [ inspect, makeThumbnail, delete ]
 ```
 
-A **Program** holds the portable interaction declarations and their derived
-identities. A **Projection** selects the interactions and modes a caller needs;
-it can exist before any implementation is available.
+Every piece we just needed has a crisp name in Boundary:
 
-An **Installation** supplies live implementations. A **Binding** records a
-successful check of the entire Projection against one Installation. Its
-**Caller** invokes that selected surface.
+1. **Program** — the canonical set of declared interactions and their digests. Pure data; no handlers.
+2. **Projection** — the exact slice of interactions and modes (`direct` or `request`) a caller needs. Slice them like sets (`pick`, `omit`, `union`, `intersect`) before any implementation exists.
+3. **Installation** — a live snapshot of your application's implementations, each paired with an explicit realization ID.
+4. **Binding** — the atomic, checked connection pairing one Projection to one Installation plus your per-call admission rule.
+5. **Caller** — the stateless interface obtained from a Binding (`call`, `direct.*`, or typed-outcome `try.*`).
 
-Try one more prediction: a caller requires both inspection and thumbnail
-creation, but the installation provides only inspection. Should it receive an
-inspection-only Caller?
+Test your intuition with one more prediction: suppose a caller asks for `[inspect, makeThumbnail]`, and an installation only implements `[inspect]`. Should Boundary hand back an `inspect`-only Caller?
 
 ```text
-caller requires       installation provides
-inspect          ───> inspect                 match
-makeThumbnail    ───> [ missing ]              missing
-                         |
-                         v
-                 unrealized report
-                 no partial Caller
+caller requires        installation provides
+inspect          ───▶  inspect                  match
+makeThumbnail    ───▶  [ missing ]              missing
+                          │
+                          ▼
+                   unrealized report
+                   (no partial Caller)
 ```
 
-Binding is atomic over the selected surface. A caller can deliberately select
-a smaller surface, but binding does not make that product decision for it.
+No. Binding is **all-or-nothing** over the Projection. If a caller wants a smaller interface, it chooses a smaller Projection explicitly; Boundary never silently degrades a caller's contract. And a Binding stays pinned to its Installation—replacing an implementation never moves live callers behind your back (when you *want* live upgrades, swap atomically with `createBindingSlot`).
 
-Each Binding pins its checked mapping. It does not follow a replacement
-installation automatically. The host still decides whether to admit each
-invocation; selecting an interaction does not grant permission to execute it.
+## Step 5: See what else falls out for free
 
-## Know what the check cannot tell you
+Once interactions declare `reads` and `changes`, two more capabilities emerge without inventing a new model:
 
-Suppose the worker returns a valid thumbnail ID and dimensions, but the image
-is blurry. Its output may satisfy the schema while failing the application's
-quality requirements.
+- **Live view refresh:** Any UI view reading `"images"` knows to refresh when an observed interaction changes `"images"` (or `"image:{input.id}"` for per-record precision).
+- **Handler-free `Plan`s:** A multi-step workflow is just a static DAG over interactions. Before step 1 runs, Boundary can derive its minimal Projection, group independent steps into parallel waves (by disjoint footprints), and atomically preflight the whole sequence.
 
-Contract checks establish declared agreement. They do not prove image quality,
-business correctness, or equivalent behavior between implementations. Those
-need application tests and evidence.
+And when an action is too risky to execute immediately (like publishing or deleting), you expose it in **`request`** mode instead of `direct` mode: calling `request` prepares a reviewable proposal rather than running the effect, and any mid-flight network drop stays explicitly **`uncertain`** until reconciled.
 
-Use interactions at boundaries where callers and implementations need an
-explicit agreement. Keep private helpers as ordinary functions.
+## Step 6: Know what the check cannot tell you
 
-## Now add an agent
+Suppose the worker returns `{ imageId: "orig:w200", width: 200, height: 150 }`—matching the schema to the letter—but the resized image is upside-down and blurry.
 
-An agent needs to prepare thumbnails for an article. Which parts of the model
-must change?
+Contract checks establish **declared agreement**, not visual quality, business correctness, or behavioral equivalence between two implementations. Those still belong to your tests (and `@foxworth/boundary/testing` helps verify handlers against their contracts).
 
-The application can select inspection and thumbnail creation for it:
+## Step 7: Now add an AI agent
+
+An agent needs to prepare thumbnails for an article. Ask yourself: **which definitions must change?**
+
+None.
 
 ```text
 editor: [ inspect, makeThumbnail, delete ]
 script: [          makeThumbnail         ]
 agent:  [ inspect, makeThumbnail         ]
-                         |
-                  checked connections
-                         |
+                         │
+                  checked bindings
+                         │
 worker: [ inspect, makeThumbnail, delete ]
 ```
 
-The agent uses the existing interactions through its own selected surface and
-host admission. Deleting originals remains outside that surface. Tool
-presentation can describe the available actions without defining a second
-execution model.
+The agent gets its own narrow Projection (`inspect` and `makeThumbnail`—never `delete`) and its own admission rule. MCP or WebMCP adapters present that exact Binding as tools without inventing a second execution model.
 
-The next step is to [build and break the thumbnail example](../guides/getting-started.md).
-For ownership boundaries, read [what Boundary provides](./boundary.md); for exact limits,
-read [guarantees](./guarantees.md).
+---
+
+**Next:** [Build and break the thumbnail example in TypeScript →](../guides/getting-started.md)
+For ownership lines, see [What Boundary provides](./boundary.md); for exact limits, see [Guarantees and counterexamples](./guarantees.md).

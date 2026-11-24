@@ -11,7 +11,7 @@ describe("thumbnail documentation example", () => {
   });
 
   it("shares rendering between callers and binds a replacement explicitly", async () => {
-    const example = await createThumbnailExample();
+    const example = createThumbnailExample();
     const screen = await example.fromScreen();
     expect(screen).toEqual({ imageId: "original:w200", width: 200, height: 150 });
     expect(await example.fromScript()).toEqual(screen);
@@ -25,16 +25,16 @@ describe("thumbnail documentation example", () => {
     expect(example.dispatches).toEqual(["makeThumbnail", "makeThumbnail", "makeThumbnail"]);
   });
 
-  it("refuses a job-returning installation before dispatch", async () => {
-    const example = await createThumbnailExample();
+  it("refuses a job-returning installation before dispatch", () => {
+    const example = createThumbnailExample();
     expect(example.mismatch.status).toBe("unrealized");
     expect(example.queuedDispatches).toEqual([]);
     expect(example.dispatches).toEqual([]);
   });
 
   it("narrows the agent surface and checks admission independently", async () => {
-    const example = await createThumbnailExample();
-    expect(Object.keys(example.agentSurface.handles)).toEqual(["makeThumbnail", "inspectImage"]);
+    const example = createThumbnailExample();
+    expect(Object.keys(example.agentSurface.handles).sort()).toEqual(["inspectImage", "makeThumbnail"]);
     expect(example.agentBinding.resolve("images.delete")).toBeUndefined();
     expect(await example.agent.call(
       example.agentSurface.handles.inspectImage,

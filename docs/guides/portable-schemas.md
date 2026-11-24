@@ -5,24 +5,38 @@ description: "One fail-closed schema meaning for identity, validation, and gener
 
 # Portable schemas
 
-Boundary uses one fail-closed portable schema meaning for identity, local
-validation, remote validation, and generated interfaces.
+Why does Boundary care so much about schemas? Because a local Caller, an HTTP Handoff, an MCP tool definition, and a native Rust host must all give the **exact same yes/no answer** for every value. If one side silently strips unknown keys or runs a hidden transform, your contract drifts.
 
-> **Current status:** `defineInteraction` retains inert authoring schemas;
-> `compileInteractions` selects schema adapters and produces the portable Program.
-> Portable schemas and Zod are built in. Other Standard Schema families use an
-> explicit Host adapter.
+Boundary therefore uses **one fail-closed portable JSON Schema profile** for identity, validation, and generated interfaces. You can author schemas in three ways—and all three compile to identical, content-addressed contracts:
 
-## Put schemas in the inert definition
+1. **Built-in `b.*`** (zero dependencies, strict by construction)
+2. **Zod** (`z.strictObject(...)`, optional peer dependency)
+3. **Literal `portableSchema(...)`** or Rust `#[derive(JsonSchema)]`
+
+## 1. Zero-dependency `b.*` schemas (recommended default)
+
+`@foxworth/boundary` (and `@foxworth/boundary/program`) ships a built-in builder whose objects are strict (`additionalProperties: false`) by construction:
 
 ```ts
+import { b, compileInteractions, defineInteraction, type InferSchema } from "@foxworth/boundary";
+
+const NewTodo = b.object({
+  title: b.string({ minLength: 1 }),
+  priority: b.optional(b.enum(["low", "high"])),
+});
+const Todo = b.object({
+  id: b.integer(),
+  title: b.string(),
+});
+type TodoValue = InferSchema<typeof Todo>;
+
 export const interactions = {
   create: defineInteraction({
     id: "todos.create",
-    input: newTodoContract,
-    output: todoContract,
+    input: NewTodo,
+    output: Todo,
     errors: {
-      alreadyExists: alreadyExistsContract,
+      alreadyExists: b.object({ title: b.string() }),
     },
     reads: ["todos"],
     changes: ["todos"],
@@ -32,11 +46,9 @@ export const interactions = {
 const compiled = compileInteractions(interactions);
 ```
 
-Compilation makes the assertion-bearing contract canonical. Titles,
-descriptions, examples, and other annotations may support documentation without
-changing contract identity.
+`b.*` supports `string`, `number`, `integer`, `boolean`, `null`, `literal`, `enum`, `array`, `tuple`, `object`, `optional`, `nullable`, `record`, `union`, `discriminatedUnion`, and `json`. Compilation makes the assertion-bearing contract canonical; documentation annotations (`summary`, `description`) never change contract identity.
 
-## Use Zod directly or select it explicitly
+## 2. Use Zod directly (optional peer)
 
 ```ts
 const NewTodo = z.strictObject({ title: z.string().min(1) });
@@ -127,12 +139,7 @@ Intersections whose halves share a key, or that aren't both strict objects,
 still fail. So do records with enum, literal or number keys, and string formats
 without a pattern, such as `z.url()`.
 
-Package dependency boundaries follow those imports:
-
-- `@foxworth/boundary` requires the `zod` peer at `^4.6.5` because its root
-  provides zero-configuration Zod compilation.
-- `@foxworth/boundary/program` has no root Zod requirement. Its optional `zod` peer at
-  `^4.6.5` is required only when importing `@foxworth/boundary/program/zod`.
+`zod` (`^4.6.5`) is an **optional** peer dependency of `@foxworth/boundary`. Install it only if you author contracts with Zod or import `@foxworth/boundary/program/zod`; packages using `b.*` or `portableSchema` need zero schema dependencies.
 
 ### Rust authoring
 

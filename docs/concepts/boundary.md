@@ -1,86 +1,62 @@
 ---
 title: "What Boundary provides"
-description: "Boundary gives applications an explicit, checked agreement between callers and the implementations of their interactions."
+description: "A clean ownership line between your application's behavior and Boundary's checked interaction layer."
 ---
 
 # What Boundary provides
 
-Boundary gives applications an explicit, checked agreement between callers and the
-implementations of their interactions.
+Boundary is deliberately narrow: it gives your application an explicit, checked agreement between callers and implementations—without taking over your storage, framework, transport, or business rules.
 
-In the [thumbnail example](./interaction-first-programming.md), the application
-owns image processing. Boundary checks whether an installation can fulfill the
-caller's declared thumbnail contract before connecting them.
+In the [thumbnail example](./interaction-first-programming.md), your application owns image processing. Boundary checks whether an installation fulfills a caller's declared contract before connecting them, validates data at the seam, and passes every call through your admission rule.
 
-## Where the boundary belongs
+## The ownership line
 
-A shared function is often enough inside one application. Boundary becomes useful
-when a caller's expectations need to be represented independently: a separately
-built client, a native tool, a plugin, or an implementation deployed on another
-schedule.
+When a helper only has one local caller and both change together, keep it an ordinary function. Reach for Boundary when an action's contract needs to outlive one caller, process, language, or deployment: a separate UI, a CLI, an AI agent, a plugin, or a worker.
 
-The contract describes the action without carrying executable handlers or
-private authority. The live host supplies implementations and decides whether
-each invocation is allowed.
-
-| The application owns | Boundary provides |
+| Your application owns | Boundary provides |
 | --- | --- |
-| What making a thumbnail means | Portable declarations and derived identity |
-| Image stores, processing code, and transactions | Validation of declared inputs, outputs, and errors |
-| Authentication, credentials, and policy | An admission seam for each invocation |
-| Which capabilities a caller should receive | Explicit caller selections and checked binding |
-| Runtime health, transport, and deployment | Recorded installation and realization identities |
-| Evidence that the thumbnail is correct | Reports of declared incompatibility |
+| What each action means (`images.makeThumbnail`) | Canonical portable contracts and deterministic digests |
+| Stores, rendering, transactions, and side effects | Fail-closed validation of inputs, outputs, and declared errors |
+| Authentication, actors, and authorization policy | Per-call admission seam (and typed `AuthorizedContext` narrowing) |
+| Which actions each caller should get | Set-algebra Projections (`pick`, `omit`, `union`, `intersect`) and atomic Binding |
+| Runtime health, transports, retries, and deployment | Pinned installation/realization IDs and atomic `BindingSlot` swaps |
+| Proof that results are business-correct | Exhaustive `unrealized` reports, typed `certainty`, and contract-verification harnesses |
 
-The two sides stay independent until binding:
+Both sides stay decoupled until Binding:
 
 ```text
-application declarations             application implementations
-           |                                      |
-           v                                      v
-        Program                              Installation
-           |                                      |
-           v                                      |
-       Projection ─────── checked binding ────────┘
-                                 |
-                                 v
-                              Caller
-                                 |
-                       host admission per call
-                                 |
-                       application execution
+your declarations                    your implementations
+        │                                     │
+        ▼                                     ▼
+     Program                             Installation
+        │                                     │
+        ▼                                     │
+    Projection ─────── atomic binding ────────┘
+                             │
+                             ▼
+                           Caller
+                             │
+                  admission on every call
+                             │
+                     your code runs here
 ```
 
-## Integrate at the level your application needs
+## Adopt only the layers you need
 
-Bare TypeScript can declare interactions and pair them with implementations using
-`@foxworth/boundary`. A framework can retain its own authoring syntax and native
-dispatcher, then lower its declarations into the same lifecycle.
+- **Zero-ceremony direct path (`@foxworth/boundary`):** Declare interactions with zero-dependency `b.*` (or Zod), wire handlers and callers synchronously with `createHost`, and call with named methods (`callers.*`) or exhaustive typed outcomes (`tryCallers.*`).
+- **Explicit lifecycle (`@foxworth/boundary`):** Use `compileInteractions`, `Projection` set algebra, `installInteractions` (`realizeDirect`), `bindProjection` / `bindAuthorizedProjection`, and `createBindingSlot` when projections and installations live independently or hot-rebind.
+- **Static multi-step workflows (`@foxworth/boundary/plan`):** Describe DAGs over interactions to derive minimal projections, parallel waves, and atomic preflight checks before step 1 runs.
+- **Process seams (`@foxworth/boundary/handoff` + adapters):** Frame calls over HTTP, MCP, WebMCP, React, Workers, Electron, or WASM plugins without duplicating contract checks.
+- **Consequential effects (`@foxworth/boundary/control`):** Opt into `request` mode (proposals → approval → grant → attempt → verify → reconcile) only for actions where "the function returned" isn't enough evidence. Direct-only apps never import Control.
 
-The lower-level packages remain independently useful:
+## What Boundary does *not* do
 
-- **Program** represents portable contracts and their identity.
-- **Handoff** checks untrusted serialized intent at a process boundary.
-- **Control** represents proposals, authority, attempts, receipts, uncertainty,
-  and reconciliation for consequential effects.
+Boundary does not provision workers, pick your database, run background queues, make handlers transactional, or silently migrate callers when a contract breaks.
 
-A direct interaction does not require Control. When the host chooses request
-mode, requesting creates a proposal without executing the effect. Persistence,
-policy, verification, and recovery remain host responsibilities.
+Two honesty rules to keep in mind:
+1. **A matching contract is not proof of correctness.** Passing validation proves declared shapes and footprints match—not that a thumbnail looks sharp or a handler obeyed its declared `changes`.
+2. **A Projection is not permission.** Selecting an action makes it *reachable* on a surface; your host admission function still decides whether a specific authenticated actor may call it right now.
 
-## What adopting Boundary does not supply
+---
 
-Boundary does not provision workers, choose transports, schedule jobs, store domain
-data, or make an application transactional. It does not automatically migrate
-callers when an implementation changes.
-
-A compatible declaration is not proof of equivalent behavior. The application
-must still establish that an implementation does the intended work. Likewise,
-a caller's selected surface is not a grant: host admission remains necessary.
-
-These boundaries let an image library, an application framework, and a native
-tool retain their own programming models while exposing checked interactions.
-
-Read the [walkthrough](../guides/getting-started.md) to try the lifecycle,
-[who Boundary is for](./audience.md) to choose an integration path, or
-[current status](./current-status.md) for publication and support details.
+**Next:** Walk through the live code in [Build a thumbnail tool](../guides/getting-started.md), check [Who Boundary is for](./audience.md), or review [Availability and support](./current-status.md).

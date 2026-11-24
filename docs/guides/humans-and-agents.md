@@ -1,152 +1,70 @@
 ---
 title: "Humans and agents in the same application"
-description: "Give people and agents different surfaces over the same application-owned work."
+description: "Give people and AI agents tailored surfaces over the same actions, honest shared updates, and approval-gated side effects."
 ---
 
 # Humans and agents in the same application
 
-Imagine an editor and an assistant preparing an article. Both can inspect its
-images and make thumbnails. The assistant may edit the draft, but publication
-needs a person's review. When either changes something, the other needs an
-accurate view of the result.
+Imagine a human editor and an AI assistant working on the same article. Both inspect images, generate thumbnails, and edit drafts—but only a person can publish. When either makes a change, the other needs to see the truth on screen.
 
-These are application interactions with different callers, not two applications
-with separate definitions of editing and publishing. Boundary connects selected
-interactions to each caller; the application owns permissions, data and UI.
+Most teams accidentally build *two* applications here: one API for the UI and a parallel set of hand-rolled tools for the agent. In Boundary, **there is only one set of interactions.** People and agents simply bind different Projections over the same application.
 
-## A projection is a capability interface, not a screen
+## 1. Keep three security questions separate
 
-A Projection selects declared interactions and their invocation modes. Its
-presentation can describe those interactions without specifying a component
-tree, form layout or renderer. The same interaction may appear as a button,
-command-menu item or agent tool.
-
-Keep three questions separate:
+A Projection is a capability surface—not a UI layout, and not a permission grant. The same interaction can render as a button, a CLI command, or an MCP tool. Never blur these three seams:
 
 | Question | Where it is answered |
 | --- | --- |
-| Which interactions and modes are in this caller's surface? | Explicit Projection selection and its checked Binding |
-| May this caller perform this particular action now? | Host authentication, admission and any required exact grant |
-| Which records and fields may this caller read? | Application-owned read interactions and data policy |
+| Which actions and modes exist on this caller's surface? | Explicit **Projection** and its atomic **Binding** |
+| May this authenticated actor run this call right now? | Host **admission** (and an exact **Control grant** for controlled effects) |
+| Which records and fields may this actor see? | Application-owned read handlers and data policy |
 
-A narrower tool listing is not a narrower Binding. Hiding a listed tool does
-not revoke its underlying interaction. Likewise, selecting a read interaction does
-not automatically redact private fields from its output. Author safe results
-and check object and tenant access on the server.
+Two sharp rules:
+- **Hiding a tool from a list does not revoke it.** Adapters present the whole Binding; to remove an action from an agent, bind a narrower Projection.
+- **Selecting a read does not redact fields.** Enforce tenant/object checks and return safe projections from your server handlers.
 
-The [caller guide](./adding-a-caller.md) shows selection and binding using the
-thumbnail example. The [adapter reference](../reference/adapters.md) describes
-the tool and protocol interfaces.
+## 2. Own your UI; import the interaction plumbing
 
-## Own the UI; import the interaction behavior
+Boundary never forces a component library or page schema:
+- Use `@foxworth/boundary/client` for checked remote clients and framework-neutral reactive reads (`watchInteraction`).
+- Use `@foxworth/boundary/react` for React hooks (`useInteraction`, `InteractionCacheProvider`).
+- Render your own editor, chat pane, review banner, and error states.
 
-Use `@foxworth/boundary/client` for selected remote clients and
-`@foxworth/boundary/client` for framework-neutral reactive reads.
-`watchInteraction` supplies snapshots, subscription, refresh and disposal.
-`@foxworth/boundary/react` adapts that read store to React and supplies explicit
-interaction calls, pending state and error handling through `useInteraction`.
+For controlled effects, keep request clients separate from approval/admin paths—a request-capable UI or agent never receives `ControlAdmin`.
 
-Your application renders the editor, chat, review panel and error messages.
-Adopting Boundary does not require ejecting components into the app or adopting an
-Boundary page schema. An example may use a rich editor, UI library or agent SDK;
-those are choices for that application, not requirements for every Boundary user.
+## 3. Delegate drafts without granting every consequence
 
-For controlled work, use the separate request and authorized status interfaces
-described in [Control](../reference/control.md). A request-capable client does
-not acquire approval or execution administration. A general task dashboard is
-not implied by an interaction hook. See [availability and support](../concepts/current-status.md)
-for the scope of the supplied interfaces.
+Your host can admit reads and ordinary draft edits inside a delegated workspace while routing publishing or deletion through `request` mode:
 
-## Delegate a job without granting every consequence
+1. The agent calls `request` → Boundary prepares a reviewable proposal without publishing.
+2. A human reviews the exact revision and declared consequences.
+3. Your server records `approve` and `grant` separately.
+4. Execution creates an attempt, applies at most once, verifies, and stores a receipt.
 
-The host can admit reads and ordinary draft changes within a delegated
-workspace while requiring request mode for designated consequential actions.
-The application decides that classification; Boundary does not decide that every
-edit needs review or that a task instruction authorizes every effect.
-
-Record the agent executor and human delegator separately when delegation is
-involved. Construct trustworthy context from authenticated application state.
-A caller-provided actor ID or task ID is a claim to validate, not proof of
-permission. Delegation may be revoked or narrowed independently of tool
-presentation.
-
-For a reviewed publication:
-
-1. The selected request interaction prepares a public proposal without publishing.
-2. An authorized person reviews the designated revision and consequences.
-3. The host records approval and grants exact execution authority separately.
-4. Execution establishes an attempt before applying, verifying and recording
-   the result.
-
-An application may present steps 2–4 as one "Approve and publish" interaction.
-That is a server-side composition of distinct checks, not a general
-administrative capability sent to the browser or agent. Apply the same rules
-when a human initiates the original request.
-
-If the response disappears after publication may have started, do not repeat
-publication to find out what happened. Preserve uncertainty and reconcile
-against application evidence. Stopping a bot is not proof that an effect was
-cancelled or rolled back. See the [controlled effects guide](./controlled-effects.md).
+Record the agent executor and human delegator separately from trusted server authentication—never trust an actor ID supplied in untrusted input. And if a network drop leaves a publication `uncertain`, reconcile against reality rather than retrying (stopping an agent does not roll back an in-flight side effect). See [Controlled effects](./controlled-effects.md).
 
 ## Make shared updates truthful
 
-Interaction footprints can identify reads affected by a change. Mounted reads
-sharing an explicit invalidation scope can refresh together. The scope itself
-does not authenticate an event publisher or authorize access to data.
+Because interactions declare `reads` and `changes`—either globally (`"documents"`) or scoped per record (`"document:{input.id}"`)—Boundary knows which live views are invalidated by a change. Mounted reads sharing an explicit invalidation scope refresh together.
 
-An agent running elsewhere does not update a browser merely because both use
-Boundary. The host supplies authenticated event delivery or another refresh
-mechanism. It chooses retention, replay and tenant/workspace routing, then
-feeds appropriate observations into read invalidation. Authoritative reads
-establish the displayed state; chat prose does not establish execution truth.
+Be clear on what crosses processes: an agent running in another process does not magically update a browser just because both use Boundary. Your host delivers authenticated observations (e.g., via SSE or WebSocket) into the client's invalidation scope, and authoritative reads—not chat prose—establish what the screen shows.
 
-Reconnecting an observation stream and replacing a stale Binding are different
-actions. A new installation needs a deliberate new connection. Neither action
-authorizes replaying an outstanding effect or moving an old grant to a new
-implementation. See [reactive reads](../reference/adapters.md#reactive-reads-foxworthboundaryclient)
-and [explicit rehandshake](../reference/adapters.md#remote-client-and-explicit-rehandshake).
+Reconnecting an observation stream and replacing a stale Binding are separate operations: a new installation still requires an explicit new handshake and never replays an in-flight effect. See [reactive reads](../reference/adapters.md#reactive-reads-foxworthboundaryclient) and [explicit rehandshake](../reference/adapters.md#remote-client-and-explicit-rehandshake).
 
-## Let the chosen runtime own the bot
+## Let your chosen runtime own the bot
 
-Named bots, saved conversations, task scheduling, progress retention and
-restart coordination belong to the application and its chosen agent runtime.
-Boundary interactions can expose their application-owned work without becoming a
-scheduler.
-
-Persistence is a host/storage property, not a consequence of calling through
-MCP or mounting a Fetch handler. A local process continuing after a browser
-closes is different from a cloud worker continuing while the user's computer
-is asleep.
-
-For integration into Next, Vite, Hono, Workers, Durable Objects or Electron,
-continue with the [native application guides](../README.md#native-application-guides).
-For evidence boundaries and portability, consult
-[availability and support](../concepts/current-status.md).
+Named bots, saved threads, schedules, and restart recovery belong to your application and agent runtime—Boundary exposes your application's interactions cleanly without becoming a scheduler. See the [native application guides](../README.md#native-application-guides) for Next, Vite, Hono, Workers, Durable Objects, Electron, and Bun setups.
 
 ## Deliver observations across processes
 
-`createObservationHttpHandler` from `@foxworth/boundary/http`
-frames host-selected observations as a bounded SSE stream. The application
-supplies `context(request)` for authentication and `subscribe(context, publish,
-signal)` to select recipients and redact any correlation data. Returning a
-Response from `context` rejects a subscription before attaching it. The stream
-closes a slow subscriber when its bounded buffer fills; it has no replay log.
+`@foxworth/boundary/http` provides `createObservationHttpHandler` to stream host-selected observations over bounded SSE. Your app supplies `context(request)` for authentication (returning a `Response` rejects before subscribing) and `subscribe(context, publish, signal)` for recipient filtering and redaction. Slow subscribers close when the bounded buffer fills; there is no built-in replay log.
 
-`subscribeToObservations` from `@foxworth/boundary/client`
-connects a pinned client and explicit cache scope to that stream. Its `ready`
-promise resolves after subscription and an authoritative read refresh. Relevant
-observations refresh reads; they never repeat changes. `disconnect()` stops
-delivery, `reconnect()` explicitly opens a fresh stream and refreshes reads to
-cover the gap, and `dispose()` permanently retires the subscription. A failed
-stream reports through `onError` and remains disconnected until the application
-chooses to reconnect. New credentials or a new Binding require a new client and
-subscription; this module never follows an installation replacement silently.
+On the client, `subscribeToObservations` from `@foxworth/boundary/client` links a pinned client and explicit cache scope to that stream:
+- `subscription.ready` resolves only after subscribing *and* running an authoritative read refresh.
+- Incoming observations refresh matching reads—never repeating mutations.
+- `disconnect()`, `reconnect()` (re-opens + refreshes to cover any gap), and `dispose()` keep lifecycle explicit.
 
-Use one explicit scope for the typed read, change store, and observation
-subscription. `screenClient` is the checked client for the host's Binding;
-`references` is its application-owned or generated typed reference data.
-`observationOptions` supplies the host's events URL and authenticated fetch
-options. It may also provide `onError` for connection feedback.
+Share one explicit `scope` across your read watcher, mutation store, and observation stream:
 
 <!-- snippet:examples/snippets/typescript/scoped-observations.ts#imports -->
 ```ts
@@ -171,11 +89,7 @@ try {
 }
 ```
 
-The read's first subscriber mounts it before readiness refresh. A read created
-without `{ scope }` uses a separate client-local scope, so this subscription
-would not refresh it. For React, pass this same scope to
-`InteractionCacheProvider` around the components using `useInteraction`.
-A scope shares invalidation, not authority or application state.
+Pass that same `scope` to `InteractionCacheProvider` in React so `useInteraction` refreshes automatically. A scope shares invalidation signals only—never authority or state.
 
 <!-- snippet:examples/snippets/typescript/scoped-observations.ts#change -->
 ```ts
@@ -183,10 +97,7 @@ A scope shares invalidation, not authority or application state.
 await createTodo.invoke({ title: "From screen" });
 ```
 
-Handle a rejected invocation through its error and snapshot; an unknown outcome
-requires host-owned reconciliation before any repeat. A user-requested
-`subscription.reconnect()` refreshes mounted reads after a delivery gap and
-never repeats changes. On logout or navigation, retire the view:
+Handle rejected or `unknown` outcomes explicitly before retrying. On logout or navigation, dispose cleanly (preserving any unresolved attempt references for your reconciliation UI):
 
 <!-- snippet:examples/snippets/typescript/scoped-observations.ts#cleanup -->
 ```ts
@@ -196,17 +107,4 @@ todos.dispose();
 createTodo.dispose();
 ```
 
-Disposal blocks new invocation and removes listeners. Existing attempt evidence
-remains readable from `createTodo`; preserve unresolved attempts for the
-application's reconciliation UI before retiring that view. The
-[executable scoped example](../../examples/snippets/typescript/scoped-observations.ts)
-and [its test](../../tests/typescript/scoped-observations.test.ts) use in-process
-Fetch/SSE and test identity. It establishes the typed wiring,
-separate scopes, gap refresh, and no repeated changes; it does not establish a
-mounted browser, real socket, production identity, or CRDT synchronization.
-
-The [live example](../../examples/concepts/typescript/live-observations/README.md) and
-[cross-process test](../../tests/typescript/live/observation-delivery.test.ts)
-exercise host authentication, tenant delivery, uncertain changes, reconnect,
-and cleanup over loopback. The stream adapter is a native TypeScript integration
-of the shared observation record, not a new portable transport requirement.
+See the [executable scoped example](../../examples/snippets/typescript/scoped-observations.ts), [its tests](../../tests/typescript/scoped-observations.test.ts), and the [cross-process live observations example](../../examples/concepts/typescript/live-observations/README.md) for loopback SSE delivery, tenant filtering, reconnects, and cleanup.

@@ -1,24 +1,38 @@
 ---
 title: "Controlled effects"
-description: "Separate a request from execution when a returned function is not enough evidence."
+description: "Separate proposing an action from executing it—and handle uncertain outcomes honestly when networks or processes fail."
 ---
 
 # Controlled effects
 
-Use Control when “the function returned” is not enough evidence about what
-happened. Money movement, publication, deployment, deletion, and external APIs
-are common examples. Keep ordinary interactions on the direct path.
+For most actions, calling a function and getting a value back is enough. Keep those on Boundary's direct path.
 
-> **Status:** The `@foxworth/boundary/control` foundation and its
-> `@foxworth/boundary/control/host` bridge are current workspace interfaces. Both remain
-> pre-release and unpublished.
+Now think about publishing a release, charging a card, or deleting customer data. Two things break on the direct path:
+1. **You want someone (or an AI assistant) to *propose* the action without the authority to *execute* it.**
+2. **A network drop mid-execution leaves you in the dark:**
 
-## Contribute request mode without execution authority
+```text
+apply starts ──▶ external system changes ──▶ connection disappears
+                                                  │
+                                         did it happen or not?
+```
 
-A Projection can desire request mode before a deployment realizes it:
+Reporting **failure** invites someone to click retry and charge twice. Reporting **success** invents evidence you don't have. **Control** solves both by separating *request* from *execution* and giving uncertainty a first-class durable state:
+
+```text
+request ──▶ approve ──▶ grant ──▶ attempt ──▶ apply ──▶ verify ──▶ receipt
+                                                 │
+                                             uncertain ──▶ reconcile
+```
+
+*(Control lives in `@foxworth/boundary/control` and its host bridge `@foxworth/boundary/control/host`. Direct-only apps never import it.)*
+
+## 1. Expose `request` mode without execution authority
+
+Select `"request"` mode on a caller's Projection—even before any Control implementation is installed:
 
 ```ts
-const operatorProjection = projectInteractions(compiled, {
+const operatorProjection = compiled.project({
   publish: {
     interaction: compiled.handles.publish,
     modes: ["request"],
@@ -26,40 +40,35 @@ const operatorProjection = projectInteractions(compiled, {
 });
 ```
 
-The Control-owned bridge contributes an opaque, exact request capability:
+Install the request capability through `@foxworth/boundary/control/host` alongside any direct realizations:
 
 ```ts
+import { installInteractions, realizeDirect, realizeRequest } from "@foxworth/boundary";
 import { contributeControlRequests } from "@foxworth/boundary/control/host";
 
-const requests = contributeControlRequests(compiled, controlRequester, {
+const publishRequest = contributeControlRequests(compiled, controlRequester, {
   publish: {
     interaction: compiled.handles.publish,
     control: publishControl,
     executionRealizationId: publishExecutionRealizationId,
-    actor: context => context.actor,
+    actor: (context) => context.actor,
   },
 });
 
-const { installation, controller: installationController } =
-  installInteractions(compiled, {
+const { installation, controller: installationController } = installInteractions(compiled, {
   installationId,
-  implementations,
-  requests,
-  realizationIds: {
+  realizations: {
     publish: {
-      direct: publishDirectRealizationId,
-      request: publishRequestRealizationId,
+      direct: realizeDirect(directPublishHandler, publishDirectRealizationId),
+      request: realizeRequest(publishRequest, publishRequestRealizationId),
     },
   },
-  });
+});
 ```
 
-The bridge owns proposal creation only. It cannot approve, grant, apply,
-execute, verify, or reconcile. Without the request capability, atomic bind is
-`unrealized`. The host retains `installationController`; request adapters
-receive only the execution value.
+This bridge can **only** create proposals—it has no power to approve, grant, execute, verify, or reconcile. If a Projection asks for `"request"` mode and the Installation lacks it, `bindProjection` fails atomically as `unrealized`.
 
-After a successful bind:
+Calling `request` validates, runs admission, plans a public preview, checks Control request policy, and persists a proposal—never executing the side effect:
 
 ```ts
 const caller = binding.connect();
@@ -70,107 +79,45 @@ const proposal = await caller.request(
 );
 ```
 
-Request ordering is fixed:
-
 ```text
-validate -> admission -> plan -> Control request policy -> persist proposal
+validate ──▶ admission ──▶ plan ──▶ Control request policy ──▶ persist proposal
 ```
 
-Request never performs the effect. Direct-only Host users do not import
-Control and have no `request` method.
+## 2. Supply four honest application hooks
 
-## See the failure problem
+Your application owns the domain work behind four hooks on each controlled target:
 
-```text
-apply starts -> external system changes -> connection disappears
-                                      |
-                         did it happen or not?
-```
+- **`plan`** — derive subject, baseline, declared effects, private recovery state, and a safe public preview *without* performing the effect.
+- **`apply`** — perform the reviewed work while holding an exclusive attempt lease.
+- **`verify`** — check configured application evidence to establish completion.
+- **`reconcile`** — inspect reality after an `uncertain` outcome *without* rerunning `apply`.
 
-Reporting failure may invite duplication. Reporting success invents evidence.
-Blind retry can be worse than either. Control adds an honest third state:
+Boundary hashes these contracts together with your packaged `realizationDigest` into `controlDigest` (never hashing function source). Keep raw inputs, baselines, and recovery state private; only designated subjects, summaries, and previews cross the review seam.
 
-```text
-request -> approve -> grant -> attempt -> apply -> verify -> receipt
-                                      |
-                                   uncertain -> reconcile
-```
+## 3. Keep observation and administration separate
 
-## Supply four application hooks
+Control splits capabilities cleanly so no single caller gets unchecked power:
 
-The Control foundation resolves an exact interaction target to:
-
-- `plan`: derive subject, baseline, declared effects, private state, and public
-  preview without performing the effect;
-- `apply`: perform reviewed work while holding the attempt lease;
-- `verify`: decide whether configured application evidence supports completion;
-- `reconcile`: inspect reality after uncertainty without rerunning `apply`.
-
-The host supplies private-state and public-preview schemas plus a
-`realizationDigest` from the packaged executable artifact. Control binds these
-to the interaction contract as `controlDigest`; it never hashes function source.
-
-Keep raw input, baselines, and recovery state private. Only author-designated
-subjects, summaries, effects, and previews cross a review seam.
-
-## Keep observation and administration separate
-
-The accepted Control foundation exposes deliberately separate capabilities:
+- **Request-capable Caller:** creates proposals only.
+- **`ControlReader`:** inspects proposals, status, and receipts—cannot approve or execute.
+- **`ControlAdmin`:** approves, grants, executes, and reconciles—does not implicitly grant broad read access.
 
 ```ts
 const reader: ControlReader = controlReader;
 const admin: ControlAdmin<Actor, ExecutionContext> = controlAdmin;
-```
-
-`ControlReader` can inspect records and status but cannot approve, grant,
-execute, or reconcile. `ControlAdmin` owns those authority phases and does not
-implicitly include observation. The request-capable Caller has neither Reader
-nor Admin authority.
-
-The application supplies the durable journal, policy, clock, executor identity,
-lease behavior, validators, and hooks behind those capabilities. A production
-journal needs atomic record creation and compare-and-swap for attempts. The
-in-memory testing journal is not durable storage.
-
-## Keep authority phases separate
-
-```ts
-const proposal = await caller.request(
-  publishProjection.handles.publish,
-  { body: "after review" },
-  requestContext,
-);
 
 await admin.approve(proposal, reviewer);
 const grant = await admin.grant(proposal, owner);
 const result = await admin.execute(grant, executor, executionContext);
 ```
 
-`request` plans and persists. `approve` records review. `grant` records
-execution authority. `execute` persists or replays an attempt, applies at most
-once, verifies, and records a receipt.
-
-Context is always fresh and ephemeral. Request context reaches planning;
-execution context reaches apply and verify. Context is never serialized into a
-proposal, approval, grant, attempt, or receipt.
+Your application supplies the durable journal (with atomic creation and compare-and-swap attempts), clock, policy, and lease storage. The `MemoryJournal` in `@foxworth/boundary/testing` is for tests only. Ephemeral contexts (`requestContext`, `executionContext`) are never persisted into proposals, grants, attempts, or receipts.
 
 ### Delegation is not a grant
 
-An application may let an agent edit drafts within a delegated workspace while
-requiring review to publish. That task-level permission is host policy, not an
-exact grant for every consequence. Keep executor and delegator distinct when
-constructing trusted context.
+Letting an AI agent edit drafts inside a workspace is task-level host policy, not a blanket grant to publish or delete. Keep the agent executor and human delegator distinct in your trusted server context. Even if a UI offers one **"Approve and publish"** button, the server still executes distinct `approve` → `grant` → `execute` steps—never shipping `ControlAdmin` to the browser or agent. See [Humans and agents](./humans-and-agents.md).
 
-One "Approve and publish" button may invoke an authorized server path that
-records approval, issues the exact grant and executes it. The UI gesture does
-not merge those authority phases or expose `ControlAdmin` to the client.
-Proposals and review status should expose only the public data designated by
-the host. The same rules apply when the original requester is human.
-
-See [humans and agents](./humans-and-agents.md) for the distinction between
-interaction interactions, application tasks and optional world semantics.
-
-## Handle all three durable outcomes
+## 4. Handle all three durable outcomes
 
 ```ts
 switch (result.status) {
@@ -183,14 +130,11 @@ switch (result.status) {
 }
 ```
 
-`completed` is bounded evidence: apply returned, output validation passed,
-verification passed, and a receipt persisted. `uncertain` means the effect may
-have started. Never rewrite it as failure or retry it blindly.
+- **`completed`:** `apply` returned, output validated, `verify` passed, and a receipt persisted.
+- **`not-applied`:** proven not to have happened.
+- **`uncertain`:** the effect may have started; **never** disguise it as failure or blindly retry.
 
-Once the attempt lease is inactive, `admin.reconcile` may establish
-`completed`, `not-applied`, or continued `uncertain`; it never invokes `apply`.
-
-Retain the typed attempt when scheduling recovery:
+Once the attempt lease expires, reconcile against reality without rerunning `apply`:
 
 ```ts
 if (result.status === "uncertain") {
@@ -203,12 +147,8 @@ if (result.status === "uncertain") {
 }
 ```
 
-In TypeScript, `AttemptRef<Output>` preserves the output type from the grant
-through repeated uncertain results. Reconciliation infers that type; it does not
-accept a caller-selected output type. Persisting only an ID or decoding a public
-record loses this native relation, so recovery returns `unknown` until application
-code validates the output. Durable formats and Rust's native Control behavior
-are unchanged.
+In TypeScript, `AttemptRef<Output>` preserves the grant's exact output type across repeated reconciliations (if you serialize only a raw attempt ID to disk, validate the recovered output again on reload).
 
-Read the [Control foundation reference](../reference/control.md) for the current
-record formats and lifecycle laws.
+---
+
+**Next:** Read the [Control foundation reference](../reference/control.md) for record formats and state-machine laws.

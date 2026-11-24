@@ -2,47 +2,85 @@
  * Executable README: local calls stand in for an editor, a CLI, and an assistant.
  * A real transport authenticates callers before constructing ReviewActor.
  */
-import { reviewInteractions, reviewRejected, Suggestion } from "./document-review-interactions";
-import { defineInteraction } from "@foxworth/boundary";
-
-// #region imports
 import { createReviewApplication } from "./document-review-host";
+import { reviewInteractions, reviewRejected, Suggestion } from "./document-review-interactions";
 import type { ReviewActor } from "./document-review-store";
 import {
-  admitWhen, bindProjection, compileInteractions, direct,
-  directRealizationIds, implementInteractions, installInteractions, projectInteractions,
+  admitWhen,
+  bindProjection,
+  compileInteractions,
+  createHost,
+  defineInteraction,
+  installInteractions,
+  pickProjection,
+  realizeDirect,
 } from "@foxworth/boundary";
-// #endregion imports
 
-export async function createDocumentReviewExample() {
-  // #region surfaces
-  const compiled = compileInteractions(reviewInteractions);
-  const editorSurface = projectInteractions(compiled, {
-    read: direct(compiled.handles.read),
-    suggest: direct(compiled.handles.suggest),
-    accept: direct(compiled.handles.accept),
-  });
-  const contributorSurface = projectInteractions(compiled, {
-    read: direct(compiled.handles.read),
-    suggest: direct(compiled.handles.suggest),
-  });
-  // #endregion surfaces
-
-  // #region installation
+export function createQuickHostExample() {
   const application = createReviewApplication();
-  const implementations = implementInteractions<typeof reviewInteractions, ReviewActor>(reviewInteractions, {
-    read: application.handlers.read,
-    suggest: application.handlers.suggest,
-    accept: application.handlers.accept,
-  });
-  const { installation } = installInteractions(compiled, {
-    installationId: "review:local:1",
-    implementations,
-    realizationIds: directRealizationIds(compiled, "release-1"),
-  });
-  // #endregion installation
+  const editorActor: ReviewActor = { id: "alex", kind: "editor" };
+  const assistantActor: ReviewActor = { id: "assistant", kind: "assistant" };
 
-  // #region connections
+  // #region hero-host
+  const host = createHost(reviewInteractions, {
+    installationId: "review:local:1",
+    realizationVersion: "release-1",
+    handlers: application.handlers,
+    callers: {
+      editor: {
+        direct: ["read", "suggest", "accept"],
+        admit: (actor: ReviewActor) => actor.kind === "editor",
+      },
+      assistant: {
+        direct: ["read", "suggest"], // no `accept` — absent at compile time and runtime
+        admit: (actor: ReviewActor) => actor.kind === "assistant",
+      },
+    },
+  });
+  // #endregion hero-host
+
+  async function runQuickReview() {
+    // #region hero-calls
+    const doc = await host.callers.assistant.read(assistantActor);
+    const proposal = await host.callers.assistant.suggest(
+      { id: "s1", text: "Launch on Tuesday.", basedOnRevision: doc.revision },
+      assistantActor,
+    );
+    // Document still says "Launch on Friday." — only suggestions changed.
+
+    const outcome = await host.tryCallers.editor.accept(
+      { suggestionId: proposal.id },
+      editorActor,
+    );
+    if (outcome.kind === "ok") {
+      return outcome.value; // { text: "Launch on Tuesday.", revision: 1 }
+    }
+    throw new Error(`Accept did not complete: ${outcome.kind}`);
+    // #endregion hero-calls
+  }
+
+  return { host, application, editorActor, assistantActor, runQuickReview };
+}
+
+export function createDocumentReviewExample() {
+  // #region algebra
+  const compiled = compileInteractions(reviewInteractions);
+
+  const editorSurface = compiled.projectAll("direct");
+  const contributorSurface = pickProjection(editorSurface, "read", "suggest");
+  // Pure, synchronous values — no handlers or runtime required yet.
+  // #endregion algebra
+
+  const application = createReviewApplication();
+  const { installation } = installInteractions<typeof reviewInteractions, ReviewActor>(compiled, {
+    installationId: "review:local:1",
+    realizations: {
+      read: realizeDirect(application.handlers.read, "read:release-1"),
+      suggest: realizeDirect(application.handlers.suggest, "suggest:release-1"),
+      accept: realizeDirect(application.handlers.accept, "accept:release-1"),
+    },
+  });
+
   const editorResult = bindProjection(editorSurface, installation, {
     admit: admitWhen((actor: ReviewActor) => actor.kind === "editor", "Editor required"),
   });
@@ -57,41 +95,36 @@ export async function createDocumentReviewExample() {
   }
   const editor = editorResult.binding.connect();
   const contributor = contributorResult.binding.connect();
-  // #endregion connections
 
-  // #region actors
   // Local fixture identities. A remote host derives these from authentication.
   const editorActor: ReviewActor = { id: "alex", kind: "editor" };
   const scriptActor: ReviewActor = { id: "review-cli", kind: "script" };
   const assistantActor: ReviewActor = { id: "assistant", kind: "assistant" };
-  // #endregion actors
 
   async function runReview() {
-    // #region review
-    const original = await contributor.call(contributorSurface.handles.read, {}, scriptActor);
+    const original = await contributor.call(contributorSurface.handles.read, scriptActor);
     await contributor.call(contributorSurface.handles.suggest, {
       id: "cli-1", text: "Launch on Monday.", basedOnRevision: original.revision,
     }, scriptActor);
     const suggestion = await contributor.call(contributorSurface.handles.suggest, {
       id: "assistant-1", text: "Launch on Tuesday.", basedOnRevision: original.revision,
     }, assistantActor);
-    // The document is still "Launch on Friday." Both changes are suggestions.
 
     const accepted = await editor.call(editorSurface.handles.accept, {
       suggestionId: suggestion.id,
     }, editorActor);
-    // accepted: { text: "Launch on Tuesday.", revision: 1 }
-    // #endregion review
     return accepted;
   }
 
-  async function replaceImplementation() {
-    // A fresh set of implementation functions shares the application-owned store.
+  function replaceImplementation() {
     const replacementApplication = createReviewApplication(application.store);
-    const { installation: replacement } = installInteractions(compiled, {
+    const { installation: replacement } = installInteractions<typeof reviewInteractions, ReviewActor>(compiled, {
       installationId: "review:local:2",
-      implementations: implementInteractions<typeof reviewInteractions, ReviewActor>(reviewInteractions, replacementApplication.handlers),
-      realizationIds: directRealizationIds(compiled, "release-2"),
+      realizations: {
+        read: realizeDirect(replacementApplication.handlers.read, "read:release-2"),
+        suggest: realizeDirect(replacementApplication.handlers.suggest, "suggest:release-2"),
+        accept: realizeDirect(replacementApplication.handlers.accept, "accept:release-2"),
+      },
     });
     const result = bindProjection(contributorSurface, replacement, {
       admit: admitWhen((actor: ReviewActor) => actor.kind === "assistant", "Assistant required"),
@@ -100,29 +133,36 @@ export async function createDocumentReviewExample() {
     return { caller: result.binding.connect(), dispatches: replacementApplication.dispatches };
   }
 
-  async function tryChangedContract() {
-    // It now changes the document too. The old read-and-suggest surface must fail,
-    // even though the interaction ID, inputs, and outputs have stayed the same.
+  function tryChangedContract() {
+    // `suggest` now claims to change the document too. Even though its ID,
+    // input, and output are unchanged, binding the existing contributor surface
+    // must fail before dispatching anything.
     const changedInteractions = {
       ...reviewInteractions,
       suggest: defineInteraction({
         id: "document.suggest",
-        input: Suggestion, output: Suggestion,
+        input: Suggestion,
+        output: Suggestion,
         errors: { reviewRejected },
         reads: ["document", "suggestions"],
         changes: ["suggestions", "document"],
       }),
-    };
+    } as const;
     const changed = compileInteractions(changedInteractions);
     const dispatches: string[] = [];
-    const { installation: changedInstallation } = installInteractions(changed, {
+    const { installation: changedInstallation } = installInteractions<typeof changedInteractions, ReviewActor>(changed, {
       installationId: "review:auto-apply:1",
-      implementations: implementInteractions<typeof changedInteractions, ReviewActor>(changedInteractions, {
-        read() { dispatches.push("read"); return application.store.read(); },
-        suggest(input) { dispatches.push("suggest"); return input; },
-        accept(input, actor) { dispatches.push("accept"); return application.handlers.accept(input, actor); },
-      }),
-      realizationIds: directRealizationIds(changed, "release-1"),
+      realizations: {
+        read: realizeDirect(() => { dispatches.push("read"); return application.store.read(); }, "read:v1"),
+        suggest: realizeDirect((input: unknown) => { dispatches.push("suggest"); return input; }, "suggest:v1"),
+        accept: realizeDirect(
+          (input: { suggestionId: string }, actor: ReviewActor) => {
+            dispatches.push("accept");
+            return application.handlers.accept(input, actor);
+          },
+          "accept:v1",
+        ),
+      },
     });
     const result = bindProjection(contributorSurface, changedInstallation, {
       admit: admitWhen((actor: ReviewActor) => actor.kind === "assistant", "Assistant required"),
