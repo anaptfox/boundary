@@ -152,13 +152,29 @@ impl Plan {
         }
     }
 
-    /// Checks every plan step against a live binding's durable manifest.
+    /// Checks every plan step against a live binding and its durable manifest.
     #[must_use]
     pub fn preflight<C: Sync + ?Sized, A>(
         &self,
         binding: &Binding<C, A>,
         expected_program: Option<&Program>,
     ) -> PreflightReport {
-        self.preflight_manifest(binding.manifest(), expected_program)
+        let mut report = self.preflight_manifest(binding.manifest(), expected_program);
+        if binding.is_revoked() {
+            let mut revoked_issues = self
+                .steps()
+                .iter()
+                .map(|step| PreflightIssue {
+                    step_id: step.id.clone(),
+                    alias: step.alias.clone(),
+                    interaction_id: step.interaction_id.clone(),
+                    reason: PreflightIssueReason::BindingRevoked,
+                    message: "binding or its pinned installation has been revoked".to_owned(),
+                })
+                .collect::<Vec<_>>();
+            revoked_issues.extend(report.issues);
+            report.issues = revoked_issues;
+        }
+        report
     }
 }

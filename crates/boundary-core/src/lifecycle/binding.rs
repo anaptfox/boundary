@@ -76,7 +76,7 @@ impl<C: Sync + ?Sized, A> Binding<C, A> {
         Caller { binding: self }
     }
 
-    fn is_revoked(&self) -> bool {
+    pub(crate) fn is_revoked(&self) -> bool {
         self.revoked.load(Ordering::Acquire)
             || self
                 .ancestors

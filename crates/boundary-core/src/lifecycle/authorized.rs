@@ -155,7 +155,6 @@ pub const fn authorize_fn<F>(authorizer: F) -> AuthorizerFn<F> {
 pub struct AuthorizedBinding<CallerContext: Sync + ?Sized, Auth: Send + Sync + 'static, Z> {
     inner: Binding<Auth, AdmitAll>,
     authorizer: Arc<Z>,
-    controller: Arc<BindingController>,
     _caller_context: std::marker::PhantomData<fn(&CallerContext)>,
 }
 
@@ -174,10 +173,10 @@ impl<CallerContext: Sync + ?Sized, Auth: Send + Sync + 'static, Z>
         AuthorizedCaller { binding: self }
     }
 
-    /// Returns whether the host has revoked this binding.
+    /// Returns whether this binding, an ancestor binding, or its installation is revoked.
     #[must_use]
     pub fn is_revoked(&self) -> bool {
-        self.controller.revoked()
+        self.inner.is_revoked()
     }
 }
 
@@ -186,7 +185,7 @@ pub struct AuthorizedBound<CallerContext: Sync + ?Sized, Auth: Send + Sync + 'st
     /// Callable binding without lifecycle authority.
     pub binding: AuthorizedBinding<CallerContext, Auth, Z>,
     /// Host-held lifecycle authority for this binding.
-    pub controller: Arc<BindingController>,
+    pub controller: BindingController,
 }
 
 /// Atomic result of binding an installation with host authorization.
@@ -210,19 +209,14 @@ where
 {
     match bind(projection, installation, admit_all()) {
         BindResult::Unrealized(report) => AuthorizedBindResult::Unrealized(report),
-        BindResult::Bound(bound) => {
-            let controller = Arc::new(bound.controller);
-            let binding = bound.binding;
-            AuthorizedBindResult::Bound(Box::new(AuthorizedBound {
-                binding: AuthorizedBinding {
-                    inner: binding,
-                    authorizer: Arc::new(authorizer),
-                    controller: Arc::clone(&controller),
-                    _caller_context: std::marker::PhantomData,
-                },
-                controller,
-            }))
-        }
+        BindResult::Bound(bound) => AuthorizedBindResult::Bound(Box::new(AuthorizedBound {
+            binding: AuthorizedBinding {
+                inner: bound.binding,
+                authorizer: Arc::new(authorizer),
+                _caller_context: std::marker::PhantomData,
+            },
+            controller: bound.controller,
+        })),
     }
 }
 
