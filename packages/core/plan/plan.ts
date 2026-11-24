@@ -30,6 +30,10 @@ function normalizeBinding(value: unknown, path: string): PlanInputBinding {
     if (value.path !== undefined && typeof value.path !== "string") return fail("INVALID_STEP", path, "step-output path must be a string");
     return Object.freeze(value.path === undefined ? { kind: "step-output", stepId: value.stepId } : { kind: "step-output", stepId: value.stepId, path: value.path });
   }
+  if (value.kind === "step-output" && typeof value.step_id === "string") {
+    if (value.path !== undefined && typeof value.path !== "string") return fail("INVALID_STEP", path, "step-output path must be a string");
+    return Object.freeze(value.path === undefined ? { kind: "step-output", stepId: value.step_id } : { kind: "step-output", stepId: value.step_id, path: value.path });
+  }
   return fail("INVALID_STEP", path, "unknown or malformed input binding");
 }
 
@@ -74,13 +78,23 @@ function normalizeSteps(value: unknown): readonly PlanStep[] {
     state.set(id, 2);
   };
   for (const step of steps) visit(step.id);
+  steps.sort((left, right) => compareUtf8(left.id, right.id));
   return Object.freeze(steps);
 }
 
 function build(id: string, steps: readonly PlanStep[]): Plan {
   if (typeof id !== "string" || id.length === 0) return fail("INVALID_PLAN", "id", "plan id must be a non-empty string");
   const body = Object.freeze({ version: 1 as const, id, steps });
-  const planDigest = hashJson(PLAN_DOMAIN, body as unknown as JsonObject);
+  const canonicalSteps = steps.map((step) => ({
+    ...step,
+    inputs: Object.fromEntries(Object.entries(step.inputs).map(([name, binding]) => [
+      name,
+      binding.kind === "step-output"
+        ? { kind: binding.kind, step_id: binding.stepId, ...(binding.path === undefined ? {} : { path: binding.path }) }
+        : binding,
+    ])),
+  }));
+  const planDigest = hashJson(PLAN_DOMAIN, { ...body, steps: canonicalSteps } as unknown as JsonObject);
   return Object.freeze({ ...body, planDigest });
 }
 

@@ -192,7 +192,30 @@ impl Plan {
 }
 
 fn digest(id: &str, steps: &[PlanStep]) -> Result<PlanDigest, PlanError> {
-    let value = serde_json::json!({"version":1,"id":id,"steps":steps});
+    let mut value = serde_json::json!({"version":1,"id":id,"steps":steps});
+    // TypeScript emits its optional path only when present; serde encodes None
+    // as null by default, so remove that absent value before hashing.
+    if let Some(steps) = value
+        .get_mut("steps")
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        for step in steps {
+            if let Some(inputs) = step
+                .get_mut("inputs")
+                .and_then(serde_json::Value::as_object_mut)
+            {
+                for binding in inputs.values_mut() {
+                    if binding.get("kind").and_then(serde_json::Value::as_str)
+                        == Some("step-output")
+                        && let Some(binding) = binding.as_object_mut()
+                        && binding.get("path").is_some_and(serde_json::Value::is_null)
+                    {
+                        binding.remove("path");
+                    }
+                }
+            }
+        }
+    }
     let canonical = canonical_json(&value)?;
     let mut hasher = Sha256::new();
     hasher.update(PLAN_DOMAIN.as_bytes());

@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "program": [
+    {"id": "plan.alpha", "reads": ["inventory"], "changes": []},
+    {"id": "plan.beta", "reads": [], "changes": ["orders"]},
+    {"id": "plan.gamma", "reads": [], "changes": ["audit"]}
+  ],
+  "valid": [
+    {
+      "name": "all binding kinds and deterministic waves",
+      "plan": {
+        "version": 1,
+        "id": "fulfillment",
+        "steps": [
+          {"id": "reserve", "alias": "reserve", "interactionId": "plan.beta", "mode": "direct", "inputs": {"item": {"kind": "step-output", "step_id": "inspect", "path": "item"}}, "dependsOn": []},
+          {"id": "audit", "alias": "audit", "interactionId": "plan.gamma", "mode": "request", "inputs": {"reason": {"kind": "literal", "value": "reservation"}}},
+          {"id": "inspect", "alias": "inspect", "interactionId": "plan.alpha", "mode": "direct", "inputs": {"itemId": {"kind": "plan-input", "path": "item.id"}}}
+        ]
+      },
+      "planDigest": "sha256:0635fb7a273c9743b8a1a2cd991202c9ca21ed39fd15833da07ae29296a9a609",
+      "aggregateFootprints": {"reads": ["inventory"], "changes": ["audit", "orders"]},
+      "parallelWaves": [["audit", "inspect"], ["reserve"]]
+    },
+    {
+      "name": "omitted step-output path has one canonical representation",
+      "plan": {
+        "version": 1,
+        "id": "pathless-output",
+        "steps": [
+          {"id": "read", "alias": "read", "interactionId": "plan.alpha", "mode": "direct"},
+          {"id": "write", "alias": "write", "interactionId": "plan.beta", "mode": "direct", "inputs": {"value": {"kind": "step-output", "step_id": "read"}}}
+        ]
+      },
+      "planDigest": "sha256:ebf39b87e289095bf62a925b437bf362ed8cb1ed75179c91554642ef39057dc8",
+      "aggregateFootprints": {"reads": ["inventory"], "changes": ["orders"]},
+      "parallelWaves": [["read"], ["write"]]
+    }
+  ],
+  "invalid": [
+    {"name": "cycle", "reason": "cycle", "plan": {"version": 1, "id": "cycle", "steps": [{"id": "a", "alias": "a", "interactionId": "plan.alpha", "mode": "direct", "dependsOn": ["b"]}, {"id": "b", "alias": "b", "interactionId": "plan.beta", "mode": "direct", "dependsOn": ["a"]}]}},
+    {"name": "unknown dependency", "reason": "unknown-dependency", "plan": {"version": 1, "id": "unknown", "steps": [{"id": "a", "alias": "a", "interactionId": "plan.alpha", "mode": "direct", "dependsOn": ["missing"]}]}},
+    {"name": "duplicate step id", "reason": "duplicate-step", "plan": {"version": 1, "id": "duplicate", "steps": [{"id": "a", "alias": "a", "interactionId": "plan.alpha", "mode": "direct"}, {"id": "a", "alias": "b", "interactionId": "plan.beta", "mode": "direct"}]}},
+    {"name": "conflicting alias", "reason": "conflicting-alias", "plan": {"version": 1, "id": "alias", "steps": [{"id": "a", "alias": "same", "interactionId": "plan.alpha", "mode": "direct"}, {"id": "b", "alias": "same", "interactionId": "plan.beta", "mode": "direct"}]}}
+  ]
+}

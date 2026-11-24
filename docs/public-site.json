@@ -49,6 +49,7 @@
     {"source": "docs/spec/04-projections-handoffs-and-conformance.md", "route": "docs/specification/projections-handoffs-and-conformance", "group": "Specification", "order": 50},
     {"source": "docs/spec/05-host-authoring-and-artifacts.md", "route": "docs/specification/host-authoring-and-artifacts", "group": "Specification", "order": 60},
     {"source": "docs/spec/06-http-framing.md", "route": "docs/specification/http-framing", "group": "Specification", "order": 70},
+    {"source": "docs/spec/07-plans.md", "route": "docs/specification/plans", "group": "Specification", "order": 80},
     {"source": "docs/guides/native-embedding.md", "route": "docs/guides/native-embedding", "group": "Guides", "order": 155},
     {"source": "docs/guides/interaction-inspector.md", "route": "docs/guides/interaction-inspector", "group": "Guides", "order": 160}
   ]
