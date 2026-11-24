@@ -383,9 +383,6 @@ importers:
       '@modelcontextprotocol/server':
         specifier: ^2.3.1
         version: 2.4.0
-      '@noble/hashes':
-        specifier: ^2.4.0
-        version: 2.4.0
       '@trpc/server':
         specifier: ^11.18.0
         version: 11.22.1(typescript@7.0.2)
@@ -412,6 +409,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^5.20261031.1
         version: 5.20261031.1
+      '@noble/hashes':
+        specifier: ^2.4.0
+        version: 2.4.0
       electron:
         specifier: ^45.2.1
         version: 45.2.1(supports-color@10.2.2)

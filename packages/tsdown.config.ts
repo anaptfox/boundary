@@ -57,7 +57,11 @@ export default defineConfig({
   tsconfig: "tsconfig.build.json",
   sourcemap: false,
   clean: true,
-  deps: { neverBundle: [/^@foxworth\/boundary(?:\/|$)/u, /^node:/u] },
+  deps: {
+    alwaysBundle: [/^@noble\/hashes(?:\/|$)/u],
+    onlyBundle: ["@noble/hashes"],
+    neverBundle: [/^@foxworth\/boundary(?:\/|$)/u, /^node:/u],
+  },
   outputOptions: {
     banner: (chunk) => (chunk.name === "react" ? '"use client";' : ""),
   },
