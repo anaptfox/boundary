@@ -26,14 +26,16 @@ export type {
   NamedCallArguments,
   NamedCallerMethods,
   NamedCallers,
+  NamedInteractionMethod,
   NamedTryCallers,
 } from "./bind-interactions-types";
 export { installInteractions } from "./install";
 export { pickProjection, projectAllDirect, projectInteractions } from "./projection";
 export { omitProjection, unionProjections, intersectProjections } from "./projection-algebra";
-export type { ProjectionAlgebraMethods } from "./projection-algebra";
+export type { FluentProjection, ProjectionAlgebraMethods } from "./projection-algebra";
 export { realizeDirect, realizeRequest } from "./realizations";
-export type { DirectRealization, RequestRealization, RealizationMap, CoLocatedInstallOptions } from "./realizations";
+export type { DirectRealization, RequestRealization, RealizationEntry, RealizationMap, CoLocatedInstallOptions } from "./realizations";
+export type { ControlRequestContributions } from "./request-contributions";
 export { rebindProjection, createBindingSlot } from "./rebind";
 export type { RebindProjectionResult, BindingSlot, SlotRebindResult } from "./rebind";
 export { direct, directRealizationIds } from "./direct";

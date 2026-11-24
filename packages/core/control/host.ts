@@ -1,6 +1,7 @@
 import type {
   AnyInteractionDefinition,
   CompiledInteractions,
+  ControlRequestContributions as HostControlRequestContributions,
   DefinitionInput,
   InteractionDefinitions,
   InteractionHandle,
@@ -9,9 +10,10 @@ import type {
 import {
   createControlRequestContributions,
   type ControlRequestContributionSources,
-  type ControlRequestContributions as HostControlRequestContributions,
   type RequestInvocationPolicy,
 } from "#host/control";
+
+export type { HostControlRequestContributions };
 import { cloneJson, isInteractionId, isSha256Digest, validatePortableSchema, type JsonObject, type JsonSchema } from "@foxworth/boundary/program";
 import { exactObject } from "#program/internal";
 import { controlError } from "./errors";
