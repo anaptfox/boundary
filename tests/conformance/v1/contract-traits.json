@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "digests": [
+    {
+      "name": "declared-algebraic-traits",
+      "contract": {
+        "version": 1,
+        "id": "items.write",
+        "inputSchema": { "type": "object" },
+        "outputSchema": { "type": "object" },
+        "reads": ["items:{input.id}"],
+        "changes": ["items:{input.id}"],
+        "idempotencyKey": "request.id",
+        "compensates": "items.restore"
+      },
+      "canonical": "{\"changes\":[\"items:{input.id}\"],\"compensates\":\"items.restore\",\"id\":\"items.write\",\"idempotencyKey\":\"request.id\",\"inputSchema\":{\"type\":\"object\"},\"outputSchema\":{\"type\":\"object\"},\"reads\":[\"items:{input.id}\"],\"version\":1}",
+      "digest": "sha256:b5237e7590c0710cb4751ab6269e013a1ebcb4aa7e5340c6dd35fb47a5b1f448"
+    }
+  ],
+  "compatibility": [
+    { "name": "traits-must-match-when-expected", "compatible": false, "expected": { "idempotencyKey": "request.id" }, "offered": {} },
+    { "name": "declared-extra-trait-is-allowed", "compatible": true, "expected": {}, "offered": { "idempotencyKey": "request.id" } },
+    { "name": "matching-compensation", "compatible": true, "expected": { "compensates": "items.restore" }, "offered": { "compensates": "items.restore" } },
+    { "name": "different-compensation", "compatible": false, "expected": { "compensates": "items.restore" }, "offered": { "compensates": "items.undo" } }
+  ]
+}

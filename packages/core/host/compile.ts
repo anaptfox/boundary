@@ -73,6 +73,10 @@ function compileSnapshot<Definitions extends InteractionDefinitions>(
         output: output.annotations,
         errors: Object.freeze(errorAnnotations),
       });
+      const traits = definition as AnyInteractionDefinition & {
+        readonly idempotencyKey?: string;
+        readonly compensates?: string;
+      };
       const descriptor = createInteractionDescriptor({
         contract: {
           version: 1,
@@ -89,6 +93,8 @@ function compileSnapshot<Definitions extends InteractionDefinitions>(
               }),
           reads: definition.reads,
           changes: definition.changes,
+          ...(traits.idempotencyKey === undefined ? {} : { idempotencyKey: traits.idempotencyKey }),
+          ...(traits.compensates === undefined ? {} : { compensates: traits.compensates }),
         },
         ...(definition.summary === undefined &&
         definition.description === undefined
