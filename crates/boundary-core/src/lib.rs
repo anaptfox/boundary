@@ -11,6 +11,10 @@ pub mod observations;
 pub mod plan;
 mod program;
 
+/// Optional helpers for verifying schemas, observations, and crash recovery.
+#[cfg(feature = "test-util")]
+pub mod testing;
+
 pub use codec::{
     DeclaredErrorCodec, EmptyObjectCodec, JsonCodec, NoError, PortableFault, WireCodec, WireError,
 };
