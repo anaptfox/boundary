@@ -8,6 +8,7 @@ pub mod handoff;
 mod interaction;
 pub mod lifecycle;
 pub mod observations;
+pub mod plan;
 mod program;
 
 pub use codec::{
