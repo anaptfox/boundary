@@ -1,32 +1,14 @@
 import { createProgram, hashJson, type JsonObject } from "@foxworth/boundary/program";
 import { compareUtf8 } from "#program/internal";
-import { metadataForHandle } from "./compile";
+import { metadataForHandle } from "./compiled-state";
 import { failHost } from "./errors";
-import type { Projection, ProjectionInteraction, ProjectionManifest } from "./types";
-import { PROJECTION_DOMAIN, metadataForProjection, metadataForProjectedHandle, registerProjectionAlgebraResult, type DirectProjectionSelections, type FluentProjection } from "./projection";
-import { projectAllDirect, projectInteractions } from "./projection";
-import type { CompiledInteractions, InteractionDefinitions, InteractionMode, ProjectionSelection, ProjectionSelections } from "./types";
-
-export function projectCompiled<Definitions extends InteractionDefinitions, const Selections extends ProjectionSelections>(
-  compiled: CompiledInteractions<Definitions>,
-  selections: Selections,
-): FluentProjection<Selections>;
-export function projectCompiled<Definitions extends InteractionDefinitions, const Selections extends Readonly<Record<string, InteractionMode | ProjectionSelection>>>(
-  compiled: CompiledInteractions<Definitions>,
-  selections: Selections & { readonly [Alias in keyof Selections]: Selections[Alias] extends InteractionMode ? Alias extends keyof Definitions ? Selections[Alias] : never : Selections[Alias] },
-): FluentProjection<import("./projection").AliasProjectionSelections<Definitions, Selections>>;
-export function projectCompiled(
-  compiled: CompiledInteractions<any>,
-  selections: Readonly<Record<string, InteractionMode | ProjectionSelection>>,
-): FluentProjection<any> {
-  return projectInteractions(compiled, selections);
-}
-
-export function projectAllCompiled<Definitions extends InteractionDefinitions>(
-  compiled: CompiledInteractions<Definitions>,
-): FluentProjection<DirectProjectionSelections<Definitions>> {
-  return projectAllDirect(compiled);
-}
+import {
+  PROJECTION_DOMAIN,
+  metadataForProjection,
+  metadataForProjectedHandle,
+  registerProjectionAlgebraResult,
+} from "./projection-state";
+import type { Projection, ProjectionInteraction, ProjectionManifest, ProjectionSelections } from "./types";
 
 export interface ProjectionAlgebraMethods {
   pick(...keys: readonly string[]): FluentProjection<any>;
@@ -34,6 +16,9 @@ export interface ProjectionAlgebraMethods {
   union(other: Projection<any>): FluentProjection<any>;
   intersect(other: Projection<any>): FluentProjection<any>;
 }
+
+export type FluentProjection<Selections extends ProjectionSelections = ProjectionSelections> =
+  Projection<Selections> & ProjectionAlgebraMethods;
 
 type Entry = { alias: string; interaction: ProjectionInteraction; source: object };
 function entries(projection: Projection<any>): Entry[] {

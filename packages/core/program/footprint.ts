@@ -1,5 +1,5 @@
 import { compareUtf8, type JsonValue } from "./json";
-import { ProgramError } from "./program";
+import { ProgramError } from "./program-error";
 
 const segment = /^[A-Za-z0-9_-]+$/u;
 const placeholder = /\{input\.([A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)\}/gu;

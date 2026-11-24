@@ -1,35 +1,18 @@
-import { composePrograms, createInteractionDescriptor, createProgram, diffPrograms, portableSchema, type JsonObject, type InteractionDescriptor, type PortableSchema, type Program } from "@foxworth/boundary/program";
+import { composePrograms, createInteractionDescriptor, createProgram, diffPrograms, portableSchema, type JsonObject, type PortableSchema, type Program } from "@foxworth/boundary/program";
 import { declaredErrorSchema, isInteractionDefinition } from "./definitions";
 import { failHost } from "./errors";
 import type { AnyInteractionDefinition, CompileInteractionsOptions, CompiledInteractions, InteractionDefinitions, InteractionHandle, InteractionLowering, SchemaAdapter } from "./types";
 import type { AsyncInteractionLowering } from "./async-lowering";
 import { dataEntries, descriptorAnnotations, snapshotDefinitions } from "./definition-snapshot";
 import { compileAuthoringSchema, schemaAdapters } from "./schema-adapters";
-import { projectAllCompiled, projectCompiled } from "./projection-algebra";
+import {
+  compiledMetadata,
+  handleMetadata,
+  metadataForCompiled,
+} from "./compiled-state";
+import { projectAllDirect, projectInteractions } from "./projection";
 
-type CompiledMetadata = Readonly<{
-  definitions: Readonly<Record<string, AnyInteractionDefinition>>;
-  descriptors: ReadonlyMap<string, InteractionDescriptor>;
-  aliasesByDefinition: ReadonlyMap<AnyInteractionDefinition, string>;
-  handlesByDefinition: ReadonlyMap<AnyInteractionDefinition, InteractionHandle>;
-  nativeTargets: ReadonlyMap<string, unknown>;
-  errorSchemas: ReadonlyMap<
-    string,
-    Readonly<Record<string, PortableSchema>>
-  >;
-}>;
-
-const compiledMetadata = new WeakMap<object, CompiledMetadata>();
-
-const handleMetadata = new WeakMap<
-  object,
-  Readonly<{
-    compiled: object;
-    alias: string;
-    definition: AnyInteractionDefinition;
-    descriptor: InteractionDescriptor;
-  }>
->();
+export { handleBelongsToCompiled, metadataForCompiled, metadataForHandle } from "./compiled-state";
 
 function compileSnapshot<Definitions extends InteractionDefinitions>(
   definitions: Definitions,
@@ -157,10 +140,10 @@ function assembleCompiled<Definitions extends InteractionDefinitions>(
   const compiled = {
     program,
     handles,
-    project: (selections: any) => projectCompiled(compiled, selections),
+    project: (selections: any) => projectInteractions(compiled, selections),
     projectAll: (mode: "direct") => {
       if (mode !== "direct") throw new TypeError('projectAll currently supports only "direct" mode');
-      return projectAllCompiled(compiled);
+      return projectAllDirect(compiled);
     },
   } as unknown as CompiledInteractions<Definitions>;
   for (const alias of aliases) {
@@ -378,35 +361,4 @@ export function diffCompiledInteractions(
   metadataForCompiled(previous);
   metadataForCompiled(next);
   return diffPrograms(previous.program, next.program);
-}
-
-export function metadataForCompiled(value: unknown): CompiledMetadata {
-  if (value === null || typeof value !== "object") {
-    return failHost(
-      "INVALID_INSTALLATION",
-      "compiled",
-      "an authentic CompiledInteractions value is required",
-    );
-  }
-  const metadata = compiledMetadata.get(value);
-  if (!metadata) {
-    return failHost(
-      "INVALID_INSTALLATION",
-      "compiled",
-      "an authentic CompiledInteractions value is required",
-    );
-  }
-  return metadata;
-}
-
-export function metadataForHandle(value: unknown) {
-  if (value === null || typeof value !== "object") return undefined;
-  return handleMetadata.get(value);
-}
-
-export function handleBelongsToCompiled(
-  handle: unknown,
-  compiled: object,
-): boolean {
-  return metadataForHandle(handle)?.compiled === compiled;
 }

@@ -7,16 +7,18 @@ import type {
   InteractionMode,
   ProjectedInteractionHandle,
 } from "@foxworth/boundary";
+import { createHandoffInvocation } from "../execute";
 import {
-  createHandoffInvocation,
-  validateHandoffOutcomeAgainstManifest,
   validateHandoffOutcome,
-  type CheckedHandoff,
-  type HandoffFaultCause,
-  type HandoffInvocation,
-  type HandoffOutcome,
-  type HandoffValidationIssue,
-} from "@foxworth/boundary/handoff";
+  validateHandoffOutcomeAgainstManifest,
+} from "../messages";
+import type {
+  CheckedHandoff,
+  HandoffFaultCause,
+  HandoffInvocation,
+  HandoffOutcome,
+  HandoffValidationIssue,
+} from "../types";
 import type { JsonValue } from "@foxworth/boundary/program";
 import { AdapterError } from "./errors";
 import {

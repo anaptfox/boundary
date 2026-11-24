@@ -23,7 +23,6 @@ export function planAggregateFootprints(plan: Plan, program: Program): PlanFootp
 
 export function planParallelWaves(plan: Plan, program: Program): readonly (readonly string[])[] {
   const values = contracts(plan, program);
-  const byId = new Map(values.map((item) => [item.step.id, item]));
   const waveById = new Map<string, number>(), pending = [...values];
   while (pending.length > 0) {
     const readyIndex = pending.findIndex(({ step }) => [...step.dependsOn, ...Object.values(step.inputs).flatMap((binding) => binding.kind === "step-output" ? [binding.stepId] : [])].every((id) => waveById.has(id)));

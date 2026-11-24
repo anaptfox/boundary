@@ -28,10 +28,10 @@ export interface BindingSlot<Handles extends Record<string, any>, Context> {
   readonly revoked: boolean;
   revoke(): boolean;
   subscribe(listener: (slot: BindingSlot<Handles, Context>) => void): () => void;
-  rebind(nextInstallation: InteractionInstallation<Context>, options: BindOptions<Context>): SlotRebindResult<Handles, Context>;
-  rebindProjection(nextProjection: Projection<any>, nextInstallation: InteractionInstallation<Context>, options: BindOptions<Context>): SlotRebindResult<Handles, Context>;
+  rebind(nextInstallation: InteractionInstallation<Context>, options: BindOptions<Context>): SlotRebindResult;
+  rebindProjection(nextProjection: Projection<any>, nextInstallation: InteractionInstallation<Context>, options: BindOptions<Context>): SlotRebindResult;
 }
-export type SlotRebindResult<Handles extends Record<string, any>, Context> =
+export type SlotRebindResult =
   | Readonly<{ status: "rebound"; previousBindingDigest: string; nextBindingDigest: string; previousRevoked: boolean }>
   | Readonly<{ status: "unrealized"; report: UnrealizedReport }>;
 

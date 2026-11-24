@@ -1,5 +1,5 @@
 import { failHost } from "./errors";
-import { metadataForCompiled } from "./compile";
+import { metadataForCompiled } from "./compiled-state";
 import type {
   CompiledInteractions,
   InteractionDefinitions,
