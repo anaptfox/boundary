@@ -10,6 +10,8 @@ export type InvocationObservation = Readonly<
     reads: readonly string[];
     changes: readonly string[];
     correlation?: JsonValue;
+    scopedReads?: readonly string[];
+    scopedChanges?: readonly string[];
   }
 >;
 
@@ -18,7 +20,8 @@ export function validateInvocationObservation(value: unknown): InvocationObserva
   const event = normalizeJson(value) as Record<string, JsonValue>;
   if (!event || Array.isArray(event) || typeof event !== "object") throw new TypeError("invalid invocation observation");
   const required = ["version", "bindingDigest", "projectionDigest", "installationId", "installationDigest", "interactionId", "expectedContractDigest", "actualContractDigest", "mode", "realizationId", "certainty", "resultKind", "reads", "changes"];
-  if (required.some((key) => !Object.hasOwn(event, key)) || Object.keys(event).some((key) => !required.includes(key) && key !== "correlation")) throw new TypeError("invalid observation fields");
+  const optional = ["correlation", "scopedReads", "scopedChanges"];
+  if (required.some((key) => !Object.hasOwn(event, key)) || Object.keys(event).some((key) => !required.includes(key) && !optional.includes(key))) throw new TypeError("invalid observation fields");
   for (const key of ["bindingDigest", "projectionDigest", "installationDigest", "expectedContractDigest", "actualContractDigest"]) {
     if (!isSha256Digest(event[key])) throw new TypeError(`invalid observation ${key}`);
   }
@@ -28,6 +31,12 @@ export function validateInvocationObservation(value: unknown): InvocationObserva
   for (const key of ["reads", "changes"]) {
     const resources = event[key];
     if (!Array.isArray(resources) || resources.some((resource) => typeof resource !== "string" || resource.length === 0)) throw new TypeError(`invalid observation ${key}`);
+  }
+  for (const key of ["scopedReads", "scopedChanges"]) {
+    if (Object.hasOwn(event, key)) {
+      const resources = event[key];
+      if (!Array.isArray(resources) || resources.some((resource) => typeof resource !== "string" || resource.length === 0)) throw new TypeError(`invalid observation ${key}`);
+    }
   }
   const legal = event.resultKind === "fault"
     ? ["not-started", "not-completed", "unknown"].includes(String(event.certainty))

@@ -2,6 +2,7 @@ import { compareUtf8, type JsonSchema } from "./json";
 import type { InteractionContract } from "./program";
 import { acceptsEvery, incompatible, type ContractCompatibility } from "./schema-compatibility";
 import { validatePortableSchema } from "./validation";
+import { footprintSubsumes } from "./footprint";
 
 export type { ContractCompatibility } from "./schema-compatibility";
 
@@ -18,8 +19,7 @@ function footprintExcess(
   expected: readonly string[],
   offered: readonly string[],
 ): readonly string[] {
-  const allowed = new Set(expected);
-  return [...new Set(offered)].filter((name) => !allowed.has(name)).sort(compareUtf8);
+  return [...new Set(offered)].filter((name) => !expected.some((entry) => footprintSubsumes(entry, name))).sort(compareUtf8);
 }
 
 /**
@@ -66,6 +66,11 @@ export function contractCompatibility(
   const extraChanges = footprintExcess(expected.changes, offered.changes);
   if (extraChanges.length > 0) {
     return incompatible(`offered changes exceed the expected footprint: ${extraChanges.join(", ")}`, "changes");
+  }
+  for (const field of ["idempotencyKey", "compensates"] as const) {
+    if (expected[field] !== undefined && offered[field] !== expected[field]) {
+      return incompatible(`offered ${field} differs from the expected contract`, field);
+    }
   }
   // The matcher understands exactly the portable profile. A schema outside it
   // is never judged compatible, so validate both contracts before comparing.

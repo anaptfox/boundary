@@ -13,6 +13,7 @@ import {
 } from "./json";
 import { exactObject } from "./snapshot";
 import { validatePortableSchema } from "./validation";
+import { validateFootprint } from "./footprint";
 
 export const INTERACTION_CONTRACT_DOMAIN = "boundary.interaction-contract/v1";
 export const PROGRAM_DOMAIN = "boundary.program/v1";
@@ -34,6 +35,8 @@ export type InteractionContract = {
   readonly errorSchema?: JsonSchema;
   readonly reads: readonly string[];
   readonly changes: readonly string[];
+  readonly idempotencyKey?: string;
+  readonly compensates?: string;
 };
 
 /** The exact contract value hashed for identity. */
@@ -52,6 +55,8 @@ export type InteractionDocumentation = {
 
 export type InteractionDescriptorSource = {
   readonly contract: InteractionContract;
+  readonly idempotencyKey?: string;
+  readonly compensates?: string;
   readonly docs?: InteractionDocumentation;
   readonly annotations?: JsonObject;
 };
@@ -83,6 +88,8 @@ export type ProgramDiagnosticCode =
   | "INVALID_HASHER_RESULT"
   | "INVALID_INTERACTION_ID"
   | "INVALID_INTERACTION_FOOTPRINT"
+  | "INVALID_FOOTPRINT"
+  | "INVALID_CONTRACT_TRAIT"
   | "UNSUPPORTED_CONTRACT_VERSION"
   | "UNSUPPORTED_DESCRIPTOR_VERSION"
   | "UNSUPPORTED_PROGRAM_VERSION"
@@ -160,7 +167,7 @@ function normalizeEffects(
     );
   }
   const values = value as readonly string[];
-  const normalized = [...new Set(values)].sort(compareUtf8);
+  const normalized = [...new Set(values.map((value) => validateFootprint(value, path)))].sort(compareUtf8);
   const empty = normalized.find((value) => !value.trim());
   if (empty !== undefined) {
     fail(
@@ -170,6 +177,18 @@ function normalizeEffects(
     );
   }
   return Object.freeze(normalized);
+}
+
+function normalizeTrait(id: string, field: "idempotencyKey" | "compensates", value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || (field === "idempotencyKey"
+    ? !/^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/u.test(value)
+    : !isInteractionId(value) || value === id)) {
+    fail("INVALID_CONTRACT_TRAIT", `${id}.contract.${field}`, field === "compensates" && value === id
+      ? "an interaction cannot compensate itself"
+      : `invalid ${field}`);
+  }
+  return value;
 }
 
 function normalizeContract(contract: InteractionContract): InteractionContract {
@@ -185,7 +204,7 @@ function normalizeContract(contract: InteractionContract): InteractionContract {
   const snapped = exactObject(contract as unknown, {
     path: `${id}.contract`,
     keys: ["version", "id", "inputSchema", "outputSchema", "reads", "changes"],
-    optionalKeys: ["errorSchema"],
+    optionalKeys: ["errorSchema", "idempotencyKey", "compensates"],
     fail: (f) => fail("INVALID_INTERACTION_FOOTPRINT", f.path, f.message),
   });
   validatePortableSchema(snapped.inputSchema as JsonSchema, `${id}.inputSchema`);
@@ -205,6 +224,8 @@ function normalizeContract(contract: InteractionContract): InteractionContract {
         }),
     reads: normalizeEffects(id, "reads", snapped.reads),
     changes: normalizeEffects(id, "changes", snapped.changes),
+    ...(normalizeTrait(id, "idempotencyKey", snapped.idempotencyKey) === undefined ? {} : { idempotencyKey: snapped.idempotencyKey as string }),
+    ...(normalizeTrait(id, "compensates", snapped.compensates) === undefined ? {} : { compensates: snapped.compensates as string }),
   }) as InteractionContract;
   normalizedContracts.add(normalized);
   return normalized;
@@ -280,6 +301,8 @@ function identityFromNormalized(
       : { errorSchema: contract.errorSchema }),
     reads: contract.reads,
     changes: contract.changes,
+    ...(contract.idempotencyKey === undefined ? {} : { idempotencyKey: contract.idempotencyKey }),
+    ...(contract.compensates === undefined ? {} : { compensates: contract.compensates }),
   });
 }
 
@@ -307,7 +330,14 @@ export function createInteractionDescriptor(
   source: InteractionDescriptorSource,
   hasher: DomainHasher = hashJson,
 ): InteractionDescriptor {
-  const contract = normalizeContract(source.contract);
+  const normalizedSource = normalizeContract(source.contract);
+  const contract = source.idempotencyKey === undefined && source.compensates === undefined
+    ? normalizedSource
+    : normalizeContract({
+        ...normalizedSource,
+        ...(source.idempotencyKey === undefined ? {} : { idempotencyKey: source.idempotencyKey }),
+        ...(source.compensates === undefined ? {} : { compensates: source.compensates }),
+      });
   const contractDigest = digestInteractionContract(contract, hasher);
   return Object.freeze({
     version: 1,

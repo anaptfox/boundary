@@ -35,6 +35,8 @@ type CommonDefinitionSource<
   summary?: string;
   description?: string;
   annotations?: JsonObject;
+  idempotencyKey?: string;
+  compensates?: string;
 }>;
 
 type InputDefinitionSource<
@@ -201,6 +203,8 @@ export function defineInteraction(
     "summary",
     "description",
     "annotations",
+    "idempotencyKey",
+    "compensates",
   ]);
   const unexpected = Reflect.ownKeys(source).find(
     (key) => typeof key !== "string" || !allowed.has(key),
@@ -224,6 +228,14 @@ export function defineInteraction(
   const summary = ownData(source, "summary");
   const description = ownData(source, "description");
   const rawAnnotations = ownData(source, "annotations");
+  const idempotencyKey = ownData(source, "idempotencyKey");
+  const compensates = ownData(source, "compensates");
+  if (idempotencyKey !== undefined && typeof idempotencyKey !== "string") {
+    failHost("INVALID_DECLARATION", "defineInteraction.idempotencyKey", "idempotencyKey must be a string");
+  }
+  if (compensates !== undefined && typeof compensates !== "string") {
+    failHost("INVALID_DECLARATION", "defineInteraction.compensates", "compensates must be a string");
+  }
   const authoredErrors = errorSchemas(ownData(source, "errors"));
   if (summary !== undefined && typeof summary !== "string") {
     failHost(
@@ -253,6 +265,8 @@ export function defineInteraction(
     ...(summary === undefined ? {} : { summary }),
     ...(description === undefined ? {} : { description }),
     ...(annotations === undefined ? {} : { annotations }),
+    ...(idempotencyKey === undefined ? {} : { idempotencyKey }),
+    ...(compensates === undefined ? {} : { compensates }),
     inputArity: hasInput ? 1 : 0,
   }) as AnyInteractionDefinition;
   definitions.add(definition);

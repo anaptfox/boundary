@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "valid": ["documents", "document:{input.id}", "org:{input.org.id}:doc:{input.docId}"],
+  "invalid": ["", " documents", "documents ", "doc:{input}", "doc:{input.}", "doc:{input.a..b}", "doc:{input.a!}", "doc:{other.id}", "doc:{}", "doc:{input.id", "doc:input.id}", "doc:{input.id}}"],
+  "subsumption": [
+    { "expected": "documents", "offered": "documents:doc-1", "subsumes": true },
+    { "expected": "documents", "offered": "documents:{input.id}", "subsumes": true },
+    { "expected": "document:{input.id}", "offered": "document:doc-42", "subsumes": true },
+    { "expected": "org:{input.org}:doc:{input.id}", "offered": "org:acme:doc:99", "subsumes": true },
+    { "expected": "document:doc-42", "offered": "document:{input.id}", "subsumes": false },
+    { "expected": "document:{input.id}", "offered": "document:a:b", "subsumes": false },
+    { "expected": "document:{input.id}", "offered": "document:", "subsumes": false }
+  ],
+  "resolution": [
+    { "templates": ["documents", "document:{input.id}", "org:{input.org}:doc:{input.docId}"], "input": { "id": "a-1", "org": "acme", "docId": 7 }, "expectedResolved": ["document:a-1", "documents", "org:acme:doc:7"] },
+    { "templates": ["document:{input.id}", "document:{input.missing}"], "input": { "id": null }, "expectedResolved": ["document"] }
+  ]
+}

@@ -130,6 +130,7 @@ export type {
 } from "./artifacts";
 
 export { validateInvocationObservation, type InvocationObservation } from "./observation";
+export { footprintSubsumes, resolveFootprints, scopedObservationFootprints, validateFootprint } from "./footprint";
 
 export {
   ExecutionEvidenceError,
