@@ -22,6 +22,7 @@ conformance.
 4. [Projections, Bindings, Handoffs, and conformance](./04-projections-handoffs-and-conformance.md)
 5. [Host authoring and artifacts](./05-host-authoring-and-artifacts.md)
 6. [HTTP framing for version 1 Handoff](./06-http-framing.md)
+7. [Plans](./07-plans.md)
 
 The [Host](../reference/host.md),
 [Host build](../reference/build.md),

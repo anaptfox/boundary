@@ -57,6 +57,32 @@ ones. Footprints are directional: an implementation MAY touch less than the
 caller was told to expect and MUST NOT touch more. Reviewed cases live in
 `tests/conformance/v1/contract-compatibility.json`.
 
+## Scoped footprints
+
+A footprint MAY declare a parameterized resource using `{input.<path>}`, where
+`<path>` is a dot-separated path into the interaction input. A static footprint
+template subsumes a concrete resource when its literal segments match and each
+placeholder matches exactly the corresponding path value; compatibility MUST
+compare these templates directionally and MUST NOT treat a more general actual
+footprint as compatible with a narrower expected footprint. At invocation time,
+the host MUST resolve each placeholder deterministically from the validated
+input before applying the interaction. String, number, and boolean path values
+are converted to text. If a path cannot be resolved to one of those scalar
+values, resolution MUST use the template's coarse resource prefix when present;
+otherwise it MUST retain the original template. Reviewed cases live in
+`tests/conformance/v1/scoped-footprints.json`.
+
+## Optional algebraic traits
+
+A contract MAY declare `idempotencyKey` and `compensates` traits. These are
+declarations of intended algebraic behavior, not proofs that an implementation
+is idempotent or that compensation restores prior state. When absent, each trait
+MUST be omitted from version 1 canonical contract JSON. Compatibility is
+directional: an actual contract MUST preserve every trait required by the
+expected contract, while adding a trait does not make a narrower expected
+contract incompatible. Reviewed cases live in
+`tests/conformance/v1/contract-traits.json`.
+
 An atomic Binding MAY use that judgment. When it does, it MUST pin both expected
 and actual Programs and contract digests. It MUST NOT relabel the actual
 realization as the expected contract or use compatibility outside the complete
