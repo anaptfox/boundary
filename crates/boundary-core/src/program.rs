@@ -7,6 +7,7 @@ mod delta;
 mod descriptor;
 mod draft;
 mod error;
+mod footprint;
 mod id;
 mod schema;
 mod schema_compatibility;
@@ -34,6 +35,7 @@ pub use descriptor::{
 };
 pub use draft::Draft;
 pub use error::{ProgramError, ProgramErrorCode};
+pub use footprint::{footprint_subsumes, resolve_footprints};
 pub use id::{ContractDigest, DraftDigest, InteractionId, ProgramDigest, StaticInteractionId};
 pub use schema::{PortableSchema, SchemaType};
 

@@ -16,6 +16,8 @@ pub enum ProgramErrorCode {
     UnsupportedSchema,
     /// A contract footprint is invalid.
     InvalidFootprint,
+    /// An algebraic interaction trait is invalid.
+    InvalidTrait,
     /// A documentation or annotation value is invalid.
     InvalidMetadata,
     /// An encoded version is not supported.

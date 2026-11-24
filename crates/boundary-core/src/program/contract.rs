@@ -6,6 +6,7 @@ use serde_json::{Map, Value};
 use super::{
     ContractDigest, InteractionId, PortableSchema, ProgramError, ProgramErrorCode,
     canonical::hash_json,
+    footprint::{valid_path, validate_footprint},
 };
 
 pub(crate) const CONTRACT_DOMAIN: &str = "boundary.interaction-contract/v1";
@@ -25,6 +26,10 @@ pub struct InteractionContract {
     error_schema: Option<PortableSchema>,
     reads: Vec<String>,
     changes: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    idempotency_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    compensates: Option<InteractionId>,
     #[serde(skip)]
     digest: ContractDigest,
 }
@@ -43,6 +48,8 @@ impl InteractionContract {
             error_schema: None,
             reads: Vec::new(),
             changes: Vec::new(),
+            idempotency_key: None,
+            compensates: None,
         }
     }
 
@@ -99,6 +106,18 @@ impl InteractionContract {
         &self.changes
     }
 
+    /// Returns the input path used as this interaction's idempotency key.
+    #[must_use]
+    pub fn idempotency_key(&self) -> Option<&str> {
+        self.idempotency_key.as_deref()
+    }
+
+    /// Returns the interaction this contract declares it compensates.
+    #[must_use]
+    pub const fn compensates(&self) -> Option<&InteractionId> {
+        self.compensates.as_ref()
+    }
+
     /// Computes the contract's typed identity digest.
     ///
     /// # Errors
@@ -131,6 +150,15 @@ impl InteractionContract {
             "changes".to_owned(),
             Value::Array(self.changes.iter().cloned().map(Value::String).collect()),
         );
+        if let Some(key) = &self.idempotency_key {
+            identity.insert("idempotencyKey".to_owned(), Value::String(key.clone()));
+        }
+        if let Some(compensates) = &self.compensates {
+            identity.insert(
+                "compensates".to_owned(),
+                Value::String(compensates.to_string()),
+            );
+        }
         Value::Object(identity)
     }
 }
@@ -145,6 +173,8 @@ struct RawContract {
     error_schema: Option<PortableSchema>,
     reads: Vec<String>,
     changes: Vec<String>,
+    idempotency_key: Option<String>,
+    compensates: Option<InteractionId>,
 }
 
 impl<'de> Deserialize<'de> for InteractionContract {
@@ -165,6 +195,8 @@ impl<'de> Deserialize<'de> for InteractionContract {
             error_schema: raw.error_schema,
             reads: raw.reads,
             changes: raw.changes,
+            idempotency_key: raw.idempotency_key,
+            compensates: raw.compensates.map(Ok),
         }
         .finish()
         .map_err(serde::de::Error::custom)
@@ -180,6 +212,8 @@ pub struct InteractionContractBuilder {
     error_schema: Option<PortableSchema>,
     reads: Vec<String>,
     changes: Vec<String>,
+    idempotency_key: Option<String>,
+    compensates: Option<Result<InteractionId, ProgramError>>,
 }
 
 impl InteractionContractBuilder {
@@ -212,20 +246,54 @@ impl InteractionContractBuilder {
         self
     }
 
+    /// Declares the input path that supplies an idempotency key.
+    #[must_use]
+    pub fn idempotency_key(mut self, path: impl Into<String>) -> Self {
+        self.idempotency_key = Some(path.into());
+        self
+    }
+
+    /// Declares the interaction compensated by this interaction.
+    #[must_use]
+    pub fn compensates(mut self, interaction_id: impl AsRef<str>) -> Self {
+        self.compensates = Some(InteractionId::parse(interaction_id));
+        self
+    }
+
     /// Validates and constructs the contract.
     ///
     /// # Errors
     ///
-    /// Returns [`ProgramError`] for an invalid id or empty footprint entry.
+    /// Returns [`ProgramError`] for an invalid id, trait, or footprint entry.
     pub fn finish(self) -> Result<InteractionContract, ProgramError> {
+        if let Some(key) = &self.idempotency_key
+            && !valid_path(key)
+        {
+            return Err(ProgramError::new(
+                ProgramErrorCode::InvalidTrait,
+                "contract.idempotencyKey",
+                "idempotency key must be dot-separated [A-Za-z0-9_-] segments",
+            ));
+        }
+        let id = self.id?;
+        let compensates = self.compensates.map_or(Ok(None), |value| value.map(Some))?;
+        if compensates.as_ref().is_some_and(|value| value == &id) {
+            return Err(ProgramError::new(
+                ProgramErrorCode::InvalidTrait,
+                "contract.compensates",
+                "an interaction cannot compensate itself",
+            ));
+        }
         let contract = InteractionContract {
             version: 1,
-            id: self.id?,
+            id,
             input_schema: self.input_schema,
             output_schema: self.output_schema,
             error_schema: self.error_schema,
             reads: normalize_footprint(self.reads, "contract.reads")?,
             changes: normalize_footprint(self.changes, "contract.changes")?,
+            idempotency_key: self.idempotency_key,
+            compensates,
             digest: ContractDigest::from_hash([0; 32]),
         };
         let digest = hash_json(CONTRACT_DOMAIN, &contract.identity_value())
@@ -237,13 +305,7 @@ impl InteractionContractBuilder {
 fn normalize_footprint(values: Vec<String>, path: &str) -> Result<Vec<String>, ProgramError> {
     let mut unique = BTreeSet::new();
     for (index, value) in values.into_iter().enumerate() {
-        if value.trim().is_empty() {
-            return Err(ProgramError::new(
-                ProgramErrorCode::InvalidFootprint,
-                format!("{path}[{index}]"),
-                "footprint entries must not be empty",
-            ));
-        }
+        validate_footprint(&value, &format!("{path}[{index}]"))?;
         unique.insert(value);
     }
     let mut normalized: Vec<_> = unique.into_iter().collect();

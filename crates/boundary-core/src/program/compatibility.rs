@@ -1,4 +1,6 @@
-use super::{InteractionContract, schema_compatibility::accepts_every};
+use super::{
+    InteractionContract, footprint::footprint_subsumes, schema_compatibility::accepts_every,
+};
 
 /// Directional compatibility judgment between an expected and offered contract.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -32,7 +34,7 @@ impl Compatibility {
 fn footprint_excess(expected: &[String], offered: &[String]) -> Vec<String> {
     let mut excess: Vec<String> = offered
         .iter()
-        .filter(|name| !expected.contains(name))
+        .filter(|name| !expected.iter().any(|entry| footprint_subsumes(entry, name)))
         .cloned()
         .collect();
     excess.sort();
@@ -52,6 +54,24 @@ pub fn contract_compatibility(
 ) -> Compatibility {
     if expected.id() != offered.id() {
         return incompatible("id", "interaction ids differ");
+    }
+    if expected
+        .idempotency_key()
+        .is_some_and(|key| offered.idempotency_key() != Some(key))
+    {
+        return incompatible(
+            "idempotencyKey",
+            "offered idempotency key differs from expected",
+        );
+    }
+    if expected
+        .compensates()
+        .is_some_and(|id| offered.compensates() != Some(id))
+    {
+        return incompatible(
+            "compensates",
+            "offered compensation target differs from expected",
+        );
     }
     let extra_reads = footprint_excess(expected.reads(), offered.reads());
     if !extra_reads.is_empty() {
