@@ -358,6 +358,10 @@ export function isSha256Digest(value: unknown): value is Sha256Digest {
   return typeof value === "string" && /^sha256:[0-9a-f]{64}$/u.test(value);
 }
 
+const HEX_BYTES = Array.from({ length: 256 }, (_, byte) =>
+  byte.toString(16).padStart(2, "0"),
+);
+
 /** Hash canonical JSON in an explicit domain separated by a NUL byte. */
 export function hashJson(
   domain: string,
@@ -372,10 +376,11 @@ export function hashJson(
   }
   const bytes = encoder.encode(`${domain}\0${canonicalJson(value)}`);
   const digest = nobleSha256(bytes);
-  const hex = Array.from(digest, (byte) =>
-    byte.toString(16).padStart(2, "0"),
-  ).join("");
-  return `sha256:${hex}`;
+  let hex = "sha256:";
+  for (let i = 0; i < digest.length; i += 1) {
+    hex += HEX_BYTES[digest[i]!];
+  }
+  return hex as Sha256Digest;
 }
 
 /** Generic canonical-JSON hash; Boundary protocol identities use explicit domains. */

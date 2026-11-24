@@ -106,18 +106,39 @@ export function createCaller<Context>(binding: ProjectionBinding<any, Context>) 
   const tryDirect: Record<string, (...args: readonly unknown[]) => Promise<unknown>> = Object.create(null) as Record<string, (...args: readonly unknown[]) => Promise<unknown>>;
   for (const [alias, handle] of Object.entries(handles)) {
     if (!handle.modes.includes("direct")) continue;
-    Object.defineProperty(direct, alias, { enumerable: true, configurable: false, writable: false, value: (...args: readonly unknown[]) => (caller.call as Function)(handle, ...args) });
-    Object.defineProperty(tryDirect, alias, { enumerable: true, configurable: false, writable: false, value: async (...args: readonly unknown[]) => {
-      try {
-        const { input, context } = argsForTyped(handle, args);
-        const resolved = binding.resolve(handle.interactionId);
-        if (!resolved) throw new InteractionFault("invalid-invocation", "not-started", "projected interaction is not bound");
-        return outcomeRecord(await rawInvoke(binding, resolved, "direct", input, context as Context));
-      } catch (error) {
-        const fault = error instanceof InteractionFault ? error : new InteractionFault("realization-failed", "unknown", "interaction invocation failed");
-        return Object.freeze({ kind: "fault", cause: fault.cause, certainty: fault.certainty, message: fault.message });
-      }
-    } });
+    const resolved = binding.resolve(handle.interactionId);
+    const zeroArity = handle.inputArity === 0;
+    Object.defineProperty(direct, alias, {
+      enumerable: true,
+      configurable: false,
+      writable: false,
+      value: async (...args: readonly unknown[]) => {
+        if (!resolved) {
+          throw new InteractionFault("invalid-invocation", "not-started", "projected interaction is not bound");
+        }
+        const input = zeroArity ? null : args[0];
+        const context = (zeroArity ? args[0] : args[1]) as Context;
+        const outcome = await rawInvoke(binding, resolved, "direct", input, context);
+        if (outcome.result.kind === "returned") return outcome.result.value;
+        return throwTyped(outcome);
+      },
+    });
+    Object.defineProperty(tryDirect, alias, {
+      enumerable: true,
+      configurable: false,
+      writable: false,
+      value: async (...args: readonly unknown[]) => {
+        try {
+          if (!resolved) throw new InteractionFault("invalid-invocation", "not-started", "projected interaction is not bound");
+          const input = zeroArity ? null : args[0];
+          const context = (zeroArity ? args[0] : args[1]) as Context;
+          return outcomeRecord(await rawInvoke(binding, resolved, "direct", input, context));
+        } catch (error) {
+          const fault = error instanceof InteractionFault ? error : new InteractionFault("realization-failed", "unknown", "interaction invocation failed");
+          return Object.freeze({ kind: "fault", cause: fault.cause, certainty: fault.certainty, message: fault.message });
+        }
+      },
+    });
   }
   caller.direct = Object.freeze(direct);
   caller.try = Object.freeze(tryDirect);
@@ -159,18 +180,39 @@ export function createCaller<Context>(binding: ProjectionBinding<any, Context>) 
     const tryRequests: Record<string, (...args: readonly unknown[]) => Promise<unknown>> = Object.create(null) as Record<string, (...args: readonly unknown[]) => Promise<unknown>>;
     for (const [alias, handle] of Object.entries(handles)) {
       if (!handle.modes.includes("request")) continue;
-      Object.defineProperty(requests, alias, { enumerable: true, configurable: false, writable: false, value: (...args: readonly unknown[]) => (caller.request as Function)(handle, ...args) });
-      Object.defineProperty(tryRequests, alias, { enumerable: true, configurable: false, writable: false, value: async (...args: readonly unknown[]) => {
-        try {
-          const { input, context } = argsForTyped(handle, args);
-          const resolved = binding.resolve(handle.interactionId);
-          if (!resolved) throw new InteractionFault("invalid-invocation", "not-started", "projected interaction is not bound");
-          return outcomeRecord(await rawInvoke(binding, resolved, "request", input, context as Context));
-        } catch (error) {
-          const fault = error instanceof InteractionFault ? error : new InteractionFault("request-failed", "unknown", "interaction request failed");
-          return Object.freeze({ kind: "fault", cause: fault.cause, certainty: fault.certainty, message: fault.message });
-        }
-      } });
+      const resolved = binding.resolve(handle.interactionId);
+      const zeroArity = handle.inputArity === 0;
+      Object.defineProperty(requests, alias, {
+        enumerable: true,
+        configurable: false,
+        writable: false,
+        value: async (...args: readonly unknown[]) => {
+          if (!resolved) {
+            throw new InteractionFault("invalid-invocation", "not-started", "projected interaction is not bound");
+          }
+          const input = zeroArity ? null : args[0];
+          const context = (zeroArity ? args[0] : args[1]) as Context;
+          const outcome = await rawInvoke(binding, resolved, "request", input, context);
+          if (outcome.result.kind === "proposed") return outcome.result.proposal;
+          return throwTyped(outcome);
+        },
+      });
+      Object.defineProperty(tryRequests, alias, {
+        enumerable: true,
+        configurable: false,
+        writable: false,
+        value: async (...args: readonly unknown[]) => {
+          try {
+            if (!resolved) throw new InteractionFault("invalid-invocation", "not-started", "projected interaction is not bound");
+            const input = zeroArity ? null : args[0];
+            const context = (zeroArity ? args[0] : args[1]) as Context;
+            return outcomeRecord(await rawInvoke(binding, resolved, "request", input, context));
+          } catch (error) {
+            const fault = error instanceof InteractionFault ? error : new InteractionFault("request-failed", "unknown", "interaction request failed");
+            return Object.freeze({ kind: "fault", cause: fault.cause, certainty: fault.certainty, message: fault.message });
+          }
+        },
+      });
     }
     caller.requests = Object.freeze(requests);
     caller.tryRequest = Object.freeze(tryRequests);
