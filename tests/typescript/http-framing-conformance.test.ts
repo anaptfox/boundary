@@ -25,8 +25,8 @@ import {
   installInteractions,
   projectInteractions,
 } from "@foxworth/boundary";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
-import { statusForRemoteResult } from "@foxworth/boundary/remote";
+import { createProtocolHandler } from "@foxworth/boundary/http";
+import { statusForRemoteResult } from "@foxworth/boundary/handoff";
 import { portableSchema } from "@foxworth/boundary/program";
 import type { HandoffOutcome } from "@foxworth/boundary/handoff";
 

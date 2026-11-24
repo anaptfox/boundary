@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateInvalidSamples, generateValidSamples, verifyObservedReadEquivalence, verifyControlCrashRecovery, TestClock, MemoryJournal } from "../../packages/core/testing/index";
+import { generateInvalidSamples, generateValidSamples, verifyObservedReadEquivalence, verifyControlCrashRecovery, TestClock, MemoryJournal } from "@foxworth/boundary/testing";
 import type { JsonSchema, JsonValue } from "@foxworth/boundary/program";
 import { compileInteractions, defineInteraction, directRealizationIds, implementInteractions, installInteractions } from "@foxworth/boundary";
 import { portableSchema } from "@foxworth/boundary/program";

@@ -3,7 +3,7 @@ import { projectInteractions } from "@foxworth/boundary";
 import {
   createProtocolHandler,
   fetchTransport,
-} from "@foxworth/boundary/http/protocol";
+} from "@foxworth/boundary/http";
 import {
   isWebMcpAvailable,
   registerWebMcpBinding,

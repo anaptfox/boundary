@@ -9,13 +9,13 @@ import {
   installInteractions,
   projectInteractions,
 } from "@foxworth/boundary";
-import { createControlRequestContributions } from "@foxworth/boundary/host/control";
-import { AdapterError, isDomainErrorFor } from "@foxworth/boundary/remote";
-import { createCompositeHttpHandler, mountHandlers } from "@foxworth/boundary/http/compose";
+import { createControlRequestContributions } from "../../packages/core/host/control";
+import { AdapterError, isDomainErrorFor } from "@foxworth/boundary/client";
+import { createCompositeHttpHandler, mountHandlers } from "@foxworth/boundary/http";
 import { createHttpHandler, route } from "@foxworth/boundary/http";
-import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http";
 import type { ClientTransport } from "@foxworth/boundary/client";
-import { openapi } from "@foxworth/boundary/http/openapi";
+import { openapi } from "@foxworth/boundary/http";
 import { createProjectionClient, handlesFromBinding, pinProjectionReferences } from "@foxworth/boundary/client";
 import {
   createTrpcHandler,

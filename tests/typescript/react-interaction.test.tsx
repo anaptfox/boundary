@@ -5,7 +5,7 @@ import { StrictMode, type ReactNode } from "react";
 import type { InteractionDefinition, InteractionHandle, ProjectedInteractionHandle } from "@foxworth/boundary";
 import type { JsonValue } from "@foxworth/boundary/program";
 import type { ProjectionClient } from "@foxworth/boundary/client";
-import { RemoteExecutionError, RemoteInvocationError } from "@foxworth/boundary/remote";
+import { RemoteExecutionError, RemoteInvocationError } from "@foxworth/boundary/client";
 import { describeInteractionError, useInvocationState, useProposalInteraction } from "@foxworth/boundary/react";
 
 const DIGEST = `sha256:${"c".repeat(64)}` as const;

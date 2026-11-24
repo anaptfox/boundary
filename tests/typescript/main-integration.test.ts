@@ -5,7 +5,7 @@ import {
   projectInteractions, restrictBinding,
 } from "@foxworth/boundary";
 import { createInvocationState, createProjectionClient } from "@foxworth/boundary/client";
-import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http";
 import {
   observedRead, type ObservationSource, type ObservedReadDiagnostic,
 } from "@foxworth/boundary/observations";

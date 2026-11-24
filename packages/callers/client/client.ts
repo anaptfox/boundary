@@ -25,12 +25,12 @@ import {
   RemoteInvocationError,
   RemoteProtocolRejection,
   RemoteProtocolError,
-} from "@foxworth/boundary/remote";
+} from "#remote";
 import {
   interactionKey,
   snapshotProjectedHandle,
   type AnyProjectedInteractionHandle,
-} from "@foxworth/boundary/remote";
+} from "#remote";
 
 type DefinitionOf<Handle> = Handle extends ProjectedInteractionHandle<
   InteractionHandle<infer Definition>,

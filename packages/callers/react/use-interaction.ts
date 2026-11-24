@@ -15,7 +15,7 @@ import {
   RemoteExecutionError,
   RemoteInvocationError,
   RemoteProtocolError,
-} from "@foxworth/boundary/remote";
+} from "#remote";
 import {
   useCallback,
   useEffect,
@@ -31,7 +31,7 @@ import {
   type InteractionRead,
   type InteractionReadError,
   type InteractionReadSnapshot,
-} from "@foxworth/boundary/client/cache";
+} from "@foxworth/boundary/client";
 import { useInteractionCacheScope } from "./cache-scope";
 import { useInvocationState } from "./use-invocation-state";
 

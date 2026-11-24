@@ -24,7 +24,7 @@ import {
   type ControlHook,
 } from "@foxworth/boundary/control";
 import { contributeControlRequests } from "@foxworth/boundary/control/host";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 import { WorkspaceControlJournal } from "./controlJournal";
 
 type Session = Readonly<{ actorId: string; role: "owner" }>;

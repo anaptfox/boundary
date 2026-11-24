@@ -55,23 +55,23 @@ capability your application uses:
 
 | Export | Owns |
 | --- | --- |
-| `@foxworth/boundary/client/cache` | footprint invalidation for mounted reads |
+| `@foxworth/boundary/client` | footprint invalidation for mounted reads |
 | `@foxworth/boundary/client` | typed version 1 Binding client and explicit interaction stores |
-| `@foxworth/boundary/remote` | sanitized protocol errors |
+| `@foxworth/boundary/client` | sanitized protocol errors |
 | `@foxworth/boundary/http` | explicit routes and Fetch handler |
-| `@foxworth/boundary/http/compose` | explicit handler composition |
-| `@foxworth/boundary/http/openapi` | OpenAPI 3.1 description |
-| `@foxworth/boundary/http/protocol` | Handoff wire handler and transports |
-| `@foxworth/boundary/remote` | declaration-to-Binding resolution |
-| `@foxworth/boundary/remote` | JSON-safe version 1 result envelopes |
-| `@foxworth/boundary/remote` | projector schema helpers |
+| `@foxworth/boundary/http` | explicit handler composition |
+| `@foxworth/boundary/http` | OpenAPI 3.1 description |
+| `@foxworth/boundary/http` | Handoff wire handler and transports |
+| `@foxworth/boundary/handoff` | declaration-to-Binding resolution |
+| `@foxworth/boundary/handoff` | JSON-safe version 1 result envelopes |
+| `@foxworth/boundary/handoff` | projector schema helpers |
 | `@foxworth/boundary/frameworks/trpc` | explicit tRPC procedures and handler |
 | `@foxworth/boundary/http/node` | Node HTTP/Fetch bridge |
 | `@foxworth/boundary/frameworks/hono` | generic handler mount and typed per-request Hono middleware |
 | `@foxworth/boundary/frameworks/next` | App Router method exports and direct server interaction |
 | `@foxworth/boundary/frameworks/vite` | Vite/Connect mount and explicit host-generation lifecycle |
-| `@foxworth/boundary/http/observations` | host-authenticated SSE observation stream |
-| `@foxworth/boundary/client/observations` | pinned-client observation subscription and read refresh |
+| `@foxworth/boundary/http` | host-authenticated SSE observation stream |
+| `@foxworth/boundary/client` | pinned-client observation subscription and read refresh |
 
 `route(handle, options)` supports GET, POST, PUT, PATCH, and DELETE. GET uses
 query plus path parameters by default; other methods use JSON body plus path
@@ -213,7 +213,7 @@ changes and false otherwise; the host can override it explicitly.
 an execution mode, grant authority, or promise browser confirmation. Admission
 and request handling still pass through the same checked Binding.
 
-## Reactive reads — `@foxworth/boundary/client/cache`
+## Reactive reads — `@foxworth/boundary/client`
 
 `watchInteraction(client, reference, input?, { scope })` is the small
 framework-neutral read store for a projected direct interaction. It returns
@@ -262,7 +262,7 @@ administration. See [headless interactions](../guides/headless-interactions.md).
 `isPending`, `refetch`, and `call`. A change invalidates mounted reads whose
 `reads` footprint intersects its `changes` footprint, including reads mounted
 on other clients that share the same resource. `invalidateReadsForChange`
-lives on `@foxworth/boundary/client/cache` so a non-React client can refresh the
+lives on `@foxworth/boundary/client` so a non-React client can refresh the
 same way. Declared reads use that same `watchInteraction` store through
 `useSyncExternalStore`; React does not maintain another read cache. Mutations
 remain explicit calls and never subscribe or auto-execute.
@@ -341,10 +341,10 @@ bypass admission, flatten `unknown`, or claim administrative Control authority.
 
 ## Live observations
 
-- `@foxworth/boundary/http/observations`: `createObservationHttpHandler` accepts
+- `@foxworth/boundary/http`: `createObservationHttpHandler` accepts
   a host-authenticated context and a host-owned subscription function. It emits
   bounded SSE and releases subscriptions on disconnect.
-- `@foxworth/boundary/client/observations`: `subscribeToObservations` refreshes
+- `@foxworth/boundary/client`: `subscribeToObservations` refreshes
   the selected installation's mounted reads on initial connection and explicit
   reconnect, then applies scoped observation invalidation. It never retries an
   effect or grants authority.

@@ -1,6 +1,6 @@
 import type { HttpHandler } from "@foxworth/boundary/http";
 import type { IpcMainInvokeEvent, WebContents, WebFrameMain } from "electron";
-import { fetchTransport } from "@foxworth/boundary/http/protocol";
+import { fetchTransport } from "@foxworth/boundary/http";
 import type { ClientTransport } from "@foxworth/boundary/client";
 import {
   deserializeFetchRequest,

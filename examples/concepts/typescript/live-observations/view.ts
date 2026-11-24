@@ -1,7 +1,7 @@
 import { createProjectionClient } from "@foxworth/boundary/client";
-import { fetchTransport } from "@foxworth/boundary/http/protocol";
-import { createInteractionCacheScope, mountRead } from "@foxworth/boundary/client/cache";
-import { subscribeToObservations } from "@foxworth/boundary/client/observations";
+import { fetchTransport } from "@foxworth/boundary/http";
+import { createInteractionCacheScope, mountRead } from "@foxworth/boundary/client";
+import { subscribeToObservations } from "@foxworth/boundary/client";
 
 /** A mounted human read; the independent agent client performs the mutations. */
 export function createCounterView(baseUrl: string, token: string) {

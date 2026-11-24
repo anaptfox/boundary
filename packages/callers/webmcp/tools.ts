@@ -1,5 +1,5 @@
 import type { JsonValue } from "@foxworth/boundary/program";
-import { modeForHandle, snapshotProjectedHandle, type AnyProjectedInteractionHandle, type ResolvedBindingInteraction } from "@foxworth/boundary/remote";
+import { modeForHandle, snapshotProjectedHandle, type AnyProjectedInteractionHandle, type ResolvedBindingInteraction } from "#remote";
 import { WebMcpError } from "./errors";
 import type { WebMcpTool } from "./types";
 

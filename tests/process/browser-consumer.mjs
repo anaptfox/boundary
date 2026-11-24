@@ -8,8 +8,8 @@ export async function proveBrowserConsumer(consumerRoot) {
   writeFileSync(entry, `
 export { createProjectionClient, createInvocationState, createProposalInteraction }
   from "@foxworth/boundary/client";
-export { watchInteraction } from "@foxworth/boundary/client/cache";
-export { subscribeToObservations } from "@foxworth/boundary/client/observations";
+export { watchInteraction } from "@foxworth/boundary/client";
+export { subscribeToObservations } from "@foxworth/boundary/client";
 export { useInvocationState, useProposalInteraction } from "@foxworth/boundary/react";
 `);
   const result = await build({

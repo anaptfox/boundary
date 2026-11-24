@@ -3,12 +3,12 @@ import { z } from "zod";
 import { bindProjection, compileInteractions, defineInteraction, direct, directRealizationIds,
   implementInteractions, installInteractions, projectInteractions } from "@foxworth/boundary";
 import type { InvocationObservation } from "@foxworth/boundary/program";
-import { createObservationHttpHandler } from "@foxworth/boundary/http/observations";
-import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
+import { createObservationHttpHandler } from "@foxworth/boundary/http";
+import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http";
 // #region imports
 import { createInvocationState, createProjectionClient, pinProjectionReferences } from "@foxworth/boundary/client";
-import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client/cache";
-import { subscribeToObservations } from "@foxworth/boundary/client/observations";
+import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client";
+import { subscribeToObservations } from "@foxworth/boundary/client";
 // #endregion imports
 
 type Todo = Readonly<{ id: number; title: string }>;

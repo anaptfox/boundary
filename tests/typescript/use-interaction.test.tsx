@@ -13,13 +13,13 @@ import { projectInteractions } from "@foxworth/boundary";
 import {
   createInteractionCacheScope,
   invalidateReadsForChange,
-} from "@foxworth/boundary/client/cache";
+} from "@foxworth/boundary/client";
 import {
   AdapterError,
   isDomainErrorFor,
   RemoteDomainError,
   RemoteInvocationError,
-} from "@foxworth/boundary/remote";
+} from "@foxworth/boundary/client";
 import {
   describeInteractionError,
   InteractionCacheProvider,

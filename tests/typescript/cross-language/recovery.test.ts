@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
 import { createProjectionClient } from "@foxworth/boundary/client";
 import { portableSchema } from "@foxworth/boundary/program";
 import { createControlCapabilities, digestControlRealization, targetForControl, type ControlHook } from "@foxworth/boundary/control";
-import { MemoryJournal, TestClock, TestIds } from "@foxworth/boundary/control/testing";
+import { MemoryJournal, TestClock, TestIds } from "@foxworth/boundary/testing";
 import { Create, List, Todo } from "./native";
 import { startRustTodo } from "./transport";
 import scenarios from "./scenarios.v1.json";

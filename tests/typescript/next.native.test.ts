@@ -1,4 +1,4 @@
-import { AdapterError } from "@foxworth/boundary/remote";
+import { AdapterError } from "@foxworth/boundary/client";
 import { createNextServerCaller } from "@foxworth/boundary/frameworks/next";
 import { projectInteractions } from "@foxworth/boundary";
 import { InteractionFault } from "@foxworth/boundary";

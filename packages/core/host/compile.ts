@@ -5,6 +5,7 @@ import type { AnyInteractionDefinition, CompileInteractionsOptions, CompiledInte
 import type { AsyncInteractionLowering } from "./async-lowering";
 import { dataEntries, descriptorAnnotations, snapshotDefinitions } from "./definition-snapshot";
 import { compileAuthoringSchema, schemaAdapters } from "./schema-adapters";
+import { projectAllCompiled, projectCompiled } from "./projection-algebra";
 
 type CompiledMetadata = Readonly<{
   definitions: Readonly<Record<string, AnyInteractionDefinition>>;
@@ -156,6 +157,11 @@ function assembleCompiled<Definitions extends InteractionDefinitions>(
   const compiled = {
     program,
     handles,
+    project: (selections: any) => projectCompiled(compiled, selections),
+    projectAll: (mode: "direct") => {
+      if (mode !== "direct") throw new TypeError('projectAll currently supports only "direct" mode');
+      return projectAllCompiled(compiled);
+    },
   } as unknown as CompiledInteractions<Definitions>;
   for (const alias of aliases) {
     const definition = definitions[alias]!;

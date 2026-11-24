@@ -386,7 +386,7 @@ createInvocationState(client, generatedReferences.ping, "request");
     path.join(temporaryRoot, "execute-reference.mjs"),
     `import * as host from "@foxworth/boundary";
 import { createProjectionClient, watchInteraction } from "@foxworth/boundary/client";
-import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler, fetchTransport } from "@foxworth/boundary/http";
 import { generatedReferences } from "./proof-dist/generated.references.js";
 import { offlineReferences } from "./proof-dist/offline.references.js";
 import { createInvocationState, pinProjectionReferences } from "@foxworth/boundary/client";
@@ -526,14 +526,10 @@ console.log("Packed observed reads validate point evidence, refresh authorizatio
     "@foxworth/boundary/handoff",
     "@foxworth/boundary/control",
     "@foxworth/boundary/control/host",
-    "@foxworth/boundary/control/testing",
-    "@foxworth/boundary/client/cache",
+    "@foxworth/boundary/plan",
+    "@foxworth/boundary/testing",
     "@foxworth/boundary/client",
-    "@foxworth/boundary/remote",
     "@foxworth/boundary/http",
-    "@foxworth/boundary/http/compose",
-    "@foxworth/boundary/http/openapi",
-    "@foxworth/boundary/http/protocol",
     "@foxworth/boundary/frameworks/trpc",
     "@foxworth/boundary/http/node",
     "@foxworth/boundary/frameworks/hono",

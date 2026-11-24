@@ -8,7 +8,7 @@ import {
   bindProjection, compileInteractions, defineInteraction, implementInteractions,
   installInteractions, projectInteractions, type ProjectionBinding,
 } from "@foxworth/boundary";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 import {
   allowElectronSender, createProjectionElectronMain, type ElectronApis,
   type ElectronIpcSender, type ElectronIpcSenderFrame, type ProjectionElectronMain,

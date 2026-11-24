@@ -1,8 +1,8 @@
 import type { ProjectionBinding } from "@foxworth/boundary";
-import { AdapterError } from "@foxworth/boundary/remote";
+import { AdapterError } from "#remote";
 import { type HttpHandler } from "@foxworth/boundary/http";
-import { mountHandlers } from "@foxworth/boundary/http/compose";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { mountHandlers } from "@foxworth/boundary/http";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 import {
   createMcpHandler,
   type CreateMcpServerOptions,

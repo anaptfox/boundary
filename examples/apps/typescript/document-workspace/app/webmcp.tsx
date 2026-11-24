@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createProjectionClient, handlesFromBinding } from "@foxworth/boundary/client";
-import { fetchTransport } from "@foxworth/boundary/http/protocol";
+import { fetchTransport } from "@foxworth/boundary/http";
 import { isWebMcpAvailable, registerWebMcpTransport, webMcpTool, type WebMcpRegistration } from "@foxworth/boundary/webmcp";
 
 /** Optional browser entry point. The visible Folio UI remains complete without WebMCP. */

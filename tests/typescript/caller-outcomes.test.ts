@@ -2,7 +2,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { createHost, defineInteraction, declaredInteractionError, bindProjection, compileInteractions, installInteractions, projectInteractions, admitAll, implementInteractions, type DirectOutcome, type ProjectionSelection, type RequestOutcome } from "@foxworth/boundary";
 import { portableSchema } from "@foxworth/boundary/program";
 import { unwrapOutcome } from "@foxworth/boundary";
-import { createControlRequestContributions } from "@foxworth/boundary/host/control";
+import { createControlRequestContributions } from "../../packages/core/host/control";
 
 const Text = portableSchema<string>({ type: "string" });
 const defs = { greet: defineInteraction({ id: "outcomes.greet", output: Text, errors: { unavailable: Text } }), fail: defineInteraction({ id: "outcomes.fail", output: Text }) } as const;

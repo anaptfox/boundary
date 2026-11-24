@@ -24,6 +24,14 @@ describe("Projection set algebra", () => {
     const right = projectInteractions(rightCompiled, { run: { interaction: rightCompiled.handles.run, modes: ["request"] } });
     expect(unionProjections(left, right).projectionDigest).toBe(unionProjections(right, left).projectionDigest);
   });
+  it("projects fluently from a compiled interaction set", () => {
+    const compiled = compileInteractions({ run: defineInteraction({ id: "algebra.fluent", output: Result }) });
+    const selected = compiled.project({ run: "direct" });
+    const allDirect = compiled.projectAll("direct");
+    expect(selected.manifest.interactions).toHaveLength(1);
+    expect(allDirect.manifest.interactions).toHaveLength(1);
+    expect(selected.projectionDigest).toBe(allDirect.projectionDigest);
+  });
   it("rejects duplicate and unknown keys", () => {
     const compiled = compileInteractions({ run: defineInteraction({ id: "algebra.run", output: Result }) });
     const projection = projectInteractions(compiled, { run: { interaction: compiled.handles.run, modes: ["direct"] } });

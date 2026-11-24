@@ -1,4 +1,4 @@
-import type { MemoryJournal, TestClock } from "@foxworth/boundary/control/testing";
+import type { MemoryJournal, TestClock } from "#control/testing";
 
 export type ControlCrashPoint = "after-attempt" | "after-apply" | "after-verify";
 export type ControlCrashCaseReport = Readonly<{ point: ControlCrashPoint; recovered: boolean; sideEffects: number; terminal: boolean; message?: string }>;

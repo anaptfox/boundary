@@ -7,7 +7,7 @@ import type { JsonValue } from "@foxworth/boundary/program";
 import {
   watchInteraction,
   type InteractionRead,
-} from "@foxworth/boundary/client/cache";
+} from "@foxworth/boundary/client";
 import type { ProjectionClient } from "@foxworth/boundary/client";
 
 type Definition<Arity extends 0 | 1, Input extends JsonValue = JsonValue> =

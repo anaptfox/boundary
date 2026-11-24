@@ -1,5 +1,5 @@
 import { createProjectionHandlers } from "@foxworth/boundary/frameworks/next";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 import { demoContextFromCookie } from "../../../../lib/context";
 import { binding } from "../../../../lib/boundary";
 import { tracedContext } from "../../../../lib/activity";

@@ -23,10 +23,10 @@ import {
   proposalDigest,
   type ProposalRecord,
 } from "@foxworth/boundary/control";
-import { MemoryJournal } from "@foxworth/boundary/control/testing";
-import { createCompositeHttpHandler } from "@foxworth/boundary/http/compose";
+import { MemoryJournal } from "@foxworth/boundary/testing";
+import { createCompositeHttpHandler } from "@foxworth/boundary/http";
 import { createHttpHandler, route } from "@foxworth/boundary/http";
-import { createProtocolHandler } from "@foxworth/boundary/http/protocol";
+import { createProtocolHandler } from "@foxworth/boundary/http";
 import { createProjectionClient } from "@foxworth/boundary/client";
 import { useInteraction } from "@foxworth/boundary/react";
 import { createAdapterFixture } from "../helpers/adapter";

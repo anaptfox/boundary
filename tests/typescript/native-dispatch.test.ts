@@ -6,7 +6,7 @@ import {
   type Admission, type InvocationCoordinator, type RawInvocationOutcome,
 } from "@foxworth/boundary";
 import { portableSchema, type InvocationObservation } from "@foxworth/boundary/program";
-import { createControlRequestContributions } from "@foxworth/boundary/host/control";
+import { createControlRequestContributions } from "../../packages/core/host/control";
 import { createHandoffInvocation, executeHandoff } from "@foxworth/boundary/handoff";
 
 const Input = portableSchema<string>({ type: "string" });

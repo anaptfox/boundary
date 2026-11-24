@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client/cache";
+import { createInteractionCacheScope, watchInteraction } from "@foxworth/boundary/client";
 import { createScopedObservationExample } from "../../examples/snippets/typescript/scoped-observations";
 
 it("wires the documented typed read, change, and observations through one explicit scope", async () => {

@@ -16,7 +16,7 @@ import {
   listControl,
   type ProposalRecord,
 } from "@foxworth/boundary/control";
-import { MemoryJournal } from "@foxworth/boundary/control/testing";
+import { MemoryJournal } from "@foxworth/boundary/testing";
 
 const Title = portableSchema<{ readonly title: string }>({
   type: "object",

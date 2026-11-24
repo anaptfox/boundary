@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { b } from "../../packages/core/program/schema-builder";
 import { bindProjection, compileInteractions, defineInteraction, directRealizationIds, implementInteractions, installInteractions } from "@foxworth/boundary";
-import { createPlan, planAggregateFootprints, planParallelWaves, planRequiredProjection, planRequiredSelections, preflightPlan, validatePlan, type Plan } from "../../packages/core/plan";
+import { createPlan, planAggregateFootprints, planParallelWaves, planRequiredProjection, planRequiredSelections, preflightPlan, validatePlan, type Plan } from "@foxworth/boundary/plan";
 import type { ProjectionBindingManifest } from "../../packages/core/program/artifacts";
 import type { Sha256Digest } from "../../packages/core/program/json";
 

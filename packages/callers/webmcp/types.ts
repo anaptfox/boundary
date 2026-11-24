@@ -3,7 +3,7 @@ import type {
   ProjectionBinding,
 } from "@foxworth/boundary";
 import type { ClientInvokeFraming, ClientTransport } from "@foxworth/boundary/client";
-import type { AnyProjectedInteractionHandle } from "@foxworth/boundary/remote";
+import type { AnyProjectedInteractionHandle } from "#remote";
 
 export type WebMcpTool<
   Handle extends AnyProjectedInteractionHandle = AnyProjectedInteractionHandle,
