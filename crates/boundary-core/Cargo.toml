@@ -19,6 +19,10 @@ name = "control_test_util"
 required-features = ["test-util"]
 
 [[test]]
+name = "testing_harness"
+required-features = ["schemars", "test-util"]
+
+[[test]]
 name = "binding_coordination"
 required-features = ["schemars"]
 
