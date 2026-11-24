@@ -7,7 +7,7 @@ export function proveConciseAuthoringConsumer(consumerRoot) {
   const runtime = path.join(consumerRoot, "concise-authoring-consumer.mjs");
   writeFileSync(runtime, `
 import assert from "node:assert/strict";
-import { bindInteractions, defineInteraction } from "@foxworth/boundary";
+import { createHost, defineInteraction } from "@foxworth/boundary";
 import { portableSchema } from "@foxworth/boundary/program";
 
 const Point = portableSchema({
@@ -23,7 +23,7 @@ const definitions = {
   render: defineInteraction({ id: "consumer.render", output: Text, reads: ["canvas"] }),
 };
 let position = { x: 0, y: 0 };
-const result = bindInteractions(definitions, {
+const result = createHost(definitions, {
   installationId: "consumer:canvas:1",
   realizationVersion: "consumer-build-1",
   handlers: {
@@ -55,7 +55,7 @@ console.log("Packed concise authoring composes and narrows native bindings.");
 
   const types = path.join(consumerRoot, "concise-authoring-consumer.types.ts");
   writeFileSync(types, `
-import { bindInteractions, defineInteraction } from "@foxworth/boundary";
+import { createHost, defineInteraction } from "@foxworth/boundary";
 import { portableSchema } from "@foxworth/boundary/program";
 type Actor = { readonly id: string; readonly role: "human" | "assistant" };
 const Point = portableSchema<{ readonly x: number; readonly y: number }>({
@@ -67,7 +67,7 @@ const definitions = {
   move: defineInteraction({ id: "consumer.types.move", input: Point, output: Point }),
   capture: defineInteraction({ id: "consumer.types.capture", output: Text }),
 };
-const result = bindInteractions(definitions, {
+const result = createHost(definitions, {
   installationId: "consumer:types:1", realizationVersion: "types-1",
   handlers: {
     move(input, actor: Actor) { actor.id satisfies string; return { x: input.x, y: input.y }; },

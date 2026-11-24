@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  bindInteractions,
+  createHost,
   defineInteraction,
   declaredInteractionError,
 } from "@foxworth/boundary";
@@ -63,7 +63,7 @@ export async function createSceneAuthoringExample() {
   let nextCandidateId = 1;
 
   // #region binding-call
-  const boundary = bindInteractions(sceneInteractions, {
+  const boundary = createHost(sceneInteractions, {
     installationId: "scene:local:v1",
     realizationVersion: "scene-handlers:v1",
     handlers: {

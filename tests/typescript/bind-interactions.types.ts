@@ -1,4 +1,4 @@
-import { bindInteractions, defineInteraction } from "@foxworth/boundary";
+import { createHost, defineInteraction } from "@foxworth/boundary";
 import { portableSchema } from "@foxworth/boundary/program";
 
 type Actor = { readonly id: string; readonly role: "human" | "assistant" };
@@ -16,7 +16,7 @@ const definitions = {
   capture: defineInteraction({ id: "types.capture", output: StringOutput }),
 } as const;
 
-const source = bindInteractions(definitions, {
+const source = createHost(definitions, {
   installationId: "types:1",
   realizationVersion: "types-1",
   handlers: {
@@ -71,7 +71,7 @@ async function callerTypes() {
 void callerTypes;
 
 // One realization set has one host context type across all handlers.
-bindInteractions(definitions, {
+createHost(definitions, {
   installationId: "types:incompatible-contexts",
   realizationVersion: "incompatible-contexts-1",
   handlers: {
@@ -84,7 +84,7 @@ bindInteractions(definitions, {
   callers: { editor: { direct: ["move", "capture"], admit: (_actor: { readonly id: string }) => true } },
 });
 
-bindInteractions(definitions, {
+createHost(definitions, {
   installationId: "types:bad-handler-output",
   realizationVersion: "types-bad-1",
   handlers: {
@@ -95,7 +95,7 @@ bindInteractions(definitions, {
   callers: callerSelection,
 });
 
-bindInteractions(definitions, {
+createHost(definitions, {
   installationId: "types:missing-handler",
   realizationVersion: "types-missing-1",
   // @ts-expect-error handler coverage is exhaustive
@@ -103,7 +103,7 @@ bindInteractions(definitions, {
   callers: callerSelection,
 });
 
-bindInteractions(definitions, {
+createHost(definitions, {
   installationId: "types:unknown-alias",
   realizationVersion: "types-unknown-1",
   handlers: {
@@ -119,7 +119,7 @@ const extraHandlers = {
   capture: (actor: Actor) => actor.id,
   erase: () => "wrong",
 };
-bindInteractions(definitions, {
+createHost(definitions, {
   installationId: "types:extra-handler",
   realizationVersion: "types-extra-1",
   // @ts-expect-error handlers reject unknown action names, including variables
@@ -129,7 +129,7 @@ bindInteractions(definitions, {
 
 // In contextless mode a zero-input action takes no arguments; a one-input
 // action still takes its declared input.
-const contextless = bindInteractions(definitions, {
+const contextless = createHost(definitions, {
   installationId: "types:contextless",
   realizationVersion: "contextless-1",
   handlers: {
@@ -152,7 +152,7 @@ async function contextlessMethods() {
 void contextlessMethods;
 
 // A one-input handler can also receive its actor in the second position.
-bindInteractions(definitions, {
+createHost(definitions, {
   installationId: "types:input-and-context",
   realizationVersion: "input-context-1",
   handlers: {

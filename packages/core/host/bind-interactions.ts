@@ -5,12 +5,12 @@ import { installInteractions } from "./install";
 import { directRealizationIds } from "./direct";
 import { projectInteractions } from "./projection";
 import { bindProjection } from "./binding";
-import { namedCallers } from "./named-callers";
+import { namedCallers, namedTryCallers } from "./named-callers";
 import type {
-  BindInteractionCallers,
-  BindInteractionsIssue,
-  BindInteractionsOptions,
-  BindInteractionsResult,
+  CreateHostCallers,
+  CreateHostIssue,
+  CreateHostOptions,
+  CreateHostResult,
   ExactCallerAliases,
   ContextFromHandlers,
   ContextInferringHandlers,
@@ -22,12 +22,12 @@ import type {
   ProjectionSelections,
 } from "./types";
 
-export class BindInteractionsError extends Error {
-  readonly issues: readonly BindInteractionsIssue[];
+export class CreateHostError extends Error {
+  readonly issues: readonly CreateHostIssue[];
 
-  constructor(issues: readonly BindInteractionsIssue[]) {
+  constructor(issues: readonly CreateHostIssue[]) {
     super(`Could not bind ${issues.length} caller${issues.length === 1 ? "" : "s"}`);
-    this.name = "BindInteractionsError";
+    this.name = "CreateHostError";
     this.issues = Object.freeze(issues.map((issue) => Object.freeze({ ...issue })));
   }
 }
@@ -103,11 +103,11 @@ type CallerSnapshot = Readonly<{
 
 function snapshotCallers(value: unknown): Readonly<{
   callers: Readonly<Record<string, CallerSnapshot>>;
-  issues: readonly BindInteractionsIssue[];
+  issues: readonly CreateHostIssue[];
 }> {
   const callers = ownDataRecord(value, "callers");
   const snapshot: Record<string, CallerSnapshot> = Object.create(null) as Record<string, CallerSnapshot>;
-  const issues: BindInteractionsIssue[] = [];
+  const issues: CreateHostIssue[] = [];
   for (const name of Object.keys(callers)) {
     try {
       const config = ownDataRecord(callers[name], `callers.${name}`);
@@ -139,25 +139,25 @@ function defineValue(record: Record<string, unknown>, key: string, value: unknow
 }
 
 /** Compile, install, project, and bind named direct callers through Boundary's native pipeline. */
-export function bindInteractions<
+export function createHost<
   const Definitions extends InteractionDefinitions,
   const Handlers extends ContextInferringHandlers<Definitions>,
-  const Callers extends BindInteractionCallers<Definitions, ContextFromHandlers<Definitions, Handlers>>,
+  const Callers extends CreateHostCallers<Definitions, ContextFromHandlers<Definitions, Handlers>>,
 >(
   definitions: Definitions,
-  options: Omit<BindInteractionsOptions<Definitions, ContextFromHandlers<Definitions, Handlers>, Callers>, "handlers" | "callers"> & {
+  options: Omit<CreateHostOptions<Definitions, ContextFromHandlers<Definitions, Handlers>, Callers>, "handlers" | "callers"> & {
     readonly handlers: Handlers & Record<Exclude<keyof Handlers, keyof Definitions>, never> & CompatibleHandlerContexts<Definitions, Handlers>;
     readonly callers: Callers & ExactCallerAliases<Definitions, Callers>;
   },
-): BindInteractionsResult<Definitions, ContextFromHandlers<Definitions, Handlers>, Callers>;
-export function bindInteractions<
+): CreateHostResult<Definitions, ContextFromHandlers<Definitions, Handlers>, Callers>;
+export function createHost<
   const Definitions extends InteractionDefinitions,
   Context,
-  const Callers extends BindInteractionCallers<Definitions, Context> = BindInteractionCallers<Definitions, Context>,
+  const Callers extends CreateHostCallers<Definitions, Context> = CreateHostCallers<Definitions, Context>,
 >(
   definitions: Definitions,
   options: unknown,
-): BindInteractionsResult<Definitions, Context, Callers> {
+): CreateHostResult<Definitions, Context, Callers> {
   const copiedOptions = ownDataRecord(options, "options");
   exactKeys(copiedOptions, ["installationId", "realizationVersion", "handlers", "callers"], "options");
   const installationId = copiedOptions.installationId;
@@ -170,7 +170,7 @@ export function bindInteractions<
   const callerSnapshots = callerSnapshot.callers;
   const definitionSnapshot = snapshotDefinitions(definitions) as Definitions;
   const aliases = Object.keys(definitionSnapshot);
-  const preflightIssues: BindInteractionsIssue[] = [...callerSnapshot.issues];
+  const preflightIssues: CreateHostIssue[] = [...callerSnapshot.issues];
   for (const [name, caller] of Object.entries(callerSnapshots)) {
     for (const alias of caller.direct) {
       if (!aliases.includes(alias)) {
@@ -182,13 +182,13 @@ export function bindInteractions<
       }
     }
   }
-  const issues: BindInteractionsIssue[] = [...preflightIssues, ...Object.entries(callerSnapshots)
+  const issues: CreateHostIssue[] = [...preflightIssues, ...Object.entries(callerSnapshots)
     .filter(([, caller]) => caller.direct.includes("then"))
     .map(([name]) => ({
       caller: name,
       cause: new TypeError('interaction alias "then" cannot be exposed as a named async method'),
     }))];
-  if (issues.length > 0) throw new BindInteractionsError(issues);
+  if (issues.length > 0) throw new CreateHostError(issues);
 
   const compiled = compileInteractions(definitionSnapshot);
   const implementations = implementInteractions(
@@ -252,7 +252,7 @@ export function bindInteractions<
       }
     }
     if (issues.length > 0) {
-      throw new BindInteractionsError(issues);
+      throw new CreateHostError(issues);
     }
 
     const frozenProjections = Object.freeze(projections);
@@ -263,6 +263,7 @@ export function bindInteractions<
       frozenProjections,
       frozenBindings,
     );
+    const tryCallers = namedTryCallers<Definitions, Context, Callers>(callerSnapshots as Callers, frozenBindings);
     return Object.freeze({
       compiled,
       installation: installed.installation,
@@ -271,7 +272,8 @@ export function bindInteractions<
       bindings: frozenBindings,
       bindingControllers: frozenControllers,
       callers,
-    }) as BindInteractionsResult<Definitions, Context, Callers>;
+      tryCallers,
+    }) as CreateHostResult<Definitions, Context, Callers>;
   } catch (cause) {
     for (const controller of Object.values(controllers)) controller.revoke();
     installed.controller.revoke();

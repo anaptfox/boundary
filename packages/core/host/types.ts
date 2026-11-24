@@ -21,8 +21,7 @@ import type {
   SchemaAdapter as ProgramSchemaAdapter,
   Sha256Digest,
 } from "@foxworth/boundary/program";
-import type { NativeDispatchOutcome, NativeDispatchOutcomes } from "./native-outcome";
-
+import type { NativeDispatchOutcome, NativeDispatchOutcomes } from "./native-outcome"; import type { DirectCallers, RequestCallers, TryCallers, TryRequestCallers } from "./caller-outcomes";
 export type {
   InstallationId,
   InstallationManifest,
@@ -36,14 +35,11 @@ export type {
   RawInvocationResult,
   RealizationId,
 };
-
 export type MaybePromise<Value> = Value | PromiseLike<Value>;
-
 export type ErrorSchemas = Readonly<Record<string, PortableSchema>>;
 export type ErrorValues<Schemas extends ErrorSchemas> = {
   readonly [Code in keyof Schemas]: PortableSchemaValue<Schemas[Code]>;
 };
-
 /** Minimal Standard Schema type carrier used for authoring-time inference. */
 export interface StandardSchema<Output extends JsonValue = JsonValue> {
   readonly "~standard": {
@@ -441,7 +437,7 @@ type HandleRequestOutput<Handle> = Handle extends ProjectedInteractionHandle<
   ? RequestOutput
   : JsonValue;
 
-type InvocationArguments<Handle extends InteractionHandle, Context> =
+export type InvocationArguments<Handle extends InteractionHandle, Context> =
   HandleArity<Handle> extends 0
     ? [Context] extends [void]
       ? readonly []
@@ -467,6 +463,8 @@ export interface DirectInteractionCaller<
     interaction: ResolvedBindingInteraction,
     ...args: RawArguments<Context>
   ): Promise<RawInvocationOutcome>;
+  readonly direct: DirectCallers<Handles, Context>;
+  readonly try: TryCallers<Handles, Context>;
 }
 
 export interface RequestInteractionCaller<
@@ -482,6 +480,8 @@ export interface RequestInteractionCaller<
     interaction: ResolvedBindingInteraction,
     ...args: RawArguments<Context>
   ): Promise<RawInvocationOutcome>;
+  readonly requests: RequestCallers<Handles, Context>;
+  readonly tryRequest: TryRequestCallers<Handles, Context>;
 }
 
 type HasRequest<Handles extends Readonly<Record<string, ProjectedInteractionHandle>>> =

@@ -76,8 +76,8 @@ try {
   });
   writeFileSync(path.join(noPeers, "root-only.mjs"), `
 import assert from "node:assert/strict";
-import { bindInteractions, defineInteraction } from "@foxworth/boundary";
-assert.equal(typeof bindInteractions, "function");
+import { createHost, defineInteraction } from "@foxworth/boundary";
+assert.equal(typeof createHost, "function");
 assert.equal(typeof defineInteraction, "function");
 for (const [subpath, peer] of [["yjs", "yjs"], ["automerge", "@automerge/automerge"]]) {
   await assert.rejects(import(\`@foxworth/boundary/\${subpath}\`), error =>

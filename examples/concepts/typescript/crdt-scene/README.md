@@ -21,7 +21,7 @@ just crdt-e2e
 
 Each example creates two native replicas, makes disjoint edits, exchanges real
 Yjs updates or Automerge Sync messages, and passes immutable captures through
-the same host-owned `bindInteractions` journey. The accepted candidate survives
+the same host-owned `createHost` journey. The accepted candidate survives
 later live edits and deletion, and its engine bytes and host metadata reload
 with the same content digest. Unit tests inject in-process delivery while
 retaining the native engine messages; the executable and packed-consumer paths

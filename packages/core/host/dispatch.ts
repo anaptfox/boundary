@@ -182,6 +182,7 @@ async function rawInvokeUnobserved<Context>(
       result: Object.freeze({ kind: "denied", code: "CALL_NOT_ADMITTED" }),
     });
   }
+  const authorizedContext = "context" in decision ? decision.context as Context : context;
   if (bindingRevoked(metadata)) {
     return notStartedFault(
       metadata,
@@ -195,7 +196,7 @@ async function rawInvokeUnobserved<Context>(
       policy: Object.freeze(outcomeBase(metadata, resolution.manifest)),
       interaction: bindingDescriptions(metadata.manifest).find(entry =>
         entry.interactionId === resolution.manifest.interactionId && entry.mode === mode)!,
-      input, context,
+      input, context: authorizedContext,
     });
     let closed = false;
     let execution: Promise<RawInvocationOutcome> | undefined;
@@ -204,7 +205,7 @@ async function rawInvokeUnobserved<Context>(
       // Assign before entering native code: a synchronous dispatcher can re-enter proceed.
       execution ??= Promise.resolve().then(() => bindingRevoked(metadata)
         ? notStartedFault(metadata, resolution.manifest, "revoked")
-        : dispatchInvocation(metadata, resolution, mode, input, context));
+        : dispatchInvocation(metadata, resolution, mode, input, authorizedContext));
       return execution;
     };
     try {
@@ -222,7 +223,7 @@ async function rawInvokeUnobserved<Context>(
       return Object.freeze({ ...request.policy, certainty: "unknown", result: Object.freeze({ kind: "fault", cause: "realization-failed" }) });
     }
   }
-  return dispatchInvocation(metadata, resolution, mode, input, context);
+  return dispatchInvocation(metadata, resolution, mode, input, authorizedContext);
 }
 
 async function dispatchInvocation<Context>(
