@@ -57,8 +57,7 @@
   "imports": {
     "#program/internal": "./core/program/internal.ts",
     "#control/testing": "./core/control/testing.ts",
-    "#host/control": "./core/host/control.ts",
-    "#remote": "./core/remote/index.ts"
+    "#host/control": "./core/host/control.ts"
   },
   "peerDependencies": {
     "@automerge/automerge": "^3.5.0",

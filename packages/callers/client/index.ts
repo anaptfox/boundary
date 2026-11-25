@@ -52,4 +52,4 @@ export {
   type InteractionDeclaredError,
   type RemoteInteractionDomainError,
   type RemoteInteractionError,
-} from "#remote";
+} from "@foxworth/boundary/handoff";

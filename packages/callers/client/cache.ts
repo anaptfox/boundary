@@ -4,12 +4,12 @@ import type {
 } from "@foxworth/boundary";
 import type { ProjectionClient } from "./client";
 import { normalizeJson, validateInvocationObservation, type JsonValue } from "@foxworth/boundary/program";
-import { AdapterError, type RemoteInteractionError } from "#remote";
-import type { InteractionInput, InteractionOutput } from "#remote";
+import { AdapterError, type RemoteInteractionError } from "@foxworth/boundary/handoff";
+import type { InteractionInput, InteractionOutput } from "@foxworth/boundary/handoff";
 import {
   snapshotProjectedHandle,
   type AnyProjectedInteractionHandle,
-} from "#remote";
+} from "@foxworth/boundary/handoff";
 
 export type InteractionFootprint = Readonly<{
   reads: readonly string[];

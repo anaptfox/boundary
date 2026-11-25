@@ -1,9 +1,9 @@
 import type { InteractionMode, ProjectionBindingManifest } from "@foxworth/boundary";
 import { createCheckedHandoff, validateProjectionBindingManifest, validateHandoffResponse, type CheckedHandoff, type HandoffInvocation } from "@foxworth/boundary/handoff";
 import type { ClientInvokeFraming, ClientTransport } from "@foxworth/boundary/client";
-import { RemoteInvocationError } from "#remote";
+import { RemoteInvocationError } from "@foxworth/boundary/handoff";
 import type { JsonValue } from "@foxworth/boundary/program";
-import { compileBindingResolution, interactionKey, type ResolvedBindingInteraction } from "#remote";
+import { compileBindingResolution, interactionKey, type ResolvedBindingInteraction } from "@foxworth/boundary/handoff";
 import { isObjectInputSchema, overlayInputSchema, stableJson } from "./schema";
 import type { WebMcpBindingSyncOptions, WebMcpSyncOptions, WebMcpToolSummary } from "./types";
 import { TOOL_NAME, fail, inputAnnotations, toolDeclarations } from "./tools";

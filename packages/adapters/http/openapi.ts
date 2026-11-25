@@ -8,9 +8,9 @@ import {
   type HandoffFaultCause,
 } from "@foxworth/boundary/handoff";
 import type { InvocationCertainty, JsonObject, JsonSchema, InteractionDescriptor } from "@foxworth/boundary/program";
-import { AdapterError } from "#remote";
+import { AdapterError } from "@foxworth/boundary/handoff";
 import type { HttpRoute } from "./handler";
-import { compileBindingResolution, compileProjectionResolution, interactionKey } from "#remote";
+import { compileBindingResolution, compileProjectionResolution, interactionKey } from "@foxworth/boundary/handoff";
 
 type OpenApiCommon = Readonly<{
   routes: readonly HttpRoute[];

@@ -4,7 +4,7 @@ import type {
   ProjectionBinding,
 } from "@foxworth/boundary";
 import { createCheckedHandoff } from "@foxworth/boundary/handoff";
-import { AdapterError } from "#remote";
+import { AdapterError } from "@foxworth/boundary/handoff";
 import {
   compileExposure,
   invokePreparedInteraction,
@@ -15,13 +15,13 @@ import {
   type InteractionHasInput,
   type InteractionInput,
   type RemoteCallResult,
-} from "#remote";
+} from "@foxworth/boundary/handoff";
 import {
   modeForHandle,
   interactionKey,
   snapshotProjectedHandle,
   type AnyProjectedInteractionHandle,
-} from "#remote";
+} from "@foxworth/boundary/handoff";
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export type HttpHandler = (request: Request) => Promise<Response>;

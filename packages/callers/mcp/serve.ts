@@ -1,5 +1,5 @@
 import type { ProjectionBinding } from "@foxworth/boundary";
-import { AdapterError } from "#remote";
+import { AdapterError } from "@foxworth/boundary/handoff";
 import { type HttpHandler } from "@foxworth/boundary/http";
 import { mountHandlers } from "@foxworth/boundary/http";
 import { createProtocolHandler } from "@foxworth/boundary/http";

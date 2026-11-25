@@ -1,6 +1,6 @@
 import { createHandoffInvocation, type HandoffFaultCause, type HandoffInvocation, type HandoffOutcome } from "@foxworth/boundary/handoff";
 import type { ClientInvokeFraming } from "@foxworth/boundary/client";
-import { RemoteInvocationError } from "#remote";
+import { RemoteInvocationError } from "@foxworth/boundary/handoff";
 import type { JsonValue } from "@foxworth/boundary/program";
 import type { WebMcpContextRequest, WebMcpFrame } from "./types";
 import { PreparedTool } from "./catalog";

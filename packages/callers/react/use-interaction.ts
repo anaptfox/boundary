@@ -15,7 +15,7 @@ import {
   RemoteExecutionError,
   RemoteInvocationError,
   RemoteProtocolError,
-} from "#remote";
+} from "@foxworth/boundary/handoff";
 import {
   useCallback,
   useEffect,

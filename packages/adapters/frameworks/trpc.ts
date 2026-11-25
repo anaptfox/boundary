@@ -5,7 +5,7 @@ import type {
 import { createCheckedHandoff } from "@foxworth/boundary/handoff";
 import { initTRPC, type AnyRouter } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { AdapterError } from "#remote";
+import { AdapterError } from "@foxworth/boundary/handoff";
 import type { HttpHandler } from "@foxworth/boundary/http";
 import {
   compileExposure,
@@ -15,13 +15,13 @@ import {
   sanitizedInternalResult,
   type InteractionInput,
   type RemoteCallResult,
-} from "#remote";
+} from "@foxworth/boundary/handoff";
 import {
   modeForHandle,
   interactionKey,
   snapshotProjectedHandle,
   type AnyProjectedInteractionHandle,
-} from "#remote";
+} from "@foxworth/boundary/handoff";
 
 export type TrpcProcedureKind = "query" | "mutation";
 
